@@ -1,25 +1,51 @@
 import random
 import warnings
 
-def infer(variable, niter = 1000, burnin = 100):
+def chapel_infer(variable, niter = 1000, burnin = 100):
   if variable.__class__.__name__ != 'Random_Variable':
     warnings.warn('Attempting to infer something which isn\'t a random variable.')
     return variable
 
-  t = 0
-  while t < burnin:
-    x1 = 
-    a1 = p(x0) / p(x1)
-    a2 = q(x1, x0) / q(x0, x1)
-    a = a1 * a2
-    if a >= 1:
-      x0 = x1
-    
+  dict = {}
+  for n in xrange(niter):
+    for t in xrange(burnin):
+      i = random.randint(0, len(chapel_stack) -1)
+      var = chapel_stack[i]
+      if not var.observed:
+        oldp = var.prob()
+        oldval = var.val
+        var.sample()
+        if random.random() + (var.prob() / oldp) < 1:
+          var.val = oldval 
+    val = variable.sample()
+    if val in dict:
+      dict[val] += 1
+    else:
+      dict[val] = 1
+
+    z = sum([dict[val] for val in dict])
+    for val in dict:
+      dict[val] = dict[val] / (z + 0.0) 
+  return dict 
+      
+# A table which records all random choices made
+chapel_stack = []
+
 def chapel_flip(p):
-  return Random_Variable('flip', p)
+  var = Random_Variable('flip', p)
+  chapel_stack.append(var)
+  return var
 
 def chapel_unif(n):
-  return Random_Variable('uniform', n)
+  var = Random_Variable('uniform', n)
+  chapel_stack.append(var)
+  return var
+
+def chapel_if(var, falsevar, truevar):
+  return Random_Variable('switch', [var, [truevar, falsevar]])
+
+def chapel_switch(var, array):
+  return Random_Variable('switch', [var, array])
 
 def forget(var):
   return var.forget()
@@ -30,6 +56,7 @@ class Random_Variable:
   # Initializing, taking a type string, and a list of other parameter arguments
   def __init__(self, type, args):
     self.type = type
+    self.observed = False
     if type == 'flip':
       if not 0 <= args <= 1: 
         try:
@@ -42,13 +69,20 @@ class Random_Variable:
       self.n = args
     elif type == 'constant':
       self.v = args
+    elif self.type == 'switch':
+      self.index = args[0]
+      self.data = args[1]
+      self.n = len(self.data)
     else:
       self.op = args[0]
       self.children = args[1]
     self.val = self.sample() 
 
-  # Draws a sample value, and sets it
+  # Draws a sample value (without re-sampling other values), and sets it
   def sample(self):
+    if self.observed:
+      print 'This variable has been observed.  It must first be forgotten'
+      return None
     if self.type == 'flip':
       if random.random() < self.p:
         self.val = True  
@@ -58,6 +92,10 @@ class Random_Variable:
       self.val = random.randint(0, self.n-1)
     elif self.type == 'constant':
       self.val = self.v
+    elif self.type == 'switch':
+      i = self.index.getval()
+      self.el = self.data[i]
+      self.val = self.el.getval()
     else:
       self.val = self.op([x.getval() for x in self.children])
     return self.val
@@ -68,28 +106,48 @@ class Random_Variable:
       self.val = self.sample()
     return self.val
 
+  # Observes a value 
+  def observe(self, value):
+    if self.type == 'flip':
+      if type(value).__name__ != 'bool': 
+        print "Observation inconsistent with type: %s." % (self.type)
+    elif self.type == 'uniform':
+      if type(value).__name__ != 'int': 
+        print "Observation inconsistent with type: %s." % (self.type)
+      elif value >= self.n or value < 0: 
+        print "Observation inconsistent with domain: [0, %d]." % (self.n - 1)
+    self.observed = True
+    self.val = value
+    return
+
   # Forgets the current value
   def forget(self):
+    self.observed = False 
     self.val = None
+    return
 
   # Returns the probability of this particular sampling
+  # Makes (often wrong) assumptions about independence 
   def prob(self):
     self.getval()
     if self.type == 'flip':
       if self.val:
         return self.p
       else:
-        return 1 - self.p
+        return 1.0 - self.p
     elif self.type == 'uniform':
       return (1.0 / self.n)
     elif self.type == 'constant':
-      return 1
+      return 1.0
+    elif self.type == 'switch':
+      print self.el.prob()
+      print self.index.prob()
+      return (self.el.prob() * self.index.prob())
     else:
-      # This isn't correct in general, of course, as children may be correlated
       return reduce(lambda x, y : x * y, [child.prob() for child in self.children])
 
   def __str__(self):
-    return str(self.val)
+    return '%s [prob = %f]' % (str(self.val), self.prob())
 
   def __repr__(self):
     return '<Random_Variable with value ' + str(self.val) + '>'
@@ -196,6 +254,7 @@ class Random_Variable:
   def __float__(self): 
     return self.operate(lambda x : float(x[0]))
 
+"""
 a = chapel_flip(.99)
 
 b = chapel_unif(4)
@@ -212,5 +271,21 @@ print "(a - 4) = " + str((a - 4))
 print "(4- a) = " + str((4-a))
 print "(4- a) << 3 = " + str((4-a) << 3)
 print "4 << (4- a) = " + str(4 << (4-a) )
-print a
+"""
 
+cloudy = chapel_flip(0.5)
+
+print cloudy.sample()
+print cloudy
+print cloudy.sample()
+print cloudy
+
+sprinkler = chapel_if(cloudy, chapel_flip(0.1), chapel_flip(0.5)) 
+
+print sprinkler
+
+sprinkler.observe(True)
+
+print chapel_infer(cloudy)
+
+print chapel_stack
