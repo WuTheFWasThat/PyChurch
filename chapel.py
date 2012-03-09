@@ -12,24 +12,41 @@ def chapel_infer(variable, niter = 1000, burnin = 100):
       i = random.randint(0, len(chapel_stack) -1)
       var = chapel_stack[i]
       if not var.observed:
-        oldp = var.prob()
+        oldp = chapel_prob()
         oldval = var.val
         var.sample()
-        if random.random() + (var.prob() / oldp) < 1:
+        if random.random() + (chapel_prob() / oldp) < 1:
           var.val = oldval 
-    val = variable.sample()
-    if val in dict:
-      dict[val] += 1
-    else:
-      dict[val] = 1
+        #else:
+        #  print "walked to state: cloudy %s, sprinkler %s" % (str(cloudy), str(sprinkler))
+    flag = True
+    for var in chapel_obs:
+      obsval = var.val 
+      if var.sample() != obsval:
+        var.val = obsval
+        flag = False
+        break
+    if flag:
+      val = variable.getval()
+      if val in dict:
+        dict[val] += 1
+      else:
+        dict[val] = 1
 
-    z = sum([dict[val] for val in dict])
-    for val in dict:
-      dict[val] = dict[val] / (z + 0.0) 
+  z = sum([dict[val] for val in dict])
+  for val in dict:
+    dict[val] = dict[val] / (z + 0.0) 
   return dict 
       
 # A table which records all random choices made
+chapel_obs = []
 chapel_stack = []
+
+def chapel_prob():
+  ans = 1
+  for var in chapel_stack:
+    ans *= var.prob()
+  return ans
 
 def chapel_flip(p):
   var = Random_Variable('flip', p)
@@ -41,11 +58,18 @@ def chapel_unif(n):
   chapel_stack.append(var)
   return var
 
-def chapel_if(var, falsevar, truevar):
-  return Random_Variable('switch', [var, [truevar, falsevar]])
+def chapel_ifp(ifvar, p, q):
+  var = Random_Variable('ifp', [ifvar, [p, q]])
+  chapel_stack.append(var)
+  return var
 
-def chapel_switch(var, array):
-  return Random_Variable('switch', [var, array])
+def chapel_if(ifvar, falsevar, truevar):
+  var = Random_Variable('switch', [ifvar, [truevar, falsevar]])
+  return var
+
+def chapel_switch(switchvar, array):
+  var = Random_Variable('switch', [switchvar, array])
+  return var
 
 def forget(var):
   return var.forget()
@@ -53,8 +77,12 @@ def forget(var):
 # Class representing random variables
 class Random_Variable:
 
-  # Initializing, taking a type string, and a list of other parameter arguments
+  # Initializes a random variable, taking in a type string, and a list of other parameter arguments 
   def __init__(self, type, args):
+    self.set(type, args)
+
+  # Sets parameters of random variable, taking a type string, and a list of other parameter arguments
+  def set(self, type, args):
     self.type = type
     self.observed = False
     if type == 'flip':
@@ -73,6 +101,10 @@ class Random_Variable:
       self.index = args[0]
       self.data = args[1]
       self.n = len(self.data)
+    elif self.type == 'ifp':
+      self.index = args[0]
+      self.p = args[1][0]
+      self.q = args[1][1]
     else:
       self.op = args[0]
       self.children = args[1]
@@ -80,9 +112,9 @@ class Random_Variable:
 
   # Draws a sample value (without re-sampling other values), and sets it
   def sample(self):
-    if self.observed:
-      print 'This variable has been observed.  It must first be forgotten'
-      return None
+    #if self.observed:
+    #  print 'This variable has been observed.  It must first be forgotten'
+    #  return None
     if self.type == 'flip':
       if random.random() < self.p:
         self.val = True  
@@ -96,6 +128,17 @@ class Random_Variable:
       i = self.index.getval()
       self.el = self.data[i]
       self.val = self.el.getval()
+    elif self.type == 'ifp':
+      if self.index.getval():
+        if random.random() < self.p:
+          self.val = True  
+        else:
+          self.val = False
+      else:
+        if random.random() < self.q:
+          self.val = True  
+        else:
+          self.val = False
     else:
       self.val = self.op([x.getval() for x in self.children])
     return self.val
@@ -116,12 +159,20 @@ class Random_Variable:
         print "Observation inconsistent with type: %s." % (self.type)
       elif value >= self.n or value < 0: 
         print "Observation inconsistent with domain: [0, %d]." % (self.n - 1)
+    elif self.type == 'constant':
+      warnings.warn('Attempting to observe a constant.')
+      return
+    elif self.type == 'switch':
+      # hmm
+      pass
+    chapel_obs.append(self)
     self.observed = True
     self.val = value
     return
 
   # Forgets the current value
   def forget(self):
+    chapel_obs.remove(self)
     self.observed = False 
     self.val = None
     return
@@ -140,17 +191,30 @@ class Random_Variable:
     elif self.type == 'constant':
       return 1.0
     elif self.type == 'switch':
-      print self.el.prob()
-      print self.index.prob()
-      return (self.el.prob() * self.index.prob())
+      if self.data[self.index.getval()].getval() == self.val:
+        return 1.0 
+      else:
+        return 0.0
+    elif self.type == 'ifp':
+      if self.index.getval:
+        if self.val:
+          return self.p
+        else:
+          return 1.0 - self.p
+      else:
+        if self.val:
+          return self.q
+        else:
+          return 1.0 - self.q
     else:
-      return reduce(lambda x, y : x * y, [child.prob() for child in self.children])
+      return 1.0
+      #return reduce(lambda x, y : x * y, [child.prob() for child in self.children])
 
   def __str__(self):
     return '%s [prob = %f]' % (str(self.val), self.prob())
 
   def __repr__(self):
-    return '<Random_Variable with value ' + str(self.val) + '>'
+    return '<Random_Variable of type %s with value %s>' % (self.type, str(self.val))
 
   def __nonzero__(self):
     return self.val
@@ -280,12 +344,18 @@ print cloudy
 print cloudy.sample()
 print cloudy
 
-sprinkler = chapel_if(cloudy, chapel_flip(0.1), chapel_flip(0.5)) 
+#sprinkler = chapel_if(cloudy, chapel_flip(0.1), chapel_flip(0.5)) 
 
+sprinkler = chapel_ifp(cloudy, 0.1, 0.5) 
 print sprinkler
 
 sprinkler.observe(True)
 
+print chapel_obs
+
 print chapel_infer(cloudy)
 
 print chapel_stack
+
+sprinkler.forget()
+print chapel_infer(cloudy)
