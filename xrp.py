@@ -26,14 +26,16 @@ def coin_incorporate(state, val, arg = None):
     t += 1
   return (h, t)
 
-a = xrp((1, 1), coin_sample, coin_incorporate)
+coin_xrp = xrp((1, 1), coin_sample, coin_incorporate)
 
-print a.incorporate(a.sample()),  a.state
-print a.incorporate(a.sample()),  a.state
-print a.incorporate(a.sample()),  a.state
-print a.incorporate(a.sample()),  a.state
-print a.incorporate(a.sample()),  a.state
-print a.incorporate(a.sample()),  a.state
-print a.incorporate(a.sample()),  a.state
-print a.incorporate(a.sample()),  a.state
-print a.incorporate(a.sample()),  a.state
+print coin_xrp.incorporate(coin_xrp.sample())
+print coin_xrp.incorporate(coin_xrp.sample())
+print coin_xrp.incorporate(coin_xrp.sample())
+print coin_xrp.incorporate(coin_xrp.sample())
+print coin_xrp.incorporate(coin_xrp.sample())
+print coin_xrp.incorporate(coin_xrp.sample())
+print coin_xrp.incorporate(coin_xrp.sample())
+print coin_xrp.incorporate(coin_xrp.sample())
+print coin_xrp.incorporate(coin_xrp.sample())
+print coin_xrp.incorporate(coin_xrp.sample())
+print coin_xrp.incorporate(coin_xrp.sample())
