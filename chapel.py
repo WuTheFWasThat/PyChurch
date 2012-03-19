@@ -152,12 +152,6 @@ def infer(expr, niter = 1000, burnin = 100):
     dict[val] = dict[val] / (z + 0.0) 
   return dict 
 
-def chapel_prob():
-  ans = 1
-  for var in chapel_stack:
-    ans *= var.prob()
-  return ans
-
 def bernoulli(p):
   return expression(('bernoulli', p))
   return expr
@@ -186,6 +180,8 @@ def switch(switchvar, array):
 
 """ TESTS """
 
+""" testing expressions and sampling"""
+
 #def forget(var):
 #  return var.forget()
 
@@ -211,17 +207,15 @@ print '\nSample of\n%s\n= %s\n' % (str(d), str(sample(d)))
 
 #print a.val, c.val
 
+""" testing inference"""
+
 assume('cloudy', bernoulli(0.5))
-print "here"
 
 print sample('cloudy')
-print "here"
+global_db.clear()
 print sample('cloudy')
 
 assume('sprinkler', ifelse('cloudy', bernoulli(0.1), bernoulli(0.5))) 
-
-print global_db.db
-print global_env.assignments
 
 observe('sprinkler', True)
 
@@ -232,7 +226,7 @@ forget('sprinkler')
 print infer('cloudy')
 
 """
-def chapel_infer(variable, niter = 1000, burnin = 100):
+def infer(variable, niter = 1000, burnin = 100):
   if variable.__class__.__name__ != 'Expression':
     warnings.warn('Attempting to infer something which isn\'t an expression.')
     return variable

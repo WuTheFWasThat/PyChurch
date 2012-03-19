@@ -40,6 +40,12 @@ class RandomDB:
   def get_prob(self, expression):
     return self.db[expression][1]
 
+  def prob(self):
+    ans = 1
+    for choice in self.db:
+      ans *= self.db[choice][1]
+    return ans
+
   def clear(self):
     self.db = {}
 
