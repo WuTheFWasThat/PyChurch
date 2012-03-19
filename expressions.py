@@ -1,11 +1,41 @@
 import random
 import warnings
 
-def expression(tup):
-  if tup.__class__.__name__ == 'Expression':
-    return tup 
-  else:
-    return Expression(tup)
+# Class representing observations
+class Observations:
+  def __init__(self):
+    self.obs = {}
+
+  def observe(self, name, val):
+    self.obs[name] = val
+
+  def has(self, name):
+    return name in self.obs
+
+  def forget(self, name):
+    if self.has(name):
+      del self.obs[name]
+
+# Class representing random db
+class RandomDB:
+  def __init__(self):
+    self.db = {} 
+    return
+
+  def has(self, expression):
+    return expression in self.db
+
+  def insert(self, expression, value, probability):
+    self.db[expression] = (value, probability)
+
+  def get(self, expression):
+    return self.db[expression]
+
+  def get_val(self, expression):
+    return self.db[expression][0]
+
+  def get_prob(self, expression):
+    return self.db[expression][1]
 
 # Class representing environments
 class Environment:
@@ -26,6 +56,12 @@ class Environment:
       else:
         return self.parent.lookup(name)
 
+def expression(tup):
+  if tup.__class__.__name__ == 'Expression':
+    return tup 
+  else:
+    return Expression(tup)
+
 # Class representing expressions 
 class Expression:
   # Initializes an expression, taking in a type string, and a list of other parameter arguments 
@@ -39,23 +75,31 @@ class Expression:
       self.type = 'variable' 
       self.var = tup 
       return
+    elif tup.__class__.__name__ != 'tuple':
+      self.type = 'constant'
+      self.val = tup
+      return
 
     self.type = tup[0]
     if self.type in ['const', 'c', 'val']:
       self.type = 'constant'
-    elif self.type == 'flip':
+    elif self.type in ['flip']:
       self.type = 'bernoulli'
+    elif self.type in ['unif']:
+      self.type = 'uniform'
+    elif self.type in ['beta_dist']:
+      self.type = 'beta'
     elif self.type in ['var', 'v']:
       self.type = 'variable'
-    elif self.type == 'op':
+    elif self.type in ['a']:
       self.type = 'apply'
-    elif self.type == 'lambda':
+    elif self.type in ['lambda', 'f']:
       self.type = 'function'
-    elif self.type == 'if':
+    elif self.type in ['if', 'cond', 'ifelse']:
       self.type = 'switch'
-    elif self.type == '|':
+    elif self.type in ['|']:
       self.type = 'or'
-    elif self.type == '&':
+    elif self.type in ['&']:
       self.type = 'and'
 
     if self.type == 'bernoulli':
@@ -79,7 +123,12 @@ class Expression:
         warnings.warn('Variable must be string')
     elif self.type == 'switch':
       self.index = expression(tup[1])
-      self.children = [expression(x) for x in tup[2]]
+      if len(tup) == 3:
+        self.children = [expression(x) for x in tup[2]]
+      elif len(tup) == 4:
+        self.children = [expression(tup[2]), expression(tup[3])]
+      else:
+        warnings.warn('Switch must either take a list of children or 2 children, after the index argument')
       self.n = len(self.children)
     elif self.type == 'apply':
       self.op = expression(tup[1])
@@ -111,13 +160,13 @@ class Expression:
     elif self.type == 'switch':
       return 'switch of (%s) into (%s)' % (str(self.index), str(self.children))
     elif self.type == 'apply':
-      return 'application of (%s) to (%s)' % (str(self.op), str(self.children))
+      return '(%s)(%s)' % (str(self.op), str(self.children))
     elif self.type == 'function':
-      return 'function lambda %s : (%s)' % (str(self.vars), str(self.body))
+      return 'function lambda %s : (%s)' % (str(tuple(self.vars)), str(self.body))
     elif self.type == 'and':
-      return 'and of %s' % (str(self.children))
+      return 'and%s' % (str(tuple(self.children)))
     elif self.type == 'or':
-      return 'or of %s' % (str(self.children))
+      return 'or%s' % (str(tuple(self.children)))
     else:
       warnings.warn('Invalid type %s' % str(self.type))
       return 'Invalid Expression'
@@ -135,6 +184,4 @@ class Expression:
   def __or__(self, other):
     #return Expression(('apply', ('function', ['x', 'y'], ('|', (('var', 'x'), ('var', 'y')))), [self, expression(other)]))
     return Expression(('or', [self, expression(other)]))
-
-
 
