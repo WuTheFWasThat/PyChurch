@@ -6,15 +6,18 @@ class Observations:
   def __init__(self):
     self.obs = {}
 
-  def observe(self, name, val):
-    self.obs[name] = val
+  def observe(self, expr, val):
+    self.obs[expr] = val
 
-  def has(self, name):
-    return name in self.obs
+  def has(self, expr):
+    return expr in self.obs
 
-  def forget(self, name):
-    if self.has(name):
-      del self.obs[name]
+  def get(self, expr):
+    return self.obs[expr]
+
+  def forget(self, expr):
+    if self.has(expr):
+      del self.obs[expr]
 
 # Class representing random db
 class RandomDB:
@@ -36,6 +39,9 @@ class RandomDB:
 
   def get_prob(self, expression):
     return self.db[expression][1]
+
+  def clear(self):
+    self.db = {}
 
 # Class representing environments
 class Environment:
@@ -101,6 +107,8 @@ class Expression:
       self.type = 'or'
     elif self.type in ['&']:
       self.type = 'and'
+    elif self.type in ['~', 'negation']: 
+      self.type = 'not'
 
     if self.type == 'bernoulli':
       self.p = tup[1]
@@ -142,6 +150,8 @@ class Expression:
       self.children = [expression(x) for x in tup[1]]
     elif self.type == 'or':
       self.children = [expression(x) for x in tup[1]]
+    elif self.type == 'not':
+      self.negation = tup[1]
     else:
       warnings.warn('Invalid type %s' % str(self.type))
     return
@@ -167,6 +177,8 @@ class Expression:
       return 'and%s' % (str(tuple(self.children)))
     elif self.type == 'or':
       return 'or%s' % (str(tuple(self.children)))
+    elif self.type == 'not':
+      return 'not %s' % (str(self.negation))
     else:
       warnings.warn('Invalid type %s' % str(self.type))
       return 'Invalid Expression'
@@ -184,4 +196,7 @@ class Expression:
   def __or__(self, other):
     #return Expression(('apply', ('function', ['x', 'y'], ('|', (('var', 'x'), ('var', 'y')))), [self, expression(other)]))
     return Expression(('or', [self, expression(other)]))
+  def __invert__(self):
+    #return Expression(('apply', ('function', ['x', 'y'], ('|', (('var', 'x'), ('var', 'y')))), [self, expression(other)]))
+    return Expression(('not', self))
 

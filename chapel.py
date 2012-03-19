@@ -10,8 +10,8 @@ global_obs = Observations()
 def assume(varname, expression):
   global_env.set(varname, expression) 
 
-def observe(varname, value):
-  global_obs.observe(varname, value) 
+def observe(expression, value):
+  global_obs.observe(expression, value) 
 
 def forget(varname):
   global_obs.forget(varname) 
@@ -62,9 +62,8 @@ def sample(expr, env = global_env):
   elif expr.type == 'switch':
     i = sample(expr.index, env)
     if i.type == 'constant':
-      assert type(i.val) is int
       assert 0 <= i.val < expr.n
-      el = expr.children[i.val]
+      el = expr.children[int(i.val)]
       return sample(el, env)
     else:
       return expr
@@ -113,6 +112,12 @@ def sample(expr, env = global_env):
       return remaining[0]
     else:
       return Expression(('val', False))
+  elif expr.type == 'not':
+    neg = sample(expr.negation)
+    if neg.type == 'constant':
+      return Expression(('val', ~neg.val))
+    else:
+      return expr
   else:
     warnings.warn('Invalid expression type %s' % expr.type)
     return None
@@ -124,20 +129,23 @@ def infer(expr, niter = 1000, burnin = 100):
   dict = {}
   for n in xrange(niter):
     # Re-draw from prior
-    ans = sample(expr)
+    global_db.clear()
+    ans = sample(expr) 
+    assert ans.type == 'constant'
+
+    # Reject if observations untrue
     flag = True
-    for var in chapel_obs:
-      obsval = var.getval()
-      if var in chapel_stack and var.obsval != obsval:
-        var.setval(obsval)
+    for obs_expr in global_obs.obs:
+      obsval = sample(obs_expr)
+      if obsval.type != 'constant' or obsval.val != global_obs.get(obs_expr):
         flag = False
         break
+
     if flag:
-      val = expr.getval()
-      if val in dict:
-        dict[val] += 1
+      if ans.val in dict:
+        dict[ans.val] += 1
       else:
-        dict[val] = 1
+        dict[ans.val] = 1
 
   z = sum([dict[val] for val in dict])
   for val in dict:
@@ -184,7 +192,7 @@ def switch(switchvar, array):
 x = bernoulli(0.3) 
 y = beta(3, 4) 
 z = uniform(3) 
-c = (x & y) | z
+c = (~x & y) | z
 print '\nSample of\n%s\n= %s\n' % (str(c), str(sample(c)))
 #print x.val, y.val, z.val 
 
@@ -215,15 +223,13 @@ assume('sprinkler', ifelse('cloudy', bernoulli(0.1), bernoulli(0.5)))
 print global_db.db
 print global_env.assignments
 
-"""
 observe('sprinkler', True)
 
-infer('cloudy')
+print infer('cloudy')
 
 forget('sprinkler')
 
-infer('cloudy')
-"""
+print infer('cloudy')
 
 """
 def chapel_infer(variable, niter = 1000, burnin = 100):
