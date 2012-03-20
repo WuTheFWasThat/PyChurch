@@ -8,7 +8,7 @@ class Value:
       self.type = 'int'
     elif type(val) == float:
       self.type = 'float'
-    elif type(val) == bool
+    elif type(val) == bool:
       self.type = 'bool'
     else:
       assert val.__class__.__name__ == 'Expression'
@@ -16,6 +16,37 @@ class Value:
       assert env is not None
       self.type = 'procedure'
       self.env = env 
+
+  def __str__(self):
+    return str(self.val)
+  def __repr__(self):
+    return str(self.val)
+
+  def __cmp__(self, other):
+    if other.__class__.__name__ == 'Value':
+      if (self.val == other.val):
+        return 0
+      elif (self.val > other.val):
+        return 1
+      else:
+        return -1
+    else:
+      if (self.val == other):
+        return 0
+      elif (self.val > other):
+        return 1
+      else:
+        return -1
+
+  def __and__(self, other):
+    return Value(self.val & other.value)
+  def __xor__(self, other):
+    return Value(self.val ^ other.value)
+  def __or__(self, other):
+    return Value(self.val | other.value)
+  def __invert__(self):
+    return Value(~self.val)
+
 
 # Class representing observations
 class Observations:

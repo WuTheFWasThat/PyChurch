@@ -8,7 +8,8 @@ global_db = RandomDB()
 global_obs = Observations() 
 
 def assume(varname, expression):
-  global_env.set(varname, sample(expression)) 
+  global_env.set(varname, expression) 
+  #global_env.set(varname, sample(expression)) 
 
 def observe(expression, value):
   global_obs.observe(expression, value) 
@@ -40,14 +41,14 @@ def sample(expr, env = global_env):
   elif expr.type == 'bernoulli':
     if random.random() < expr.p:
       global_db.insert(expr, True, expr.p)
-      return Expression(('val', Value(True))) 
+      return Expression(('val', True)) 
     else:
       global_db.insert(expr, False, 1 - expr.p)
-      return Expression(('val', Value(False))) 
+      return Expression(('val', False)) 
   elif expr.type == 'beta':
     val = random.betavariate(expr.a, expr.b) 
     global_db.insert(expr, val, 0) # SHOULD IT HAVE THE PDF?  BUT THEN WHAT IF A SWITCH COMPARES IT TO SOMETHING ELSE?
-    return Expression(('val', Value(val))) 
+    return Expression(('val', val)) 
   elif expr.type == 'uniform':
     val = random.randint(0, expr.n-1)
     global_db.insert(expr, val, (1.0/expr.n)) 
@@ -62,8 +63,8 @@ def sample(expr, env = global_env):
   elif expr.type == 'switch':
     i = sample(expr.index, env)
     if i.type == 'constant':
-      assert 0 <= i.val < expr.n
-      el = expr.children[int(i.val)]
+      assert 0 <= i.val.val < expr.n
+      el = expr.children[int(i.val.val)]
       return sample(el, env)
     else:
       return expr
@@ -144,10 +145,10 @@ def infer(expr, niter = 1000, burnin = 100):
         break
 
     if flag:
-      if ans.val in dict:
-        dict[ans.val] += 1
+      if ans.val.val in dict:
+        dict[ans.val.val] += 1
       else:
-        dict[ans.val] = 1
+        dict[ans.val.val] = 1
 
   z = sum([dict[val] for val in dict])
   for val in dict:
