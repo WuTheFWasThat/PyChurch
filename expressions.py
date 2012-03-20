@@ -1,13 +1,32 @@
 import random
 import warnings
 
+class Value:
+  def __init__(self, val, env = None):
+    self.val = val
+    if type(val) == int:
+      self.type = 'int'
+    elif type(val) == float:
+      self.type = 'float'
+    elif type(val) == bool
+      self.type = 'bool'
+    else:
+      assert val.__class__.__name__ == 'Expression'
+      assert val.type == 'function'
+      assert env is not None
+      self.type = 'procedure'
+      self.env = env 
+
 # Class representing observations
 class Observations:
   def __init__(self):
     self.obs = {}
 
   def observe(self, expr, val):
-    self.obs[expr] = val
+    if val.__class__.__name__ == 'Value':
+      self.obs[expr] = val
+    else:
+      self.obs[expr] = Value(val)
 
   def has(self, expr):
     return expr in self.obs
@@ -29,6 +48,8 @@ class RandomDB:
     return expression in self.db
 
   def insert(self, expression, value, probability):
+    if value.__class__.__name__ != 'Value':
+      value = Value(value)
     self.db[expression] = (value, probability)
 
   def get(self, expression):
@@ -130,7 +151,10 @@ class Expression:
       if type(self.n).__name__ != 'int':
         warnings.warn('Parameter N must be integer')
     elif self.type == 'constant':
-      self.val = tup[1]
+      if tup[1].__class__.__name__ == 'Value': 
+        self.val = tup[1]
+      else:
+        self.val = Value(tup[1])
     elif self.type == 'variable':
       self.var = tup[1]
       if type(self.var).__name__ != 'str':

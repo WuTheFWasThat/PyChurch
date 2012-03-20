@@ -8,7 +8,7 @@ global_db = RandomDB()
 global_obs = Observations() 
 
 def assume(varname, expression):
-  global_env.set(varname, expression) 
+  global_env.set(varname, sample(expression)) 
 
 def observe(expression, value):
   global_obs.observe(expression, value) 
@@ -40,14 +40,14 @@ def sample(expr, env = global_env):
   elif expr.type == 'bernoulli':
     if random.random() < expr.p:
       global_db.insert(expr, True, expr.p)
-      return Expression(('val', True)) 
+      return Expression(('val', Value(True))) 
     else:
       global_db.insert(expr, False, 1 - expr.p)
-      return Expression(('val', False)) 
+      return Expression(('val', Value(False))) 
   elif expr.type == 'beta':
     val = random.betavariate(expr.a, expr.b) 
     global_db.insert(expr, val, 0) # SHOULD IT HAVE THE PDF?  BUT THEN WHAT IF A SWITCH COMPARES IT TO SOMETHING ELSE?
-    return Expression(('val', val)) 
+    return Expression(('val', Value(val))) 
   elif expr.type == 'uniform':
     val = random.randint(0, expr.n-1)
     global_db.insert(expr, val, (1.0/expr.n)) 
@@ -70,8 +70,10 @@ def sample(expr, env = global_env):
   elif expr.type == 'apply':
     n = len(expr.children)
     op = sample(expr.op, env)
-    if op.type != 'function':
-      warnings.warn('Should be applying a function!')
+    if op.type == 'constant' and op.val.type == 'procedure':
+      return sample(Expression(('apply', op.val.val, expr.children)), op.val.env)
+    elif op.type != 'function':
+      warnings.warn('Should be applying a function or procedure!')
     for i in range(n):
       newenv = Environment(env)
       newenv.set(op.vars[i], sample(expr.children[i], env)) 
@@ -167,6 +169,11 @@ def var(v):
 
 def uniform(n):
   return expression(('uniform', n))
+
+def apply(f, args):
+  f = validate(f)
+  args = [validate(x) for x in args]
+  return expression(('apply', f, args))
 
 def ifelse(ifvar, truevar, falsevar):
   ifvar = validate_expr(ifvar, global_env)
