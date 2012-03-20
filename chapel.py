@@ -9,9 +9,10 @@ global_obs = Observations()
 
 def assume(varname, expression):
   global_env.set(varname, expression) 
-  #global_env.set(varname, sample(expression)) 
+  #global_env.set(varname, sample(expression)) # NOT SURE WHAT IS GOING ON HERE 
 
 def observe(expression, value):
+  #noisy_expression = 
   global_obs.observe(expression, value) 
 
 def forget(varname):
@@ -70,23 +71,25 @@ def sample(expr, env = global_env):
       return expr
   elif expr.type == 'apply':
     n = len(expr.children)
-    op = sample(expr.op, env)
-    if op.type == 'constant' and op.val.type == 'procedure':
-      return sample(Expression(('apply', op.val.val, expr.children)), op.val.env)
-    elif op.type != 'function':
-      warnings.warn('Should be applying a function or procedure!')
+    if expr.op.type != 'constant':
+      op = sample(expr.op, env)
+    else:
+      op = expr.op
+    assert op.type == 'constant' and op.val.type == 'procedure'
     for i in range(n):
       newenv = Environment(env)
-      newenv.set(op.vars[i], sample(expr.children[i], env)) 
-    if n == len(op.vars):
-      return sample(op.body, newenv)
+      newenv.set(op.val.vars[i], sample(expr.children[i], env)) 
+    newbody = sample(op.val.body, newenv) 
+    if n == len(op.val.vars):
+      return newbody 
     else:
-      return Expression(('function', op.vars[n:], sample(op.body, newenv))) 
+      vars = op.val.vars[n:]
+      return Expression(('val', Value((vars, newbody), env)))
   elif expr.type == 'function':
-    if len(expr.vars) == 0:
-      return expr.body
-    else:
-      return expr
+    procedure_body = sample(expr.body, env)
+    procedure = Value((expr.vars, procedure_body), env)
+    # assert that the procedure has no unbound variables that aren't in expr.vars
+    return Expression(('val', procedure))
   elif expr.type == 'and':
     remaining = []
     for x in expr.children:

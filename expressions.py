@@ -11,9 +11,8 @@ class Value:
     elif type(val) == bool:
       self.type = 'bool'
     else:
-      assert val.__class__.__name__ == 'Expression'
-      assert val.type == 'function'
-      assert env is not None
+      (self.vars, self.body) = val
+      #assert env is not None
       self.type = 'procedure'
       self.env = env 
 
@@ -145,7 +144,7 @@ class Expression:
       return
 
     self.type = tup[0]
-    if self.type in ['const', 'c', 'val']:
+    if self.type in ['const', 'c', 'val', 'procedure']:
       self.type = 'constant'
     elif self.type in ['flip']:
       self.type = 'bernoulli'
@@ -159,7 +158,7 @@ class Expression:
       self.type = 'apply'
     elif self.type in ['lambda', 'f']:
       self.type = 'function'
-    elif self.type in ['if', 'cond', 'ifelse']:
+    elif self.type in ['if', 'case', 'cond', 'ifelse']:
       self.type = 'switch'
     elif self.type in ['|']:
       self.type = 'or'
