@@ -1,123 +1,6 @@
 import random
 import warnings
-
-class Value:
-  def __init__(self, val, env = None):
-    self.val = val
-    if type(val) == int:
-      self.type = 'int'
-    elif type(val) == float:
-      self.type = 'float'
-    elif type(val) == bool:
-      self.type = 'bool'
-    else:
-      (self.vars, self.body) = val
-      #assert env is not None
-      self.type = 'procedure'
-      self.env = env 
-
-  def __str__(self):
-    return str(self.val)
-  def __repr__(self):
-    return str(self.val)
-
-  def __cmp__(self, other):
-    if other.__class__.__name__ == 'Value':
-      if (self.val == other.val):
-        return 0
-      elif (self.val > other.val):
-        return 1
-      else:
-        return -1
-    else:
-      if (self.val == other):
-        return 0
-      elif (self.val > other):
-        return 1
-      else:
-        return -1
-
-  def __and__(self, other):
-    return Value(self.val & other.value)
-  def __xor__(self, other):
-    return Value(self.val ^ other.value)
-  def __or__(self, other):
-    return Value(self.val | other.value)
-  def __invert__(self):
-    return Value(~self.val)
-
-
-# Class representing observations
-class Observations:
-  def __init__(self):
-    self.obs = {}
-
-  def observe(self, expr, val):
-    if val.__class__.__name__ == 'Value':
-      self.obs[expr] = val
-    else:
-      self.obs[expr] = Value(val)
-
-  def has(self, expr):
-    return expr in self.obs
-
-  def get(self, expr):
-    return self.obs[expr]
-
-  def forget(self, expr):
-    if self.has(expr):
-      del self.obs[expr]
-
-# Class representing random db
-class RandomDB:
-  def __init__(self):
-    self.db = {} 
-    return
-
-  def has(self, expression):
-    return expression in self.db
-
-  def insert(self, expression, value, probability):
-    if value.__class__.__name__ != 'Value':
-      value = Value(value)
-    self.db[expression] = (value, probability)
-
-  def get(self, expression):
-    return self.db[expression]
-
-  def get_val(self, expression):
-    return self.db[expression][0]
-
-  def get_prob(self, expression):
-    return self.db[expression][1]
-
-  def prob(self):
-    ans = 1
-    for choice in self.db:
-      ans *= self.db[choice][1]
-    return ans
-
-  def clear(self):
-    self.db = {}
-
-# Class representing environments
-class Environment:
-  def __init__(self, parent = None):
-    self.parent = parent 
-    self.assignments = {}
-    return
-
-  def set(self, name, expression):
-    self.assignments[name] = expression
-
-  def lookup(self, name):
-    if name in self.assignments:
-      return self.assignments[name]
-    else:
-      if self.parent is None:
-        return None
-      else:
-        return self.parent.lookup(name)
+from values import *
 
 def expression(tup):
   if tup.__class__.__name__ == 'Expression':
@@ -129,116 +12,149 @@ def expression(tup):
 class Expression:
   # Initializes an expression, taking in a type string, and a list of other parameter arguments 
   def __init__(self, tup):
+    self.tup = tup
     self.hashval = random.randint(0, 2**32-1)
     self.val = None
     self.children = []
     self.parents = []
+    self.dbstack = []
 
     if tup.__class__.__name__ == 'str':
       self.type = 'variable' 
-      self.var = tup 
+      self.name = tup 
+      return
+    elif tup.__class__.__name__ == 'XRP':
+      self.type = 'xrp'
+      self.xrp = tup 
       return
     elif tup.__class__.__name__ != 'tuple':
-      self.type = 'constant'
-      self.val = tup
+      self.type = 'value'
+      self.val = value(tup)
       return
 
     self.type = tup[0]
-    if self.type in ['const', 'c', 'val', 'procedure']:
-      self.type = 'constant'
-    elif self.type in ['flip']:
-      self.type = 'bernoulli'
-    elif self.type in ['unif']:
-      self.type = 'uniform'
-    elif self.type in ['beta_dist']:
-      self.type = 'beta'
-    elif self.type in ['var', 'v']:
+    if self.type in ['xrp']:
+      self.type = 'xrp'
+    if self.type in ['constant', 'const', 'c', 'val', 'procedure']:
+      self.type = 'value'
+    elif self.type in ['variable', 'var', 'v']:
       self.type = 'variable'
-    elif self.type in ['a']:
+    elif self.type in ['apply', 'a']:
       self.type = 'apply'
-    elif self.type in ['lambda', 'f']:
+    elif self.type in ['function', 'lambda', 'f']:
       self.type = 'function'
-    elif self.type in ['if', 'case', 'cond', 'ifelse']:
+    elif self.type in ['cond', 'if', 'ifelse']:
+      self.type = 'if'
+    elif self.type in ['case', 'switch']:
       self.type = 'switch'
-    elif self.type in ['|']:
-      self.type = 'or'
-    elif self.type in ['&']:
-      self.type = 'and'
-    elif self.type in ['~', 'negation']: 
-      self.type = 'not'
+    elif self.type in ['eq', 'equals', 'e', '=']: 
+      self.type = '='
+    elif self.type in ['l', 'less', '<']: 
+      self.type = '<'
+    elif self.type in ['g', 'greater', '>']: 
+      self.type = '>'
+    elif self.type in ['le', 'lessequals', '<=']: 
+      self.type = '<='
+    elif self.type in ['ge', 'greaterequals', '>=']: 
+      self.type = '>='
+    elif self.type in ['add', 'sum']: 
+      self.type = 'add'
+    elif self.type in ['subtract', 'sub']: 
+      self.type = 'subtract'
+    elif self.type in ['mul', 'multiply', 'product']: 
+      self.type = 'multiply'
+    elif self.type in ['|', 'or']:
+      self.type = '|'
+    elif self.type in ['&', 'and']:
+      self.type = '&'
+    elif self.type in ['~', 'negation', 'not']: 
+      self.type = '~'
 
-    if self.type == 'bernoulli':
-      self.p = tup[1]
-      if not 0 <= self.p <= 1:
-        warnings.warn('Probability should be a float between 0 and 1')
-    elif self.type == 'beta':
-      self.a = tup[1]
-      self.b = tup[2]
-      if self.a <= 0 or self.b <= 0:
-        warnings.warn('Alpha and Beta must be > 0')
-    elif self.type == 'uniform':
-      self.n = tup[1]
-      if type(self.n).__name__ != 'int':
-        warnings.warn('Parameter N must be integer')
-    elif self.type == 'constant':
+    if self.type == 'xrp':
+      self.xrp = tup[1]
+    elif self.type == 'value':
       if tup[1].__class__.__name__ == 'Value': 
         self.val = tup[1]
       else:
         self.val = Value(tup[1])
     elif self.type == 'variable':
-      self.var = tup[1]
-      if type(self.var).__name__ != 'str':
+      self.name = tup[1]
+      if type(self.name).__name__ != 'str':
         warnings.warn('Variable must be string')
+    elif self.type == 'if':
+      self.cond = expression(tup[1])
+      self.true = expression(tup[2])
+      self.false = expression(tup[3])
     elif self.type == 'switch':
       self.index = expression(tup[1])
-      if len(tup) == 3:
-        self.children = [expression(x) for x in tup[2]]
-      elif len(tup) == 4:
-        self.children = [expression(tup[2]), expression(tup[3])]
-      else:
-        warnings.warn('Switch must either take a list of children or 2 children, after the index argument')
+      self.children = [expression(x) for x in tup[2]]
       self.n = len(self.children)
     elif self.type == 'apply':
       self.op = expression(tup[1])
-      self.children = [expression(x) for x in tup[2]]
+      if type(tup[2]) == list or type(tup[2]) == tuple:
+        self.children = [expression(x) for x in tup[2]]
+      else:
+        if len(tup) == 3:
+          self.children = [expression(tup[2])]
+        else:
+          self.children = []
       if self.op.type == 'function' and len(self.op.vars) < len(self.children):
         warnings.warn('Applying function to too many arguments!')
     elif self.type == 'function':
-      self.vars = [x for x in tup[1]]
+      if type(tup[1]) == list or type(tup[1]) == tuple:
+        self.vars = list(tup[1])
+      else:
+        self.vars = [tup[1]]
       self.body = expression(tup[2])
-    elif self.type == 'and':
+    elif self.type in ['&', '|']:
       self.children = [expression(x) for x in tup[1]]
-    elif self.type == 'or':
+    elif self.type == '~':
+      self.negation = expression(tup[1])
+    elif self.type in ['=', '<=', '>=', '<', '>']:
+      assert len(tup[1]) == 2
       self.children = [expression(x) for x in tup[1]]
-    elif self.type == 'not':
-      self.negation = tup[1]
+    elif self.type == 'add': 
+      self.children = [expression(x) for x in tup[1]]
+    elif self.type == 'subtract': 
+      assert len(tup[1]) == 2
+      self.children = [expression(x) for x in tup[1]]
+    elif self.type == 'multiply': 
+      self.children = [expression(x) for x in tup[1]]
     else:
       warnings.warn('Invalid type %s' % str(self.type))
     return
 
+  def str_op(self, children, opstring, funstring = None):
+    if (len(children) < 5) or (funstring is None):
+        return opstring.join(['(' + str(x) + ')' for x in self.children])
+    else:
+      return funstring + str(children)
+    
   def __str__(self):
-    if self.type == 'bernoulli':
-      return 'Bernoulli(%f)' % (self.p)
-    elif self.type == 'beta':
-      return 'Beta(%f, %f)' % (self.a, self.b)
-    elif self.type == 'uniform':
-      return 'Uniform(0, %d)' % (self.n)
-    elif self.type == 'constant':
+    if self.type == 'xrp':
+      return '%s' % (str(self.xrp))
+    elif self.type == 'value':
       return str(self.val)
     elif self.type == 'variable':
-      return self.var
+      return self.name
+    elif self.type == 'if':
+      return 'if (%s), then (%s), else (%s)' % (str(self.cond), str(self.true), str(self.false))
     elif self.type == 'switch':
       return 'switch of (%s) into (%s)' % (str(self.index), str(self.children))
     elif self.type == 'apply':
-      return '(%s)(%s)' % (str(self.op), str(self.children))
+      return '(%s)%s' % (str(self.op), str(self.children))
     elif self.type == 'function':
-      return 'function lambda %s : (%s)' % (str(tuple(self.vars)), str(self.body))
-    elif self.type == 'and':
-      return 'and%s' % (str(tuple(self.children)))
-    elif self.type == 'or':
-      return 'or%s' % (str(tuple(self.children)))
-    elif self.type == 'not':
-      return 'not %s' % (str(self.negation))
+      return 'lambda%s : (%s)' % (str(tuple(self.vars)), str(self.body))
+    elif self.type in ['=', '>', '<', '>=', '<=', '&', '|']: 
+      return self.str_op(self.children, self.type)
+    elif self.type == '~':
+      return '~(%s)' % (str(self.negation))
+    elif self.type == 'add': 
+      return self.str_op(self.children, '+', 'sum')
+    elif self.type == 'subtract': 
+      return self.str_op(self.children, '-', 'sub')
+    elif self.type == 'multiply': 
+      return self.str_op(self.children, '*', 'product')
     else:
       warnings.warn('Invalid type %s' % str(self.type))
       return 'Invalid Expression'
@@ -250,13 +166,65 @@ class Expression:
   def __hash__(self):
     return self.hashval
 
+  def rehash(self):
+    self.hashval = random.randint(0, 2**32-1)
+
+  def operate(self, other, opname):
+    return Expression((opname, [self, expression(other)]))
+
+  def __eq__(self, other):
+    return self.operate(other, '=')
+  def __lt__(self, other):
+    return self.operate(other, '<')
+  def __le__(self, other):
+    return self.operate(other, '<=')
+  def __gt__(self, other):
+    return self.operate(other, '>')
+  def __ge__(self, other):
+    return self.operate(other, '>=')
+  def __add__(self, other):
+    return self.operate(other, 'add')
+  def __sub__(self, other):
+    return self.operate(other, 'subtract')
+  def __mul__(self, other):
+    return self.operate(other, 'multiply')
   def __and__(self, other):
-    #return Expression(('and', ('function', ['x', 'y'], ('&', (('var', 'x'), ('var', 'y')))), [self, expression(other)]))
-    return Expression(('and', [self, expression(other)]))
+    return self.operate(other, 'and')
   def __or__(self, other):
-    #return Expression(('apply', ('function', ['x', 'y'], ('|', (('var', 'x'), ('var', 'y')))), [self, expression(other)]))
-    return Expression(('or', [self, expression(other)]))
+    return self.operate(other, 'or')
   def __invert__(self):
-    #return Expression(('apply', ('function', ['x', 'y'], ('|', (('var', 'x'), ('var', 'y')))), [self, expression(other)]))
     return Expression(('not', self))
+
+def xrp(xrp):
+  return expression(('xrp', xrp)) 
+
+bernoulli_xrp = bernoulli_XRP() 
+def bernoulli(p):
+  return expression(('apply', ('xrp', bernoulli_xrp), p)) 
+
+beta_xrp = beta_XRP() 
+def beta(a, b): 
+  return expression(('apply', ('xrp', beta_xrp), [a, b])) 
+
+uniform_xrp = uniform_XRP() 
+def uniform(n):
+  return expression(('apply', ('xrp', uniform_xrp), n)) 
+
+def constant(c):
+  return expression(('value', c)) 
+
+def var(v):
+  return expression(('variable', v)) 
+
+def apply(f, args = []):
+  return expression(('apply', f, args))
+
+def ifelse(ifvar, truevar, falsevar):
+  return expression(('if', ifvar, truevar, falsevar))
+
+def switch(switchvar, array):
+  return expression(('switch', switchvar, array))
+
+def function(vars, body):
+  return expression(('function', vars, body))
 
