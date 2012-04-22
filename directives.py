@@ -129,7 +129,7 @@ def evaluate(expr, env = None, reflip = False, stack = []):
       globals.db.unevaluate(stack + [0])
       return evaluate(expr.true, env, reflip, stack + [1])
     else:
-      globals.db.unevaluate(stack + [2])
+      globals.db.unevaluate(stack + [1])
       return evaluate(expr.false, env, reflip, stack + [0])
   elif expr.type == 'switch':
     index = evaluate(expr.index, env, reflip, stack + [-1])
