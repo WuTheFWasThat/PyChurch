@@ -20,30 +20,35 @@ def assume(varname, expr):
 
 def observe_helper(expr, obs_val, args = []):
   # bit of a hack, here, to make it recognize same things as with noisy_expr
-  val = evaluate(expr, globals.env, reflip = False, stack = ['obs', expr, 0, 0])
+  if expr.__class__.__name__ == 'Expression':
+    hashval = expr.hashval
+  else:
+    hashval = expr
+
+  val = evaluate(expr, globals.env, reflip = False, stack = ['obs', hashval, 0, 0])
   noisy_expr = globals.obs.get_noisy(expr)
   off = True
   if val != obs_val:
-    globals.db.insert(['obs', expr, -1], globals.obs.noise_xrp, Value(False), args) 
+    globals.db.insert(['obs', hashval, -1], globals.obs.noise_xrp, Value(False), args) 
     if not off:
       print "trying1", noisy_expr
       print globals.db.db.keys()
-      print evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', expr]) 
-      assert evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', expr]) == value(True)
+      print evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', hashval]) 
+      assert evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', hashval]) == value(True)
   else:
-    globals.db.insert(['obs', expr, -1], globals.obs.noise_xrp, Value(True), args) 
+    globals.db.insert(['obs', hashval, -1], globals.obs.noise_xrp, Value(True), args) 
 
     if not off:
       print "trying2", noisy_expr
       print globals.db.db.keys()
-      print evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', expr]) 
-      assert evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', expr]) == value(True)
+      print evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', hashval]) 
+      assert evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', hashval]) == value(True)
 
   if not off:
     print "trying", noisy_expr
     print globals.db.db.keys()
-    print evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', expr]) 
-    assert evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', expr]) 
+    print evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', hashval]) 
+    assert evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', hashval]) 
 
 def observe(expr, obs_val, args = []):
   # expr can actually be a string as well
@@ -140,22 +145,30 @@ def evaluate(expr, env = None, reflip = False, stack = []):
   elif expr.type == 'apply':
     # UNEVALUATE?
     n = len(expr.children)
+    args = [evaluate(expr.children[i], env, reflip, stack + [i]) for i in range(n)]
     op = evaluate(expr.op, env, reflip, stack + [-2])
     if op.type == 'procedure':
+      globals.db.unevaluate(stack + [-1], args)
       assert n == len(op.vars)
       newenv = op.env.spawn_child()
       for i in range(n):
-        newenv.set(op.vars[i], evaluate(expr.children[i], env, reflip, stack + [i])) 
-      return evaluate(op.body, newenv, reflip, stack + [-1])
+        newenv.set(op.vars[i], args[i]) 
+      return evaluate(op.body, newenv, reflip, stack + [-1, tuple(args)])
     elif op.type == 'xrp':
       # if in stack, but args are different ... force to have same value? 
       # NEED TO REMOVE THINGS?
-      if reflip or not globals.db.has(stack):
-        args = [evaluate(expr.children[i], env, reflip, stack + [i]) for i in range(n)]
+      #   need to check args are same
+      stack = stack + [-1]
+      if not globals.db.has(stack):
         val = value(op.val.apply(args))
         globals.db.insert(stack, op.val, val, args)
       else:
-        val = globals.db.get_val(stack) 
+        if reflip:
+          globals.db.remove(stack)
+          val = value(op.val.apply(args))
+          globals.db.insert(stack, op.val, val, args)
+        else:
+          val = globals.db.get_val(stack) 
       return val
     else:
       warnings.warn('Must apply either a procedure or xrp')
@@ -199,7 +212,7 @@ def sample(expr, env = None, varname = None, reflip = False):
   if env is None:
     env = globals.env
   if varname is None:
-    return evaluate(expr, env, reflip, [expr])
+    return evaluate(expr, env, reflip, ['expr', expr.hashval])
   else:
     return evaluate(expr, env, reflip, [varname])
 

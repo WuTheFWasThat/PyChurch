@@ -232,7 +232,7 @@ def test():
 #test_recursion()
 #test_beta_bernoulli()
 
-test_bayes_nets()
+#test_bayes_nets()
 test_xor()
 test_tricky()
 test_geometric()

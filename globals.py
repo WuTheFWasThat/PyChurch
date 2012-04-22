@@ -99,12 +99,19 @@ class RandomDB:
       ans *= prob
     return ans
 
-  def unevaluate(self, uneval_stack):
+  def unevaluate(self, uneval_stack, args = None):
+    if args is not None:
+      args = tuple(args)
     to_delete = []
     for tuple_stack in self.db:
       stack = list(tuple_stack) 
       if len(stack) >= len(uneval_stack) and stack[:len(uneval_stack)] == uneval_stack:
-        to_delete.append(tuple_stack)
+        if args is None:
+          to_delete.append(tuple_stack)
+        else:
+          assert len(stack) > len(uneval_stack)
+          if stack[len(uneval_stack)] == args:
+            to_delete.append(tuple_stack)
     for tuple_stack in to_delete:
       self.remove(tuple_stack)
 
