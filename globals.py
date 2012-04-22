@@ -177,7 +177,7 @@ class Directives_Memory:
 # The global environment. Has assignments of names to expressions, and parent pointer 
 env = Environment()
 
-noise_xrp = beta_bernoulli_1((10000, 1)) 
+noise_xrp = beta_bernoulli_1((100, 1)) 
 
 # A dictionary mapping expressions to values
 obs = Observations(noise_xrp) 

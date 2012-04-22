@@ -22,14 +22,28 @@ def observe_helper(expr, obs_val, args = []):
   # bit of a hack, here, to make it recognize same things as with noisy_expr
   val = evaluate(expr, globals.env, reflip = False, stack = ['obs', expr, 0, 0])
   noisy_expr = globals.obs.get_noisy(expr)
+  off = True
   if val != obs_val:
     globals.db.insert(['obs', expr, -1], globals.obs.noise_xrp, Value(False), args) 
-    assert evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', expr]) == value(True)
+    if not off:
+      print "trying1", noisy_expr
+      print globals.db.db.keys()
+      print evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', expr]) 
+      assert evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', expr]) == value(True)
   else:
     globals.db.insert(['obs', expr, -1], globals.obs.noise_xrp, Value(True), args) 
-    assert evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', expr]) == value(True)
 
-  assert evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', expr]) 
+    if not off:
+      print "trying2", noisy_expr
+      print globals.db.db.keys()
+      print evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', expr]) 
+      assert evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', expr]) == value(True)
+
+  if not off:
+    print "trying", noisy_expr
+    print globals.db.db.keys()
+    print evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', expr]) 
+    assert evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', expr]) 
 
 def observe(expr, obs_val, args = []):
   # expr can actually be a string as well
@@ -275,15 +289,16 @@ def infer(): # RERUN AT END
       print 'transition prob',  (new_p * new_to_old_q) / (old_p * old_to_new_q + 0.0) 
 
     p = random.random()
-    if p + (new_p * new_to_old_q) / (old_p * old_to_new_q + 0.0) < 1:
-      globals.db.restore()
-      if debug: 
-        print 'restore'
+    if old_p * old_to_new_q > 0:
+      if p + (new_p * new_to_old_q) / (old_p * old_to_new_q) < 1:
+        globals.db.restore()
+        if debug: 
+          print 'restore'
     globals.db.save()
     if debug: 
       print "new db", [(s, globals.db.db[s][1]) for s in globals.db.db] 
 
-def infer_many(name, niter = 1000, burnin = 100):
+def follow_prior(name, niter = 1001, burnin = 100):
 
   if name in globals.mem.vars:
     expr = globals.mem.vars[name]

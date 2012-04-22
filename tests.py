@@ -41,20 +41,32 @@ def test_expressions():
   print [resample(e) for i in xrange(10)]
   print
 
-def test_coin():
+def test_tricky():
   print " \n COIN TEST\n "
   
   assume('make-coin', function([], apply(function(['weight'], function([], bernoulli('weight'))), beta(1, 1))))
   print globals.env.lookup('make-coin')
   
-  assume('my-coin', apply('make-coin'))
+  assume('tricky-coin', apply('make-coin'))
+  print globals.env.lookup('tricky-coin')
+  print "flips: ", [sample(apply('tricky-coin')) for i in xrange(10)]
   
-  print globals.env.lookup('my-coin')
-  print "flips: ", [sample(apply('my-coin')) for i in xrange(10)]
-  
-  assume('my-coin-2', apply('make-coin'))
-  print globals.env.lookup('my-coin-2')
-  print "flips: ", [sample(apply('my-coin-2')) for i in xrange(10)]
+  #assume('my-coin-2', apply('make-coin'))
+  #print globals.env.lookup('my-coin-2')
+  #print "flips: ", [sample(apply('my-coin-2')) for i in xrange(10)]
+
+  assume('fair-coin', function([], bernoulli(0.5)))
+  print globals.env.lookup('fair-coin')
+  print "flips: ", [sample(apply('fair-coin')) for i in xrange(10)]
+
+  assume('is-fair', bernoulli(0.5))
+  assume('coin', ifelse('is-fair', 'fair-coin', 'tricky-coin')) 
+
+  for i in xrange(100):
+    observe(apply('coin'), True)
+
+  print follow_prior('is-fair', 100, 50)
+
 
 def test_beta_bernoulli():
   print " \n TESTING BETA-BERNOULLI XRPs\n"
@@ -69,39 +81,81 @@ def test_beta_bernoulli():
   print [sample(apply(coin_2)) for i in xrange(10)]
   print coin_2.state
 
-def test_cloudy():
-  print "\n TESTING INFERENCE\n"
+def test_bayes_nets():
+  print "\n TESTING INFERENCE ON CLOUDY/SPRINKLER\n"
   
   reset()
   assume('cloudy', bernoulli(0.5))
   
-  print sample('cloudy')
-  print sample('cloudy')
-  
   assume('sprinkler', ifelse('cloudy', bernoulli(0.1), bernoulli(0.5)))
   
   observe('sprinkler', True)
-  print infer_many('cloudy', 1000, 25)
+  print follow_prior('cloudy', 1000, 50)
+  print 'Should be .833 False, .166 True'
   
   forget('sprinkler')
-  print infer_many('cloudy', 1000, 25)
+  print follow_prior('cloudy', 1000, 50)
+  print 'Should be .500 False, .500 True'
+
+  print "\n TESTING BEACH NET\n"
+  
+  reset()
+  assume('sunny', bernoulli(0.5))
+  assume('weekend', bernoulli(0.285714))
+  assume('beach', ifelse('weekend', ifelse('sunny', bernoulli(0.9), bernoulli(0.5)), \
+                                    ifelse('sunny', bernoulli(0.3), bernoulli(0.1))))
+  
+  observe('weekend', True)
+  print follow_prior('sunny', 1000, 50)
+  print 'Should be .5 False, .5 True'
+  
+  observe('beach', True)
+  print follow_prior('sunny', 1000, 50)
+  print 'Should be .357142857 False, .642857143 True'
+
+  print "\n TESTING BURGLARY NET\n" # An example from AIMA
+  reset()
+  assume('burglary', bernoulli(0.001))
+  assume('earthquake', bernoulli(0.002))
+  assume('alarm', ifelse('burglary', ifelse('earthquake', bernoulli(0.95), bernoulli(0.94)), \
+                                    ifelse('earthquake', bernoulli(0.29), bernoulli(0.001))))
+  assume('johnCalls', ifelse('alarm',  bernoulli(0.90), bernoulli(0.05)))
+  assume('maryCalls', ifelse('alarm',  bernoulli(0.70), bernoulli(0.01)))
+  
+  print follow_prior('alarm', 10000, 1)
+  print 'Should be .9975 False, .0025 True'
+
+  observe('maryCalls', True)
+  print follow_prior('johnCalls', 1000, 50)
+  print 'Should be .1775766 True'
+  forget('maryCalls')
+
+  observe('burglary', False)
+  print follow_prior('johnCalls', 1000, 50)
+  print 'Should be .95 False, .0513413 True'
+  forget('burglary')
 
 def test_xor():
   print "\n XOR TEST\n"
 
   reset()
-
-  assume('a', bernoulli(0.8)) 
-  assume('b', bernoulli(0.2)) 
+ 
+  p = 0.6
+  q = 0.4
+  assume('a', bernoulli(p)) 
+  assume('b', bernoulli(q)) 
   assume('c', (var('a') & ~var('b')) |(~var('a') & var('b'))) 
 
   observe('c', True) 
-  print infer_many('a', 1000, 25) 
+  print follow_prior('a', 1000, 50) 
+  # should be True : p(1-q)/(p(1-q)+(1-p)q), False : q(1-p)/(p(1-q) + q(1-p)) 
+  # I believe this gets skewed because it has to pass through illegal states, and the noise values get rounded badly 
 
   forget('c') 
-  print infer_many('a', 1000, 25) 
+  print follow_prior('a', 1000, 50) 
+  # should be True : p, False : 1 - p
 
-def test_mem():
+def test_recursion():
   print "\n TESTING RECURSION, FACTORIAL\n" 
   reset() 
   
@@ -114,8 +168,8 @@ def test_mem():
   print "factorial(5) =", sample(apply('factorial', 5)) 
   print "factorial(10) =", sample(apply('factorial', 10)) 
 
-  print "\n MEM TEST\n" 
-  print "\n TESTING RECURSION, FIBONACCI\n" 
+def test_mem():
+  print "\n MEM TEST, FIBONACCI\n" 
   reset() 
   
   fibonacci_expr = function(['x'], ifelse(var('x') <= 1, 1, \
@@ -133,7 +187,7 @@ def test_mem():
 
   assume('mem_xrp', mem_XRP()) 
   assume('bad_mem_fibonacci', apply('mem_xrp', 'fibonacci')) 
-  # Notice that mem'ed fibonacci doesn't recurse using itself.  It still calls fibonacci
+  # Notice that this mem'ed fibonacci doesn't recurse using itself.  It still calls fibonacci
 
   t = time()
   print "bad_mem_fibonacci(20) =", sample(apply('bad_mem_fibonacci', 20))
@@ -145,7 +199,6 @@ def test_mem():
   mem_fibonacci_expr = function(['x'], ifelse(var('x') <= 1, 1, \
                 apply('mem_fibonacci', var('x') - 1) + apply('mem_fibonacci', var('x') - 2) )) 
   assume('mem_fibonacci', apply('mem_xrp', mem_fibonacci_expr)) 
-  # Notice that mem'ed fibonacci doesn't recurse using itself.  It still calls fibonacci
 
   print "mem_fibonacci(20) =", sample(apply('mem_fibonacci', 20))
   print "      took", time() - t, "seconds"
@@ -153,10 +206,35 @@ def test_mem():
   print "mem_fibonacci(20) =", sample(apply('mem_fibonacci', 20))
   print "      took", time() - t, "seconds"
 
-test_expressions()
-test_coin()
-test_beta_bernoulli()
-test_mem()
-test_cloudy()
+def test_geometric():
+  reset()
+  print " \n TESTING GEOMETRIC\n"
+
+  print "Sampling from a geometric distribution"
+  assume('decay', beta(1, 1))
+  #assume('decay', 0.5)
+  #assume('decay', uniform(5))
+  assume('geometric', function(['x'], ifelse(bernoulli('decay'), 'x', apply('geometric', var('x') + 1))))
+  print "decay", globals.env.lookup('decay')
+  print [sample(apply('geometric', 0)) for i in xrange(10)]
+  observe(apply('geometric', 0), 3)
+  print follow_prior('decay', 100, 25)
+
+def test():
+  reset()
+  print " \n TESTING BLAH\n"
+  
+  print "description"
+  expr = beta_bernoulli_1()
+  print [sample(apply(coin_1)) for i in xrange(10)]
+  
+#test_expressions()
+#test_recursion()
+#test_beta_bernoulli()
+
+test_bayes_nets()
 test_xor()
+test_tricky()
+test_geometric()
+test_mem()
 
