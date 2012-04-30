@@ -18,7 +18,7 @@ def assume(varname, expr):
   globals.mem.add('assume', (varname, expr))
   return assume_helper(varname, expr, True)
 
-def observe_helper(expr, obs_val, args = []):
+def observe_helper(expr, obs_val):
   # bit of a hack, here, to make it recognize same things as with noisy_expr
   if expr.__class__.__name__ == 'Expression':
     hashval = expr.hashval
@@ -27,16 +27,18 @@ def observe_helper(expr, obs_val, args = []):
 
   val = evaluate(expr, globals.env, reflip = False, stack = ['obs', hashval, 0, 0])
   noisy_expr = globals.obs.get_noisy(expr)
+  noise_xrp = globals.obs.get_xrp(expr)
+  args = globals.obs.get_args(expr)
   off = True
   if val != obs_val:
-    globals.db.insert(['obs', hashval, -1], globals.obs.noise_xrp, Value(False), args) 
+    globals.db.insert(['obs', hashval, -1], noise_xrp, Value(False), args) 
     if not off:
       print "trying1", noisy_expr
       print globals.db.db.keys()
       print evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', hashval]) 
       assert evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', hashval]) == value(True)
   else:
-    globals.db.insert(['obs', hashval, -1], globals.obs.noise_xrp, Value(True), args) 
+    globals.db.insert(['obs', hashval, -1], noise_xrp, Value(True), args) 
 
     if not off:
       print "trying2", noisy_expr
@@ -50,11 +52,11 @@ def observe_helper(expr, obs_val, args = []):
     print evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', hashval]) 
     assert evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', hashval]) 
 
-def observe(expr, obs_val, args = []):
+def observe(expr, obs_val, noise_xrp = None, args = []):
   # expr can actually be a string as well
-  globals.obs.observe(expr, obs_val, args)
-  globals.mem.add('observe', (expr, value(obs_val), args))
-  observe_helper(expr, value(obs_val), args = args)
+  globals.obs.observe(expr, obs_val, noise_xrp, args)
+  globals.mem.add('observe', (expr, value(obs_val), noise_xrp, args))
+  observe_helper(expr, value(obs_val))
 
 def forget(expr):
   globals.obs.forget(expr) 
@@ -260,8 +262,8 @@ def rerun(reflip):
   for (varname, expr) in globals.mem.assumes:
     assume_helper(varname, expr, reflip)
   for expr in globals.mem.observes:
-    (obs_val, args) = globals.mem.observes[expr] 
-    observe_helper(expr, obs_val, args = args)
+    (obs_val, xrp, args) = globals.mem.observes[expr] 
+    observe_helper(expr, obs_val)
 
 def infer(): # RERUN AT END
   # reflip some coin
@@ -271,45 +273,44 @@ def infer(): # RERUN AT END
   #debug = True 
   debug = False 
 
-  if xrp != globals.obs.noise_xrp:
-    old_p = globals.db.prob() 
-    old_to_new_q = 1.0 / globals.db.count 
-    if debug:
-      old_db = [(s, globals.db.db[s][1].val) for s in globals.db.db] 
+  old_p = globals.db.prob() 
+  old_to_new_q = 1.0 / globals.db.count 
+  if debug:
+    old_db = [(s, globals.db.db[s][1].val) for s in globals.db.db] 
 
-    globals.db.save()
+  globals.db.save()
 
-    globals.db.remove(stack)
-    new_val = xrp.apply(args)
+  globals.db.remove(stack)
+  new_val = xrp.apply(args)
 
-    if debug:
-      print "\nchanging", stack, "to", new_val
-      print  "old_db", old_db
-    if val == new_val:
-      globals.db.insert(stack, xrp, new_val, args)
-      return
+  if debug:
+    print "\nchanging", stack, "to", new_val
+    print  "old_db", old_db
+  if val == new_val:
     globals.db.insert(stack, xrp, new_val, args)
+    return
+  globals.db.insert(stack, xrp, new_val, args)
 
-    rerun(False)
-    new_p = globals.db.prob() 
-    new_to_old_q = 1.0 / globals.db.count 
-    old_to_new_q *= globals.db.eval_p 
-    new_to_old_q *= globals.db.uneval_p 
-    if debug:
-      print "new db", [(s, globals.db.db[s][1]) for s in globals.db.db] 
-      print "q(o -> n)", old_to_new_q, "q(n -> o)", new_to_old_q 
-      print "p(old)", old_p, "p(new)", new_p
-      print 'transition prob',  (new_p * new_to_old_q) / (old_p * old_to_new_q + 0.0) 
+  rerun(False)
+  new_p = globals.db.prob() 
+  new_to_old_q = 1.0 / globals.db.count 
+  old_to_new_q *= globals.db.eval_p 
+  new_to_old_q *= globals.db.uneval_p 
+  if debug:
+    print "new db", [(s, globals.db.db[s][1]) for s in globals.db.db] 
+    print "q(o -> n)", old_to_new_q, "q(n -> o)", new_to_old_q 
+    print "p(old)", old_p, "p(new)", new_p
+    print 'transition prob',  (new_p * new_to_old_q) / (old_p * old_to_new_q + 0.0) 
 
-    p = random.random()
-    if old_p * old_to_new_q > 0:
-      if p + (new_p * new_to_old_q) / (old_p * old_to_new_q) < 1:
-        globals.db.restore()
-        if debug: 
-          print 'restore'
-    globals.db.save()
-    if debug: 
-      print "new db", [(s, globals.db.db[s][1]) for s in globals.db.db] 
+  p = random.random()
+  if old_p * old_to_new_q > 0:
+    if p + (new_p * new_to_old_q) / (old_p * old_to_new_q) < 1:
+      globals.db.restore()
+      if debug: 
+        print 'restore'
+  globals.db.save()
+  if debug: 
+    print "new db", [(s, globals.db.db[s][1]) for s in globals.db.db] 
 
 def follow_prior(name, niter = 1001, burnin = 100):
 

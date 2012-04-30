@@ -123,14 +123,16 @@ class RandomDB:
 # Class representing observations
 class Observations:
   def __init__(self, noise_xrp):
-    self.noise_xrp = noise_xrp  
+    self.default_noise_xrp = noise_xrp  
     self.obs = {}
 
-  def observe(self, expr, val, args = []):
+  def observe(self, expr, val, noise_xrp = None, args = []):
+    if noise_xrp == None:
+      noise_xrp = self.default_noise_xrp
     if expr in self.obs: 
       warnings.warn('Reboserving %s' % str(expr))
-    noisy_expr = ifelse(apply(self.noise_xrp, args), (expression(expr) == val), True)
-    self.obs[expr] = (noisy_expr, value(val), args)
+    noisy_expr = ifelse(apply(noise_xrp, args), (expression(expr) == val), True)
+    self.obs[expr] = (noisy_expr, value(val), args, noise_xrp)
     return noisy_expr
 
   def has(self, expr):
@@ -148,11 +150,15 @@ class Observations:
   def get_args(self, expr):
     return self.obs[expr][2]
 
+  def get_xrp(self, expr):
+    return self.obs[expr][3]
+
   def forget(self, expr):
     if self.has(expr):
       val = self.get_val(expr)
       args = self.get_args(expr)
-      self.noise_xrp.remove(val, args)
+      noise_xrp = self.get_xrp(expr) 
+      noise_xrp.remove(val, args)
       del self.obs[expr]
 
 class Directives_Memory:
@@ -171,10 +177,10 @@ class Directives_Memory:
       self.vars[varname] = expr
     else:
       assert type == 'observe'
-      (expr, obs_val, args) = tup
+      (expr, obs_val, xrp, args) = tup
       if expr in self.observes:
         warnings.warn('Already observed %s' % str(expr))
-      self.observes[expr] = (value(obs_val), args)
+      self.observes[expr] = (value(obs_val), xrp, args)
   
   def forget(self, expr):
     assert expr in self.observes

@@ -148,11 +148,13 @@ def test_xor():
 
   observe('c', True) 
   print follow_prior('a', 1000, 50) 
+  print 'should be 0.69 true'
   # should be True : p(1-q)/(p(1-q)+(1-p)q), False : q(1-p)/(p(1-q) + q(1-p)) 
   # I believe this gets skewed because it has to pass through illegal states, and the noise values get rounded badly 
 
   forget('c') 
   print follow_prior('a', 1000, 50) 
+  print 'should be 0.60 true'
   # should be True : p, False : 1 - p
 
 def test_recursion():
@@ -233,8 +235,8 @@ def test():
 #test_beta_bernoulli()
 
 #test_bayes_nets()
-test_xor()
-test_tricky()
-test_geometric()
+#test_xor()
+#test_tricky()
+#test_geometric()
 test_mem()
 
