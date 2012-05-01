@@ -145,7 +145,6 @@ def evaluate(expr, env = None, reflip = False, stack = []):
     # unevaluate?
     return evaluate(expr.children[index.val], env, reflip, stack + [index.val])
   elif expr.type == 'apply':
-    # UNEVALUATE?
     n = len(expr.children)
     args = [evaluate(expr.children[i], env, reflip, stack + [i]) for i in range(n)]
     op = evaluate(expr.op, env, reflip, stack + [-2])
@@ -157,10 +156,9 @@ def evaluate(expr, env = None, reflip = False, stack = []):
         newenv.set(op.vars[i], args[i]) 
       return evaluate(op.body, newenv, reflip, stack + [-1, tuple(args)])
     elif op.type == 'xrp':
-      # if in stack, but args are different ... force to have same value? 
       # NEED TO REMOVE THINGS?
-      #   need to check args are same
-      stack = stack + [-1]
+      # UNEVALUATE?
+      stack = stack + [-1, tuple(args)]
       if not globals.db.has(stack):
         val = value(op.val.apply(args))
         globals.db.insert(stack, op.val, val, args)
