@@ -29,7 +29,7 @@ class mem_proc_XRP(XRP):
       pass
     return self.state
   def prob(self, val, args = None):
-    return 1 # correct since other flips will be added to db? 
+    return 0 # correct since other flips will be added to db? 
   def __str__(self):
     return 'Memoization of procedure %s XRP' % str(self.procedure)
 
@@ -54,7 +54,7 @@ class mem_XRP(XRP):
       warnings.warn('Couldn\'t remove procedure %s from mem_XRP' % (str(args[0])))
     return self.state
   def prob(self, val, args = None):
-    return 1 # correct since other flips will be added to db? 
+    return 0 # correct since other flips will be added to db? 
   def __str__(self):
     return 'Memoization XRP'
 

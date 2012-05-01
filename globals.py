@@ -31,8 +31,9 @@ class RandomDB:
     self.noise_xrp = noise_xrp  
     self.count = 0
     self.memory = []
-    self.uneval_p = 1
-    self.eval_p = 1
+    # ALWAYS WORKING WITH LOG PROBABILITIES
+    self.uneval_p = 0
+    self.eval_p = 0
     return
   
   # implement tree data-structure?
@@ -45,14 +46,14 @@ class RandomDB:
     self.db[tuple(stack)] = (xrp, value, prob, args)
     if xrp is not self.noise_xrp:
       self.count += 1
-      self.eval_p *= prob 
+      self.eval_p += prob 
     if memorize:
       self.memory.append(('insert', stack, xrp, value, args))
 
   def save(self):
     self.memory = []
-    self.uneval_p = 1
-    self.eval_p = 1
+    self.uneval_p = 0
+    self.eval_p = 0
 
   def restore(self):
     self.memory.reverse()
@@ -69,7 +70,7 @@ class RandomDB:
     if xrp is not self.noise_xrp:
       self.count -= 1
       assert self.count >= 0
-      self.uneval_p *= prob
+      self.uneval_p += prob
     xrp.remove(value, args)
     del self.db[tuple(stack)]
     if memorize:
@@ -92,11 +93,12 @@ class RandomDB:
     index = random.randint(0, len(self.db)-1)
     return list(keys[index])
 
+  # gets log probability
   def prob(self):
-    ans = 1
+    ans = 0
     for key in self.db:
       (xrp, value, prob, args) = self.db[key]
-      ans *= prob
+      ans += prob
     return ans
 
   def unevaluate(self, uneval_stack, args = None):
@@ -190,6 +192,7 @@ class Directives_Memory:
 # The global environment. Has assignments of names to expressions, and parent pointer 
 env = Environment()
 
+#noise_xrp = beta_bernoulli_1((100, 1)) 
 noise_xrp = beta_bernoulli_1((100, 1)) 
 
 # A dictionary mapping expressions to values

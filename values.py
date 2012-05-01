@@ -90,6 +90,7 @@ class XRP:
   def remove(self, val, args = None):
     self.state = self.rem(self.state, val, args)
     return self.state
+  # SHOULD RETURN THE LOG PROBABILITY
   def prob(self, val, args = None):
     return self.prob(self.state, val, args)
   def __str__(self):

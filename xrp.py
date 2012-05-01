@@ -20,9 +20,9 @@ class beta_XRP(XRP):
     assert type(a) == int and a >= 0
     assert type(b) == int and b >= 0
     assert type(val.val) == float and 0 <= val.val <= 1
-    prob = math.factorial(a + b - 1) * pow(val.val, a - 1) * pow(1 - val.val, b - 1) \
-           / float(math.factorial(a - 1) * math.factorial(b - 1))
-    return prob
+    log_prob = math.log(math.factorial(a + b - 1)) + (a - 1) * math.log(val.val)  + (b - 1) * math.log(1 - val.val) \
+           - math.log(math.factorial(a - 1)) - math.log(math.factorial(b - 1))
+    return log_prob
   def __str__(self):
     return 'beta'
 
@@ -44,9 +44,9 @@ class bernoulli_XRP(XRP):
     assert type(p) == float and 0 <= p <= 1
     assert type(val.val) == bool
     if val.val:
-      return p
+      return math.log(p)
     else:
-      return 1.0 - p
+      return math.log(1.0 - p)
   def __str__(self):
     return 'bernoulli'
 
@@ -67,7 +67,7 @@ class uniform_XRP(XRP):
     n = args[0].val
     assert type(n) == int and n > 0
     assert type(val.val) == int and 0 <= val.val < n
-    return (1.0 / n)
+    return -math.log(n)
   def __str__(self):
     return 'uniform'
 
@@ -85,10 +85,11 @@ class beta_bernoulli_1(XRP):
   def remove(self, val, args = None):
     return self.state
   def prob(self, val, args = None):
+    # PREPROCESS?
     if val.val:
-      return self.state
+      return math.log(self.state)
     else:
-      return 1.0 - self.state
+      return math.log(1.0 - self.state)
   def __str__(self):
     return 'beta_bernoulli'
 
@@ -125,13 +126,12 @@ class beta_bernoulli_2(XRP):
     assert type(val.val) == bool
     (h, t) = self.state
     if (h | t) == 0:
-      return 0.5
+      return - math.log(2)
     else:
-      prob = (h + 0.0) / (h + t)
       if val.val:
-        return prob
+        return math.log(h) - math.log(h + t)
       else:
-        return 1.0 - prob
+        return math.log(t) - math.log(h + t)
   def __str__(self):
     return 'beta_bernoulli'
 
