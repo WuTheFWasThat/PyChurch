@@ -1,6 +1,22 @@
 from directives import * 
 from mem import *
 from time import *
+import matplotlib.pyplot as plot
+
+def get_cumulative_dist(valuedict, start, end, bucketsize):
+  numbuckets = int(math.floor((end - start) / bucketsize))
+  density = [0] * numbuckets 
+  cumulative = [0] * numbuckets 
+  for value in valuedict:
+    assert start <= value <= end
+    index = int(math.floor((value - start) / bucketsize))
+    density[index] += valuedict[value]
+  cumulative[0] = density[0]
+  for i in range(1, len(cumulative)):
+    cumulative[i] = cumulative[i-1] + density[i]
+  plot.plot([start + i * bucketsize for i in range(numbuckets)], cumulative)
+  return cumulative
+  
 
 """ TESTS """
 
@@ -113,26 +129,98 @@ def test_bayes_nets():
   print follow_prior('sunny', 1000, 50)
   print 'Should be .357142857 False, .642857143 True'
 
-  print "\n TESTING BURGLARY NET\n" # An example from AIMA
+  print "\n TESTING MODIFIED BURGLARY NET\n" # An example from AIMA
   reset()
-  assume('burglary', bernoulli(0.001))
-  assume('earthquake', bernoulli(0.002))
-  assume('alarm', ifelse('burglary', ifelse('earthquake', bernoulli(0.95), bernoulli(0.94)), \
-                                    ifelse('earthquake', bernoulli(0.29), bernoulli(0.001))))
-  assume('johnCalls', ifelse('alarm',  bernoulli(0.90), bernoulli(0.05)))
-  assume('maryCalls', ifelse('alarm',  bernoulli(0.70), bernoulli(0.01)))
+
+  pB = 0.1
+  pE = 0.2
+  pAgBE = 0.95
+  pAgBnE = 0.94
+  pAgnBE = 0.29
+  pAgnBnE = 0.10
+  pJgA = 0.9
+  pJgnA = 0.5
+  pMgA = 0.7
+  pMgnA = 0.1
   
+  pA = pB * pE * pAgBE + (1-pB) * pE * pAgnBE + pB * (1 - pE) * pAgBnE + (1-pB) * (1-pE) * pAgnBnE
+  
+  pJ = pA * pJgA + (1 - pA) * pJgnA
+  
+  pAgnB = (pE * pAgnBE + (1 - pE) * pAgnBnE) / (1 - pB)
+  pJgnB = pJgA * pAgnB + pJgnA * (1 - pAgnB) 
+  
+  pAgM = pMgA * pA / (pMgA * pA + pMgnA * (1 - pA))
+  pJgM = pAgM * pJgA + (1 - pAgM) * pJgnA
+  
+  pJnB = pJgnB * (1 - pB)
+  
+  assume('burglary', bernoulli(pB))
+  assume('earthquake', bernoulli(pE))
+  assume('alarm', ifelse('burglary', ifelse('earthquake', bernoulli(pAgBE), bernoulli(pAgBnE)), \
+                                    ifelse('earthquake', bernoulli(pAgnBE), bernoulli(pAgnBnE))))
+
+  assume('johnCalls', ifelse('alarm',  bernoulli(pJgA), bernoulli(pJgnA)))
+  assume('maryCalls', ifelse('alarm',  bernoulli(pMgA), bernoulli(pMgnA)))
+
   print follow_prior('alarm', 10000, 1)
-  print 'Should be .9975 False, .0025 True'
+  print 'Should be %f True' % pA
 
   observe('maryCalls', True)
   print follow_prior('johnCalls', 1000, 50)
-  print 'Should be .1775766 True'
+  print 'Should be %f True' % pJgM
   forget('maryCalls')
 
   observe('burglary', False)
   print follow_prior('johnCalls', 1000, 50)
-  print 'Should be .95 False, .0513413 True'
+  print 'Should be %f True' % pJgnB
+  forget('burglary')
+
+  print "\n TESTING BURGLARY NET\n" # An example from AIMA
+
+  pB = 0.001
+  pE = 0.002
+  pAgBE = 0.95
+  pAgBnE = 0.94
+  pAgnBE = 0.29
+  pAgnBnE = 0.001
+  pJgA = 0.9
+  pJgnA = 0.05
+  pMgA = 0.7
+  pMgnA = 0.01
+  
+  pA = pB * pE * pAgBE + (1-pB) * pE * pAgnBE + pB * (1 - pE) * pAgBnE + (1-pB) * (1-pE) * pAgnBnE
+  
+  pJ = pA * pJgA + (1 - pA) * pJgnA
+  
+  pAgnB = (pE * pAgnBE + (1 - pE) * pAgnBnE) / (1 - pB)
+  pJgnB = pJgA * pAgnB + pJgnA * (1 - pAgnB) 
+  
+  pAgM = pMgA * pA / (pMgA * pA + pMgnA * (1 - pA))
+  pJgM = pAgM * pJgA + (1 - pAgM) * pJgnA
+  
+  pJnB = pJgnB * (1 - pB)
+  
+  reset()
+  assume('burglary', bernoulli(pB))
+  assume('earthquake', bernoulli(pE))
+  assume('alarm', ifelse('burglary', ifelse('earthquake', bernoulli(pAgBE), bernoulli(pAgBnE)), \
+                                    ifelse('earthquake', bernoulli(pAgnBE), bernoulli(pAgnBnE))))
+
+  assume('johnCalls', ifelse('alarm',  bernoulli(pJgA), bernoulli(pJgnA)))
+  assume('maryCalls', ifelse('alarm',  bernoulli(pMgA), bernoulli(pMgnA)))
+
+  print follow_prior('alarm', 10000, 1)
+  print 'Should be %f True' % pA
+
+  observe('maryCalls', True)
+  print follow_prior('johnCalls', 1000, 50)
+  print 'Should be %f True' % pJgM
+  forget('maryCalls')
+
+  observe('burglary', False)
+  print follow_prior('johnCalls', 1000, 50)
+  print 'Should be %f True' % pJgnB
   forget('burglary')
 
 def test_xor():
@@ -187,8 +275,7 @@ def test_mem():
   print "fibonacci(20) =", sample(apply('fibonacci', 20)) 
   print "      took", time() - t, "seconds"
 
-  assume('mem_xrp', mem_XRP()) 
-  assume('bad_mem_fibonacci', apply('mem_xrp', 'fibonacci')) 
+  assume('bad_mem_fibonacci', mem('fibonacci')) 
   # Notice that this mem'ed fibonacci doesn't recurse using itself.  It still calls fibonacci
 
   t = time()
@@ -200,7 +287,7 @@ def test_mem():
 
   mem_fibonacci_expr = function(['x'], ifelse(var('x') <= 1, 1, \
                 apply('mem_fibonacci', var('x') - 1) + apply('mem_fibonacci', var('x') - 2) )) 
-  assume('mem_fibonacci', apply('mem_xrp', mem_fibonacci_expr)) 
+  assume('mem_fibonacci', mem(mem_fibonacci_expr)) 
 
   print "mem_fibonacci(20) =", sample(apply('mem_fibonacci', 20))
   print "      took", time() - t, "seconds"
@@ -220,7 +307,7 @@ def test_geometric():
   print "decay", globals.env.lookup('decay')
   print [sample(apply('geometric', 0)) for i in xrange(10)]
   observe(apply('geometric', 0), 3)
-  print follow_prior('decay', 100, 25)
+  print get_cumulative_dist(follow_prior('decay', 100, 25), 0, 1, .01)
 
 def test():
   reset()
@@ -230,13 +317,13 @@ def test():
   expr = beta_bernoulli_1()
   print [sample(apply(coin_1)) for i in xrange(10)]
   
-#test_expressions()
-#test_recursion()
+test_expressions()
+test_recursion()
 #test_beta_bernoulli()
-
-test_bayes_nets()
-test_xor()
-test_tricky()
-test_geometric()
+#
+#test_bayes_nets()
+#test_xor()
+#test_tricky()
+#test_geometric()
 test_mem()
 

@@ -1,4 +1,5 @@
 from expressions import *
+import sys
 
 # Class representing environments
 class Environment:
@@ -203,3 +204,6 @@ db = RandomDB(noise_xrp)
 
 # Global memory.  List of (directive type, args)
 mem = Directives_Memory() 
+
+sys.setrecursionlimit(10000)
+

@@ -58,3 +58,7 @@ class mem_XRP(XRP):
   def __str__(self):
     return 'Memoization XRP'
 
+mem_xrp = mem_XRP()
+def mem(function):
+  return expression(('apply', mem_xrp, function))
+

@@ -87,7 +87,8 @@ def replace(expr, env):
     children = [replace(x, env) for x in expr.children] 
     return Expression(('apply', expr.op, children)) 
   elif expr.type == 'function':
-    return expr 
+    body = replace(expr.body, env)
+    return Expression(('function', expr.vars, body)) 
   elif expr.type in ['=', '<', '>', '>=', '<=', '&', '|', 'add', 'subtract', 'multiply']:
     children = [replace(x, env) for x in expr.children] 
     return Expression((expr.type, children)) 

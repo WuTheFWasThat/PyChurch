@@ -1,7 +1,7 @@
 import random
 from values import *
 
-class beta_XRP(XRP):
+class beta_args_XRP(XRP):
   def __init__(self):
     self.state = None
     self.hash = random.randint(0, 2**32 - 1)
@@ -26,7 +26,52 @@ class beta_XRP(XRP):
   def __str__(self):
     return 'beta'
 
-class bernoulli_XRP(XRP):
+class beta_no_args_XRP(XRP):
+  def __init__(self, a, b):
+    self.state = None
+    self.hash = random.randint(0, 2**32 - 1)
+    assert type(a) == int and a >= 0
+    assert type(b) == int and b >= 0
+    self.a, self.b = a, b 
+    self.prob_help = math.log(math.factorial(a + b - 1)) - math.log(math.factorial(a - 1)) - math.log(math.factorial(b - 1))
+    return
+  def apply(self, args = None):
+    if args != None:
+      warnings.warn('Warning: beta_XRP has no need to take in arguments %s' % str(args))
+    return value(random.betavariate(self.a, self.b))
+  def incorporate(self, val, args = None):
+    return None
+  def remove(self, val, args = None):
+    return None
+  def prob(self, val, args = None):
+    if args != None:
+      warnings.warn('Warning: beta_XRP has no need to take in arguments %s' % str(args))
+    assert type(val.val) == float and 0 <= val.val <= 1
+    log_prob = self.prob_help + (self.a - 1) * math.log(val.val) + (self.b - 1) * math.log(1 - val.val) 
+    return log_prob
+  def __str__(self):
+    return 'beta(%d, %d)' % (self.a, self.b)
+
+class beta_XRP(XRP):
+  def __init__(self):
+    self.state = None
+    self.hash = random.randint(0, 2**32 - 1)
+    return
+  def apply(self, args = None):
+    (a,b) = (args[0].val, args[1].val)
+    assert type(a) == int and a >= 0
+    assert type(b) == int and b >= 0
+    return Value(beta_no_args_XRP(a, b)) 
+  def incorporate(self, val, args = None):
+    return None
+  def remove(self, val, args = None):
+    return None
+  def prob(self, val, args = None):
+    return 1
+  def __str__(self):
+    return 'beta_XRP'
+
+class bernoulli_args_XRP(XRP):
   def __init__(self):
     self.state = None
     self.hash = random.randint(0, 2**32 - 1)
@@ -41,7 +86,7 @@ class bernoulli_XRP(XRP):
     return None
   def prob(self, val, args = None):
     p = args[0].val
-    assert type(p) == float and 0 <= p <= 1
+    assert 0 <= p <= 1
     assert type(val.val) == bool
     if val.val:
       return math.log(p)
@@ -50,7 +95,47 @@ class bernoulli_XRP(XRP):
   def __str__(self):
     return 'bernoulli'
 
-class uniform_XRP(XRP):
+class bernoulli_no_args_XRP(XRP):
+  def __init__(self, p):
+    self.state = None
+    self.p = p
+    assert 0 <= p <= 1
+    self.hash = random.randint(0, 2**32 - 1)
+    return
+  def apply(self, args = None):
+    return value(random.random() < self.p)
+  def incorporate(self, val, args = None):
+    return None
+  def remove(self, val, args = None):
+    return None
+  def prob(self, val, args = None):
+    assert type(val.val) == bool
+    if val.val:
+      return math.log(self.p)
+    else:
+      return math.log(1.0 - self.p)
+  def __str__(self):
+    return 'bernoulli(%d)' % self.p
+
+class beta_XRP(XRP):
+  def __init__(self):
+    self.state = None
+    self.hash = random.randint(0, 2**32 - 1)
+    return
+  def apply(self, args = None):
+    p = args[0].val
+    assert 0 <= p <= 1
+    return Value(bernoulli_no_args_XRP(p)) 
+  def incorporate(self, val, args = None):
+    return None
+  def remove(self, val, args = None):
+    return None
+  def prob(self, val, args = None):
+    return 1
+  def __str__(self):
+    return 'bernoulli_XRP'
+
+class uniform_args_XRP(XRP):
   def __init__(self):
     self.state = None
     self.hash = random.randint(0, 2**32 - 1)
@@ -71,6 +156,42 @@ class uniform_XRP(XRP):
   def __str__(self):
     return 'uniform'
 
+class uniform_no_args_XRP(XRP):
+  def __init__(self, n):
+    self.state = None
+    self.hash = random.randint(0, 2**32 - 1)
+    assert type(n) == int and n > 0
+    self.n = n
+    return
+  def apply(self, args = None):
+    return value(random.randint(0, self.n-1))
+  def incorporate(self, val, args = None):
+    return None
+  def remove(self, val, args = None):
+    return None
+  def prob(self, val, args = None):
+    assert type(val.val) == int and 0 <= val.val < n
+    return -math.log(self.n)
+  def __str__(self):
+    return 'uniform(%d)' % self.n
+
+class uniform_XRP(XRP):
+  def __init__(self):
+    self.state = None
+    self.hash = random.randint(0, 2**32 - 1)
+    return
+  def apply(self, args = None):
+    n = args[0].val
+    assert type(n) == int and n > 0
+    return Value(uniform_no_args_XRP(n)) 
+  def incorporate(self, val, args = None):
+    return None
+  def remove(self, val, args = None):
+    return None
+  def prob(self, val, args = None):
+    return 1
+  def __str__(self):
+    return 'uniform_XRP'
 
 class beta_bernoulli_1(XRP):
   def __init__(self, start_state = (1, 1)):

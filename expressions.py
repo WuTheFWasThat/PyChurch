@@ -199,17 +199,17 @@ class Expression:
 def xrp(xrp):
   return expression(('xrp', xrp)) 
 
-bernoulli_xrp = bernoulli_XRP() 
+bernoulli_args_xrp = bernoulli_args_XRP() 
 def bernoulli(p):
-  return expression(('apply', ('xrp', bernoulli_xrp), p)) 
+  return expression(('apply',  bernoulli_args_xrp, p)) 
 
-beta_xrp = beta_XRP() 
+beta_args_xrp = beta_args_XRP() 
 def beta(a, b): 
-  return expression(('apply', ('xrp', beta_xrp), [a, b])) 
+  return expression(('apply', beta_args_xrp, [a, b])) 
 
-uniform_xrp = uniform_XRP() 
+uniform_args_xrp = uniform_args_XRP() 
 def uniform(n):
-  return expression(('apply', ('xrp', uniform_xrp), n)) 
+  return expression(('apply', ('xrp', uniform_args_xrp), n)) 
 
 def constant(c):
   return expression(('value', c)) 
