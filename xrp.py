@@ -1,6 +1,76 @@
 import random
 from values import *
 
+class gaussian_args_XRP(XRP):
+  def __init__(self):
+    self.state = None
+    self.hash = random.randint(0, 2**32 - 1)
+    return
+  def apply(self, args = None):
+    (a,b) = (args[0].val, args[1].val)
+    assert type(a) == int and a >= 0
+    assert type(b) == int and b >= 0
+    return value(random.normalvariate(a, b))
+  def incorporate(self, val, args = None):
+    return None
+  def remove(self, val, args = None):
+    return None
+  def prob(self, val, args = None):
+    (a , b) = (args[0].val, args[1].val)
+    assert type(a) == int and a >= 0
+    assert type(b) == int and b >= 0
+    assert type(val.val) == float and 0 <= val.val <= 1
+    log_prob = math.log(math.factorial(a + b - 1)) + (a - 1) * math.log(val.val)  + (b - 1) * math.log(1 - val.val) \
+           - math.log(math.factorial(a - 1)) - math.log(math.factorial(b - 1))
+    return log_prob
+  def __str__(self):
+    return 'normal'
+
+class gaussian_no_args_XRP(XRP):
+  def __init__(self, a, b):
+    self.state = None
+    self.hash = random.randint(0, 2**32 - 1)
+    assert type(a) == int and a >= 0
+    assert type(b) == int and b >= 0
+    self.a, self.b = a, b 
+    self.prob_help = math.log(math.factorial(a + b - 1)) - math.log(math.factorial(a - 1)) - math.log(math.factorial(b - 1))
+    return
+  def apply(self, args = None):
+    if args != None:
+      warnings.warn('Warning: gaussian_no_args_XRP has no need to take in arguments %s' % str(args))
+    return value(random.normalvariate(self.a, self.b))
+  def incorporate(self, val, args = None):
+    return None
+  def remove(self, val, args = None):
+    return None
+  def prob(self, val, args = None):
+    if args != None:
+      warnings.warn('Warning: gaussian_no_args_XRP has no need to take in arguments %s' % str(args))
+    assert type(val.val) == float and 0 <= val.val <= 1
+    log_prob = self.prob_help + (self.a - 1) * math.log(val.val) + (self.b - 1) * math.log(1 - val.val) 
+    return log_prob
+  def __str__(self):
+    return 'gaussian(%d, %d)' % (self.a, self.b)
+
+class gaussian_XRP(XRP):
+  def __init__(self):
+    self.state = None
+    self.hash = random.randint(0, 2**32 - 1)
+    return
+  def apply(self, args = None):
+    (a,b) = (args[0].val, args[1].val)
+    assert type(a) == int and a >= 0
+    assert type(b) == int and b >= 0
+    return Value(gaussian_no_args_XRP(a, b)) 
+  def incorporate(self, val, args = None):
+    return None
+  def remove(self, val, args = None):
+    return None
+  def prob(self, val, args = None):
+    return 1
+  def __str__(self):
+    return 'gaussian_XRP'
+
 class beta_args_XRP(XRP):
   def __init__(self):
     self.state = None
@@ -37,7 +107,7 @@ class beta_no_args_XRP(XRP):
     return
   def apply(self, args = None):
     if args != None:
-      warnings.warn('Warning: beta_XRP has no need to take in arguments %s' % str(args))
+      warnings.warn('Warning: beta_no_args_XRP has no need to take in arguments %s' % str(args))
     return value(random.betavariate(self.a, self.b))
   def incorporate(self, val, args = None):
     return None
@@ -45,7 +115,7 @@ class beta_no_args_XRP(XRP):
     return None
   def prob(self, val, args = None):
     if args != None:
-      warnings.warn('Warning: beta_XRP has no need to take in arguments %s' % str(args))
+      warnings.warn('Warning: beta_no_args_XRP has no need to take in arguments %s' % str(args))
     assert type(val.val) == float and 0 <= val.val <= 1
     log_prob = self.prob_help + (self.a - 1) * math.log(val.val) + (self.b - 1) * math.log(1 - val.val) 
     return log_prob
@@ -103,12 +173,16 @@ class bernoulli_no_args_XRP(XRP):
     self.hash = random.randint(0, 2**32 - 1)
     return
   def apply(self, args = None):
+    if args != None:
+      warnings.warn('Warning: bernoulli_no_args_XRP has no need to take in arguments %s' % str(args))
     return value(random.random() < self.p)
   def incorporate(self, val, args = None):
     return None
   def remove(self, val, args = None):
     return None
   def prob(self, val, args = None):
+    if args != None:
+      warnings.warn('Warning: bernoulli_no_args_XRP has no need to take in arguments %s' % str(args))
     assert type(val.val) == bool
     if val.val:
       return math.log(self.p)
@@ -164,13 +238,17 @@ class uniform_no_args_XRP(XRP):
     self.n = n
     return
   def apply(self, args = None):
+    if args != None:
+      warnings.warn('Warning: uniform_no_args_XRP has no need to take in arguments %s' % str(args))
     return value(random.randint(0, self.n-1))
   def incorporate(self, val, args = None):
     return None
   def remove(self, val, args = None):
     return None
   def prob(self, val, args = None):
-    assert type(val.val) == int and 0 <= val.val < n
+    if args != None:
+      warnings.warn('Warning: uniform_no_args_XRP has no need to take in arguments %s' % str(args))
+    assert type(val.val) == int and 0 <= val.val < self.n
     return -math.log(self.n)
   def __str__(self):
     return 'uniform(%d)' % self.n

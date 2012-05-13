@@ -73,7 +73,7 @@ class Value:
     return bool(self.val)
 
 class XRP:
-  def __init__(self, start_state, sample, inc, rem, prob, name = 'XRP'):
+  def __init__(self, start_state, sample, prob = None, inc = None, rem = None, name = 'XRP'):
     self.sample = sample # function which takes state, args, and returns value 
     self.inc = inc # function which takes state, value, args, and returns state
     self.rem = rem # function which takes state, value, args, and returns state
@@ -85,14 +85,23 @@ class XRP:
   def apply(self, args = None):
     return sample(self.state, args)
   def incorporate(self, val, args = None):
-    self.state = self.inc(self.state, val, args)
-    return self.state
+    if self.inc != None:
+      self.state = self.inc(self.state, val, args)
+      return self.state
+    else:
+      return None
   def remove(self, val, args = None):
-    self.state = self.rem(self.state, val, args)
-    return self.state
+    if self.rem != None:
+      self.state = self.rem(self.state, val, args)
+      return self.state
+    else:
+      return None
   # SHOULD RETURN THE LOG PROBABILITY
   def prob(self, val, args = None):
-    return self.prob(self.state, val, args)
+    if self.prob != None:
+      return self.prob(self.state, val, args)
+    else:
+      return 0
   def __str__(self):
     return self.name
   def __hash__(self):

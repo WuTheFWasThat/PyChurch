@@ -62,3 +62,13 @@ mem_xrp = mem_XRP()
 def mem(function):
   return expression(('apply', mem_xrp, function))
 
+sticks_expr = mem(function('j', beta(1.0, 'concentration')))
+atoms_expr = mem(function('j', apply('basemeasure')))
+
+loop_body_expr = function('j', ifelse( bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), apply('loophelper', var('j') + 1))) 
+loop_expr = apply(  function(['sticks', 'atoms'], loop_body_expr), [sticks_expr , atoms_expr])
+assume('loophelper', function(['concentration', 'basemeasure'], loop_expr))
+assume( 'DP', function(['concentration', 'basemeasure'], apply(apply('loophelper', ['concentration', 'basemeasure']), 1)))
+
+
+

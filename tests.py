@@ -309,6 +309,29 @@ def test_geometric():
   observe(apply('geometric', 0), 3)
   print get_cumulative_dist(follow_prior('decay', 100, 25), 0, 1, .01)
 
+def test_DPmem():
+  reset()
+  print " \n TESTING DPMem\n"
+
+  sticks_expr = mem(function('j', beta(1, 'concentration')))
+  atoms_expr = mem(function('j', apply('basemeasure')))
+
+  loop_body_expr = function('j', ifelse( bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), apply(apply('loophelper', ['concentration', 'basemeasure']), var('j') + 1))) 
+  loop_expr = apply(  function(['sticks', 'atoms'], loop_body_expr), [sticks_expr , atoms_expr])
+  assume('loophelper', apply(function(['concentration', 'basemeasure'], loop_expr), ['concentration', 'basemeasure']) )
+  assume( 'DP', function(['concentration', 'basemeasure'], apply(apply('loophelper', ['concentration', 'basemeasure']), 1)))
+
+  #loop_body_expr = function('j', ifelse( bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), apply(apply('loophelper', ['concentration', 'basemeasure']), var('j') + 1))) 
+  #loop_expr = apply(  function(['sticks', 'atoms'], loop_body_expr), [sticks_expr , atoms_expr])
+  #assume('loophelper', function(['concentration', 'basemeasure'], loop_expr))
+  #assume( 'DP', function(['concentration', 'basemeasure'], apply(apply('loophelper', ['concentration', 'basemeasure']), 1)))
+
+  print "description"
+  concentration = 1
+  uniform_base_measure = uniform_no_args_XRP(2)
+  print [sample(apply('DP', [concentration, uniform_base_measure])) for i in xrange(10)]
+  expr = beta_bernoulli_1()
+
 def test():
   reset()
   print " \n TESTING BLAH\n"
@@ -317,13 +340,14 @@ def test():
   expr = beta_bernoulli_1()
   print [sample(apply(coin_1)) for i in xrange(10)]
   
-test_expressions()
-test_recursion()
+#test_expressions()
+#test_recursion()
 #test_beta_bernoulli()
 #
 #test_bayes_nets()
 #test_xor()
 #test_tricky()
 #test_geometric()
-test_mem()
+#test_mem()
+test_DPmem()
 

@@ -9,7 +9,7 @@ def expression(tup):
   else:
     return Expression(tup)
 
-# Class representing expressions 
+#Class Class representing expressions 
 class Expression:
   # Initializes an expression, taking in a type string, and a list of other parameter arguments 
   def __init__(self, tup):

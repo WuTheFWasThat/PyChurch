@@ -70,7 +70,8 @@ def replace(expr, env):
   elif expr.type == 'variable':
     val = env.lookup(expr.name)
     if val is None:
-      warnings.warn('Unbound free variable') 
+      return expr
+      #warnings.warn('Unbound free variable %s' % expr.name)  ... not necessarily bad 
     else:
       return Expression(val)
   elif expr.type == 'if':
@@ -151,6 +152,10 @@ def evaluate(expr, env = None, reflip = False, stack = []):
     op = evaluate(expr.op, env, reflip, stack + [-2])
     if op.type == 'procedure':
       globals.db.unevaluate(stack + [-1], args)
+      print
+      print expr.children
+      print n
+      print op.vars
       assert n == len(op.vars)
       newenv = op.env.spawn_child()
       for i in range(n):
@@ -210,6 +215,7 @@ def evaluate(expr, env = None, reflip = False, stack = []):
     return None
 
 def sample(expr, env = None, varname = None, reflip = False):
+  expr = expression(expr)
   if env is None:
     env = globals.env
   if varname is None:
