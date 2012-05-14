@@ -326,10 +326,7 @@ def test_DPmem():
   assume('DPmem', function(['alpha', 'proc'], function('args', apply(restaurants_expr, 'args'))))
 
   concentration = 1
-  fibonacci_expr = function(['x'], ifelse(var('x') <= 1, 1, \
-                apply('fibonacci', var('x') - 1) + apply('fibonacci', var('x') - 2) )) 
-  assume('fibonacci', fibonacci_expr) 
-  assume('DPmemfib', apply('DPmem', [concentration, 'fibonacci']))
+  assume('DPmemfib', apply('DPmem', [concentration, function([], bernoulli(0.5))]))
   print [sample(apply('DPmemfib', 5)) for i in xrange(10)]
   #expr = beta_bernoulli_1()
 
