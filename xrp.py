@@ -9,7 +9,7 @@ class gaussian_args_XRP(XRP):
   def apply(self, args = None):
     (mu , sigma) = (args[0].val, args[1].val)
     assert type(mu) in [int, float]
-    assert type(sigma) == [int, float] and sigma > 0
+    assert type(sigma) in [int, float] and sigma > 0
     return value(random.normalvariate(mu, sigma))
   def incorporate(self, val, args = None):
     return None
@@ -18,7 +18,7 @@ class gaussian_args_XRP(XRP):
   def prob(self, val, args = None):
     (mu , sigma) = (args[0].val, args[1].val)
     assert type(mu) in [int, float]
-    assert type(sigma) == [int, float] and sigma > 0
+    assert type(sigma) in [int, float] and sigma > 0
     assert type(val.val) in [int, float]
     log_prob = - ((val.val - mu) / sigma)**2/ 2.0 - math.log(sigma) - math.log(2 * math.pi) / 2.0
     return log_prob
@@ -30,7 +30,7 @@ class gaussian_no_args_XRP(XRP):
     self.state = None
     self.hash = random.randint(0, 2**64 - 1)
     assert type(mu) in [int, float]
-    assert type(sigma) == [int, float] and sigma > 0
+    assert type(sigma) in [int, float] and sigma > 0
     (self.mu , self.sigma) = (mu, sigma)
     self.prob_help = - math.log(sigma) - math.log(2 * math.pi) / 2.0
     return
