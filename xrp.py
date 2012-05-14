@@ -7,38 +7,37 @@ class gaussian_args_XRP(XRP):
     self.hash = random.randint(0, 2**64 - 1)
     return
   def apply(self, args = None):
-    (a,b) = (args[0].val, args[1].val)
-    assert type(a) == int and a >= 0
-    assert type(b) == int and b >= 0
-    return value(random.normalvariate(a, b))
+    (mu , sigma) = (args[0].val, args[1].val)
+    assert type(mu) in [int, float]
+    assert type(sigma) == [int, float] and sigma > 0
+    return value(random.normalvariate(mu, sigma))
   def incorporate(self, val, args = None):
     return None
   def remove(self, val, args = None):
     return None
   def prob(self, val, args = None):
-    (a , b) = (args[0].val, args[1].val)
-    assert type(a) == int and a >= 0
-    assert type(b) == int and b >= 0
-    assert type(val.val) == float and 0 <= val.val <= 1
-    log_prob = math.log(math.factorial(a + b - 1)) + (a - 1) * math.log(val.val)  + (b - 1) * math.log(1 - val.val) \
-           - math.log(math.factorial(a - 1)) - math.log(math.factorial(b - 1))
+    (mu , sigma) = (args[0].val, args[1].val)
+    assert type(mu) in [int, float]
+    assert type(sigma) == [int, float] and sigma > 0
+    assert type(val.val) in [int, float]
+    log_prob = - ((val.val - mu) / sigma)**2/ 2.0 - math.log(sigma) - math.log(2 * math.pi) / 2.0
     return log_prob
   def __str__(self):
     return 'normal'
 
 class gaussian_no_args_XRP(XRP):
-  def __init__(self, a, b):
+  def __init__(self, mu, sigma):
     self.state = None
     self.hash = random.randint(0, 2**64 - 1)
-    assert type(a) == int and a >= 0
-    assert type(b) == int and b >= 0
-    self.a, self.b = a, b 
-    self.prob_help = math.log(math.factorial(a + b - 1)) - math.log(math.factorial(a - 1)) - math.log(math.factorial(b - 1))
+    assert type(mu) in [int, float]
+    assert type(sigma) == [int, float] and sigma > 0
+    (self.mu , self.sigma) = (mu, sigma)
+    self.prob_help = - math.log(sigma) - math.log(2 * math.pi) / 2.0
     return
   def apply(self, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: gaussian_no_args_XRP has no need to take in arguments %s' % str(args))
-    return value(random.normalvariate(self.a, self.b))
+    return value(random.normalvariate(self.mu, self.sigma))
   def incorporate(self, val, args = None):
     return None
   def remove(self, val, args = None):
@@ -46,11 +45,11 @@ class gaussian_no_args_XRP(XRP):
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: gaussian_no_args_XRP has no need to take in arguments %s' % str(args))
-    assert type(val.val) == float and 0 <= val.val <= 1
-    log_prob = self.prob_help + (self.a - 1) * math.log(val.val) + (self.b - 1) * math.log(1 - val.val) 
+    assert type(val.val) in [int, float]
+    log_prob = self.prob_help - ((val.val - self.mu) / self.sigma)**2 / 2.0 
     return log_prob
   def __str__(self):
-    return 'gaussian(%f, %f)' % (self.a, self.b)
+    return 'gaussian(%f, %f)' % (self.mu, self.sigma)
 
 class gaussian_XRP(XRP):
   def __init__(self):
@@ -58,10 +57,10 @@ class gaussian_XRP(XRP):
     self.hash = random.randint(0, 2**64 - 1)
     return
   def apply(self, args = None):
-    (a,b) = (args[0].val, args[1].val)
-    assert type(a) == int and a >= 0
-    assert type(b) == int and b >= 0
-    return Value(gaussian_no_args_XRP(a, b)) 
+    (mu,sigma) = (args[0].val, args[1].val)
+    assert type(mu) in [int, float]
+    assert type(sigma) == [int, float] and sigma > 0
+    return Value(gaussian_no_args_XRP(mu, sigma)) 
   def incorporate(self, val, args = None):
     return None
   def remove(self, val, args = None):

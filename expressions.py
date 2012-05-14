@@ -211,6 +211,10 @@ uniform_args_xrp = uniform_args_XRP()
 def uniform(n):
   return expression(('apply', ('xrp', uniform_args_xrp), n)) 
 
+gaussian_args_xrp = gaussian_args_XRP() 
+def gaussian(n):
+  return expression(('apply', ('xrp', gaussian_args_xrp), n)) 
+
 def constant(c):
   return expression(('value', c)) 
 

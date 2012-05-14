@@ -39,7 +39,7 @@ def test_expressions():
   print [resample(x) for i in xrange(10)]
   print
   
-  b = ifelse(bernoulli(0.2), beta(3,4), beta(4,3))
+  b = ifelse(bernoulli(0.2), beta(3,4), gaussian(4,3))
   print 'Some samples of\n%s:' % (str(b))
   print [resample(b) for i in xrange(10)]
   print 
@@ -341,7 +341,7 @@ def test():
   expr = beta_bernoulli_1()
   print [sample(apply(coin_1)) for i in xrange(10)]
   
-#test_expressions()
+test_expressions()
 #test_recursion()
 #test_beta_bernoulli()
 #
