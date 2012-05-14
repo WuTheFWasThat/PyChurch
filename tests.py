@@ -8,7 +8,10 @@ def get_cumulative_dist(valuedict, start, end, bucketsize):
   density = [0] * numbuckets 
   cumulative = [0] * numbuckets 
   for value in valuedict:
-    assert start <= value <= end
+    if not start <= value <= end:
+      print 'value %s is not in the interval [%s, %s]' % (str(value), str(start), str(end))
+      #assert False
+      continue
     index = int(math.floor((value - start) / bucketsize))
     density[index] += valuedict[value]
   cumulative[0] = density[0]
@@ -325,21 +328,30 @@ def test_DPmem():
   restaurants_expr = mem( function('args', apply('DP', ['alpha', function([], apply('proc', 'args'))])))
   assume('DPmem', function(['alpha', 'proc'], function('args', apply(restaurants_expr, 'args'))))
 
-  concentration = 1
-  assume('DPmemfib', apply('DPmem', [concentration, function([], bernoulli(0.5))]))
+
+
+  concentration = 0.1 # when close to 0, just mem.  when close to infinity, sample 
+  assume('DPmemfib', apply('DPmem', [concentration, function(['x'], bernoulli(0.5))]))
   print [sample(apply('DPmemfib', 5)) for i in xrange(10)]
+
   #expr = beta_bernoulli_1()
 
-  #loop_body_expr = function('j', ifelse( bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), apply(apply('loophelper', ['concentration', 'basemeasure']), var('j') + 1))) 
+  #loop_body_expr = function('j', ifelse( bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), apply(apply('loophelper', ['concentration', 'basemeasure']), var('j') + 1)))
   #loop_expr = apply(  function(['sticks', 'atoms'], loop_body_expr), [sticks_expr , atoms_expr])
   #assume('loophelper', function(['concentration', 'basemeasure'], loop_expr))
   #assume( 'DP', function(['concentration', 'basemeasure'], apply(apply('loophelper', ['concentration', 'basemeasure']), 1)))
 
   print "\n TESTING GAUSSIAN MIXTURE MODEL\n"
-  #assume('concentration', gaussian(1, 0.2)) # use vague-gamma? 
-  #assume('expected-mean', gaussian(0, 1))
-  #assume('expected-variance', gaussian(0, 1))
-  #assume('gen-cluster-mean', gaussian(0, 1))
+  assume('concentration', gaussian(1, 0.2)) # use vague-gamma? 
+  assume('expected-mean', gaussian(0, 1))
+  assume('expected-variance', gaussian(0, 1))
+  assume('gen-cluster-mean', gaussian(0, 1))
+  assume('get-datapoint', mem( function(['id'], gaussian('gen-cluster-mean', 1.0))))
+  assume('outer-noise', gaussian(1, 0.2)) # use vague-gamma?
+  
+  observe(apply('get-datapoint', 0), 0.3)
+
+  print get_cumulative_dist(follow_prior('expected-mean', 10, 10), -1, 3, .1) 
 
   #concentration = 1
   #uniform_base_measure = uniform_no_args_XRP(2)

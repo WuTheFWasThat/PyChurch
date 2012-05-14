@@ -72,6 +72,60 @@ class Value:
   def __nonzero__(self):
     return bool(self.val)
 
+def check_num(val):
+  if not type(val) in [int, float]:
+    print "Value %s has type %s" % (str(val), str(type(val))) 
+    assert False
+  return
+
+def check_int(val):
+  if not type(val) in [int]:
+    print "Value %s has type %s" % (str(val), str(type(val))) 
+    assert False
+  return
+
+def check_nat(val):
+  if not type(val) in [int]:
+    print "Value %s has type %s" % (str(val), str(type(val))) 
+    assert False
+  if not 0 < val: 
+    print "Value %s is not positive" % str(val)
+    assert False
+  return
+  
+def check_bool(val):
+  if not type(val) in [bool]:
+    print "Value %s has type %s" % (str(val), str(type(val))) 
+    assert False
+  return
+
+def check_prob(val):
+  if not type(val) in [int, float]:
+    print "Value %s has type %s" % (str(val), str(type(val))) 
+    assert False
+  if not 0 <= val <= 1:
+    print "Value %s is not a valid probability" % str(val)
+    assert False
+  return
+
+def check_pos(val):
+  if not type(val) in [int, float]:
+    print "Value %s has type %s" % (str(val), str(type(val))) 
+    assert False
+  if not 0 < val: 
+    print "Value %s is not positive" % str(val)
+    assert False
+  return
+
+def check_nonneg(val):
+  if not type(val) in [int, float]:
+    print "Value %s has type %s" % (str(val), str(type(val))) 
+    assert False
+  if not 0 <= val: 
+    print "Value %s is negative" % str(val)
+    assert False
+  return
+
 class XRP:
   def __init__(self, start_state, sample, prob = None, inc = None, rem = None, name = 'XRP'):
     self.sample = sample # function which takes state, args, and returns value 
