@@ -327,11 +327,13 @@ def test_DPmem():
   #assume('loophelper', function(['concentration', 'basemeasure'], loop_expr))
   #assume( 'DP', function(['concentration', 'basemeasure'], apply(apply('loophelper', ['concentration', 'basemeasure']), 1)))
 
-  print "description"
-  concentration = 1
-  uniform_base_measure = uniform_no_args_XRP(2)
-  print [sample(apply('DP', [concentration, uniform_base_measure])) for i in xrange(10)]
-  expr = beta_bernoulli_1()
+  print "\n TESTING GAUSSIAN MIXTURE MODEL\n"
+  assume('concentration', gaussian(1, 0.2)) 
+  print [sample('concentration')) for i in xrange(10)]
+  #observe(apply('geometric', 0), 3)
+  #uniform_base_measure = uniform_no_args_XRP(2)
+  #print [sample(apply('DP', [concentration, uniform_base_measure])) for i in xrange(10)]
+  #expr = beta_bernoulli_1()
 
 def test():
   reset()
@@ -341,7 +343,7 @@ def test():
   expr = beta_bernoulli_1()
   print [sample(apply(coin_1)) for i in xrange(10)]
   
-test_expressions()
+#test_expressions()
 #test_recursion()
 #test_beta_bernoulli()
 #
@@ -350,5 +352,5 @@ test_expressions()
 #test_tricky()  # THIS SEEMS TO FAIL
 #test_geometric()
 #test_mem()
-#test_DPmem()
+test_DPmem()
 
