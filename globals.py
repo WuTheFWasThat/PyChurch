@@ -100,6 +100,8 @@ class RandomDB:
     for key in self.db:
       (xrp, value, prob, args) = self.db[key]
       ans += prob
+    #  print '  ', xrp, prob
+    #print ans 
     return ans
 
   def unevaluate(self, uneval_stack, args = None):
@@ -194,7 +196,7 @@ class Directives_Memory:
 env = Environment()
 
 #noise_xrp = beta_bernoulli_1((100, 1)) 
-noise_xrp = beta_bernoulli_1((100, 1)) 
+noise_xrp = beta_bernoulli_2((100, 1)) 
 
 # A dictionary mapping expressions to values
 obs = Observations(noise_xrp) 

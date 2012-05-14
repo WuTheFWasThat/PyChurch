@@ -59,13 +59,14 @@ def test_expressions():
 
 def test_tricky():
   print " \n COIN TEST\n "
+  reset()
   
-  assume('make-coin', function([], apply(function(['weight'], function([], bernoulli('weight'))), beta(1, 1))))
+  assume('make-coin', function([], apply(function(['weight'], function([], bernoulli('weight'))), beta(10, 1))))
   print globals.env.lookup('make-coin')
   
-  assume('tricky-coin', apply('make-coin'))
+  #assume('tricky-coin', apply('make-coin'))
   print globals.env.lookup('tricky-coin')
-  print "flips: ", [sample(apply('tricky-coin')) for i in xrange(10)]
+  #print "flips: ", [sample(apply('tricky-coin')) for i in xrange(10)]
   
   #assume('my-coin-2', apply('make-coin'))
   #print globals.env.lookup('my-coin-2')
@@ -73,16 +74,16 @@ def test_tricky():
 
   assume('fair-coin', function([], bernoulli(0.5)))
   print globals.env.lookup('fair-coin')
-  print "flips: ", [sample(apply('fair-coin')) for i in xrange(10)]
+  #print "flips: ", [sample(apply('fair-coin')) for i in xrange(10)]
 
   assume('is-fair', bernoulli(0.5))
-  assume('coin', ifelse('is-fair', 'fair-coin', 'tricky-coin')) 
+  #assume('coin', ifelse('is-fair', 'fair-coin', 'tricky-coin')) 
+  assume('coin', ifelse('is-fair', 'fair-coin', apply('make-coin'))) 
 
-  for i in xrange(100):
-    observe(apply('coin'), True)
+  for i in xrange(10):
+    observe(apply('coin'), True, bernoulli_no_args_XRP(0.9))
 
-  print follow_prior('is-fair', 100, 50)
-
+  print follow_prior('is-fair', 100, 100)
 
 def test_beta_bernoulli():
   print " \n TESTING BETA-BERNOULLI XRPs\n"
@@ -319,7 +320,7 @@ def test_DPmem():
   loop_body_expr = function('j', ifelse( bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), apply(apply('loophelper', ['concentration', 'basemeasure']), var('j') + 1))) 
   loop_expr = apply(  function(['sticks', 'atoms'], loop_body_expr), [sticks_expr , atoms_expr])
   assume('loophelper', apply(function(['concentration', 'basemeasure'], loop_expr), ['concentration', 'basemeasure']) )
-  assume( 'DP', function(['concentration', 'basemeasure'], apply(apply('loophelper', ['concentration', 'basemeasure']), 1)))
+  assume( 'DP', function(['concentration', 'basemeasure'], apply('loophelper', 1)))
 
   #loop_body_expr = function('j', ifelse( bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), apply(apply('loophelper', ['concentration', 'basemeasure']), var('j') + 1))) 
   #loop_expr = apply(  function(['sticks', 'atoms'], loop_body_expr), [sticks_expr , atoms_expr])
@@ -346,8 +347,8 @@ def test():
 #
 #test_bayes_nets()
 #test_xor()
-#test_tricky()
+#test_tricky()  # THIS SEEMS TO FAIL
 #test_geometric()
 #test_mem()
-test_DPmem()
+#test_DPmem()
 

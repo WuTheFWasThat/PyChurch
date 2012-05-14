@@ -152,10 +152,6 @@ def evaluate(expr, env = None, reflip = False, stack = []):
     op = evaluate(expr.op, env, reflip, stack + [-2])
     if op.type == 'procedure':
       globals.db.unevaluate(stack + [-1], args)
-      print
-      print expr.children
-      print n
-      print op.vars
       assert n == len(op.vars)
       newenv = op.env.spawn_child()
       for i in range(n):
@@ -282,6 +278,7 @@ def infer(): # RERUN AT END
   old_to_new_q = - math.log(globals.db.count) 
   if debug:
     old_db = [(s, globals.db.db[s][1].val) for s in globals.db.db] 
+    print len(globals.db.db)
 
   globals.db.save()
 
@@ -305,7 +302,7 @@ def infer(): # RERUN AT END
     print "new db", [(s, globals.db.db[s][1]) for s in globals.db.db] 
     print "q(o -> n)", old_to_new_q, "q(n -> o)", new_to_old_q 
     print "p(old)", old_p, "p(new)", new_p
-    print 'transition prob',  (new_p * new_to_old_q) / (old_p * old_to_new_q + 0.0) 
+    print 'log transition prob',  new_p + new_to_old_q - old_p - old_to_new_q 
 
   if old_p * old_to_new_q > 0:
     p = random.random()

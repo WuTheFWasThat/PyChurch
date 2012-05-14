@@ -14,7 +14,7 @@ class Expression:
   # Initializes an expression, taking in a type string, and a list of other parameter arguments 
   def __init__(self, tup):
     self.tup = tup
-    self.hashval = random.randint(0, 2**32-1)
+    self.hashval = random.randint(0, 2**64-1)
     self.val = None
     self.children = []
     self.parents = []
@@ -168,7 +168,7 @@ class Expression:
     return self.hashval
 
   def rehash(self):
-    self.hashval = random.randint(0, 2**32-1)
+    self.hashval = random.randint(0, 2**64-1)
 
   def operate(self, other, opname):
     return Expression((opname, [self, expression(other)]))

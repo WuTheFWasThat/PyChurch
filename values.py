@@ -80,7 +80,7 @@ class XRP:
     self.prob = prob # function which takes state, value, args, and returns probability
     self.state = start_state
     self.name = name
-    self.hash = random.randint(0, 2**32 - 1)
+    self.hash = random.randint(0, 2**64 - 1)
     return
   def apply(self, args = None):
     return sample(self.state, args)
