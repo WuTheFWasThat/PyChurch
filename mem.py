@@ -48,7 +48,7 @@ class mem_XRP(XRP):
     self.state[args[0]] = val
     return self.state
   def remove(self, val, args = None):
-    if args in self.state:
+    if args[0] in self.state:
       del self.state[args[0]]
     else:
       warnings.warn('Couldn\'t remove procedure %s from mem_XRP' % (str(args[0])))

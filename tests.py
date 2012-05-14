@@ -314,13 +314,24 @@ def test_DPmem():
   reset()
   print " \n TESTING DPMem\n"
 
-  sticks_expr = mem(function('j', beta(1, 'concentration')))
-  atoms_expr = mem(function('j', apply('basemeasure')))
+  sticks_expr = mem(function('j', beta(1, 'concentration2')))
+  atoms_expr = mem(function('j', apply('basemeasure2')))
 
-  loop_body_expr = function('j', ifelse( bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), apply(apply('loophelper', ['concentration', 'basemeasure']), var('j') + 1))) 
+  loop_body_expr = function('j', ifelse( bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), apply(apply('loophelper', ['concentration2', 'basemeasure2']), var('j') + 1))) 
   loop_expr = apply(  function(['sticks', 'atoms'], loop_body_expr), [sticks_expr , atoms_expr])
-  assume('loophelper', apply(function(['concentration', 'basemeasure'], loop_expr), ['concentration', 'basemeasure']) )
-  assume( 'DP', function(['concentration', 'basemeasure'], apply('loophelper', 1)))
+  assume('loophelper', function(['concentration2', 'basemeasure2'], loop_expr))
+  assume( 'DP', function(['concentration', 'basemeasure'], apply(apply('loophelper', ['concentration', 'basemeasure']), 1)))
+
+  restaurants_expr = mem( function('args', apply('DP', ['alpha', function([], apply('proc', 'args'))])))
+  assume('DPmem', function(['alpha', 'proc'], function('args', apply(restaurants_expr, 'args'))))
+
+  concentration = 1
+  fibonacci_expr = function(['x'], ifelse(var('x') <= 1, 1, \
+                apply('fibonacci', var('x') - 1) + apply('fibonacci', var('x') - 2) )) 
+  assume('fibonacci', fibonacci_expr) 
+  assume('DPmemfib', apply('DPmem', [concentration, 'fibonacci']))
+  print [sample(apply('DPmemfib', 5)) for i in xrange(10)]
+  #expr = beta_bernoulli_1()
 
   #loop_body_expr = function('j', ifelse( bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), apply(apply('loophelper', ['concentration', 'basemeasure']), var('j') + 1))) 
   #loop_expr = apply(  function(['sticks', 'atoms'], loop_body_expr), [sticks_expr , atoms_expr])
@@ -328,9 +339,12 @@ def test_DPmem():
   #assume( 'DP', function(['concentration', 'basemeasure'], apply(apply('loophelper', ['concentration', 'basemeasure']), 1)))
 
   print "\n TESTING GAUSSIAN MIXTURE MODEL\n"
-  assume('concentration', gaussian(1, 0.2)) 
-  print [sample('concentration')) for i in xrange(10)]
-  #observe(apply('geometric', 0), 3)
+  #assume('concentration', gaussian(1, 0.2)) # use vague-gamma? 
+  #assume('expected-mean', gaussian(0, 1))
+  #assume('expected-variance', gaussian(0, 1))
+  #assume('gen-cluster-mean', gaussian(0, 1))
+
+  #concentration = 1
   #uniform_base_measure = uniform_no_args_XRP(2)
   #print [sample(apply('DP', [concentration, uniform_base_measure])) for i in xrange(10)]
   #expr = beta_bernoulli_1()

@@ -16,11 +16,11 @@ class gaussian_args_XRP(XRP):
   def remove(self, val, args = None):
     return None
   def prob(self, val, args = None):
-    (mu , sigma) = (args[0].val, args[1].val)
+    (mu , sigma) = (args[0].val, args[1].val + 0.0)
     assert type(mu) in [int, float]
     assert type(sigma) in [int, float] and sigma > 0
     assert type(val.val) in [int, float]
-    log_prob = - ((val.val - mu) / sigma)**2/ 2.0 - math.log(sigma) - math.log(2 * math.pi) / 2.0
+    log_prob = - ((val.val - mu) / (sigma) )**2/ 2.0 - math.log(sigma) - math.log(2 * math.pi) / 2.0
     return log_prob
   def __str__(self):
     return 'normal'
@@ -31,7 +31,7 @@ class gaussian_no_args_XRP(XRP):
     self.hash = random.randint(0, 2**64 - 1)
     assert type(mu) in [int, float]
     assert type(sigma) in [int, float] and sigma > 0
-    (self.mu , self.sigma) = (mu, sigma)
+    (self.mu , self.sigma) = (mu, sigma + 0.0)
     self.prob_help = - math.log(sigma) - math.log(2 * math.pi) / 2.0
     return
   def apply(self, args = None):
