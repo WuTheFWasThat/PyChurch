@@ -27,9 +27,8 @@ class Environment:
 
 # Class representing random db
 class RandomDB:
-  def __init__(self, noise_xrp):
+  def __init__(self):
     self.db = {}
-    self.noise_xrp = noise_xrp  
     self.count = 0
     self.memory = []
     # ALWAYS WORKING WITH LOG PROBABILITIES
@@ -38,18 +37,18 @@ class RandomDB:
     return
   
   # implement tree data-structure?
-  def insert(self, stack, xrp, value, args, memorize = True):
+  def insert(self, stack, xrp, value, args, is_obs_noise = False, memorize = True):
     assert value.__class__.__name__ == 'Value'
     if self.has(stack):
       self.remove(stack)
     prob = xrp.prob(value, args)
     xrp.incorporate(value, args)
-    self.db[tuple(stack)] = (xrp, value, prob, args)
-    if xrp is not self.noise_xrp:
+    self.db[tuple(stack)] = (xrp, value, prob, args, is_obs_noise)
+    if not is_obs_noise:
       self.count += 1
-      self.eval_p += prob 
+      self.eval_p += prob # hmmm.. 
     if memorize:
-      self.memory.append(('insert', stack, xrp, value, args))
+      self.memory.append(('insert', stack, xrp, value, args, is_obs_noise))
 
   def save(self):
     self.memory = []
@@ -58,24 +57,24 @@ class RandomDB:
 
   def restore(self):
     self.memory.reverse()
-    for (type, stack, xrp, value, args) in self.memory:
+    for (type, stack, xrp, value, args, is_obs_noise) in self.memory:
       if type == 'insert':
-        self.remove(stack, False)
+        self.remove(stack, False, is_obs_noise)
       else:
         assert type == 'remove'
-        self.insert(stack, xrp, value, args, False)
+        self.insert(stack, xrp, value, args, False, is_obs_noise)
 
-  def remove(self, stack, memorize = True):
+  def remove(self, stack, is_obs_noise = False, memorize = True):
     assert self.has(stack)
-    (xrp, value, prob, args) = self.get(stack)
-    if xrp is not self.noise_xrp:
+    (xrp, value, prob, args, is_obs_noise) = self.get(stack)
+    if not is_obs_noise:
       self.count -= 1
       assert self.count >= 0
-      self.uneval_p += prob
+      self.uneval_p += prob # previously unindented...
     xrp.remove(value, args)
     del self.db[tuple(stack)]
     if memorize:
-      self.memory.append(('remove', stack, xrp, value, args))
+      self.memory.append(('remove', stack, xrp, value, args, is_obs_noise))
 
   def has(self, stack):
     return tuple(stack) in self.db
@@ -98,7 +97,7 @@ class RandomDB:
   def prob(self):
     ans = 0
     for key in self.db:
-      (xrp, value, prob, args) = self.db[key]
+      (xrp, value, prob, args, is_obs_noise) = self.db[key]
       ans += prob
     #  print '  ', xrp, prob
     #print ans 
@@ -125,47 +124,6 @@ class RandomDB:
     self.count = 0
     self.save()
 
-# Class representing observations
-class Observations:
-  def __init__(self, noise_xrp):
-    self.default_noise_xrp = noise_xrp  
-    self.obs = {}
-
-  def observe(self, expr, val, noise_xrp = None, args = []):
-    if noise_xrp == None:
-      noise_xrp = self.default_noise_xrp
-    if expr in self.obs: 
-      warnings.warn('Reboserving %s' % str(expr))
-    noisy_expr = ifelse(apply(noise_xrp, args), (expression(expr) == val), True)
-    self.obs[expr] = (noisy_expr, value(val), args, noise_xrp)
-    return noisy_expr
-
-  def has(self, expr):
-    return expr in self.obs
-
-  def get(self, expr):
-    return self.obs[expr]
-
-  def get_noisy(self, expr):
-    return self.obs[expr][0]
-
-  def get_val(self, expr):
-    return self.obs[expr][1]
-
-  def get_args(self, expr):
-    return self.obs[expr][2]
-
-  def get_xrp(self, expr):
-    return self.obs[expr][3]
-
-  def forget(self, expr):
-    if self.has(expr):
-      val = self.get_val(expr)
-      args = self.get_args(expr)
-      noise_xrp = self.get_xrp(expr) 
-      noise_xrp.remove(val, args)
-      del self.obs[expr]
-
 class Directives_Memory:
   def __init__(self):
     self.assumes = []
@@ -182,27 +140,21 @@ class Directives_Memory:
       self.vars[varname] = expr
     else:
       assert type == 'observe'
-      (expr, obs_val, xrp, args) = tup
-      if expr in self.observes:
+      (expr, obs_val) = tup
+      if expr.hashval in self.observes:
         warnings.warn('Already observed %s' % str(expr))
-      self.observes[expr] = (value(obs_val), xrp, args)
+      self.observes[expr.hashval] = tup 
   
-  def forget(self, expr):
-    assert expr in self.observes
-    del self.observes[expr]
+  def forget(self, hashval):
+    assert hashval in self.observes
+    del self.observes[hashval]
 
 
 # The global environment. Has assignments of names to expressions, and parent pointer 
 env = Environment()
 
-#noise_xrp = beta_bernoulli_1((100, 1)) 
-noise_xrp = beta_bernoulli_2((100, 1)) 
-
-# A dictionary mapping expressions to values
-obs = Observations(noise_xrp) 
-
 # Table storing a list of (xrp, value, probability) tuples
-db = RandomDB(noise_xrp)
+db = RandomDB()
 
 # Global memory.  List of (directive type, args)
 mem = Directives_Memory() 

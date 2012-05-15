@@ -84,7 +84,7 @@ def test_tricky():
   assume('coin', ifelse('is-fair', 'fair-coin', apply('make-coin'))) 
 
   for i in xrange(10):
-    observe(apply('coin'), True, bernoulli_no_args_XRP(0.9))
+    observe(bernoulli_noise(apply('coin'), .01), True)
 
   print follow_prior('is-fair', 100, 100)
 
@@ -109,11 +109,12 @@ def test_bayes_nets():
   
   assume('sprinkler', ifelse('cloudy', bernoulli(0.1), bernoulli(0.5)))
   
-  observe('sprinkler', True)
+  noise_level = .01
+  sprinkler_ob = observe(bernoulli_noise('sprinkler', noise_level), True)
   print follow_prior('cloudy', 1000, 50)
   print 'Should be .833 False, .166 True'
   
-  forget('sprinkler')
+  forget(sprinkler_ob)
   print follow_prior('cloudy', 1000, 50)
   print 'Should be .500 False, .500 True'
 
@@ -125,11 +126,11 @@ def test_bayes_nets():
   assume('beach', ifelse('weekend', ifelse('sunny', bernoulli(0.9), bernoulli(0.5)), \
                                     ifelse('sunny', bernoulli(0.3), bernoulli(0.1))))
   
-  observe('weekend', True)
+  observe(bernoulli_noise('weekend', noise_level), True)
   print follow_prior('sunny', 1000, 50)
   print 'Should be .5 False, .5 True'
   
-  observe('beach', True)
+  observe(bernoulli_noise('beach', noise_level), True)
   print follow_prior('sunny', 1000, 50)
   print 'Should be .357142857 False, .642857143 True'
 
@@ -170,15 +171,15 @@ def test_bayes_nets():
   print follow_prior('alarm', 10000, 1)
   print 'Should be %f True' % pA
 
-  observe('maryCalls', True)
+  mary_ob = observe(bernoulli_noise('maryCalls', noise_level), True)
   print follow_prior('johnCalls', 1000, 50)
   print 'Should be %f True' % pJgM
-  forget('maryCalls')
+  forget(mary_ob)
 
-  observe('burglary', False)
+  burglary_ob = observe(bernoulli_noise(~var('burglary'), noise_level), True)
   print follow_prior('johnCalls', 1000, 50)
   print 'Should be %f True' % pJgnB
-  forget('burglary')
+  forget(burglary_ob)
 
   print "\n TESTING BURGLARY NET\n" # An example from AIMA
 
@@ -217,15 +218,15 @@ def test_bayes_nets():
   print follow_prior('alarm', 10000, 1)
   print 'Should be %f True' % pA
 
-  observe('maryCalls', True)
+  mary_ob = observe(bernoulli_noise('maryCalls', noise_level), True)
   print follow_prior('johnCalls', 1000, 50)
   print 'Should be %f True' % pJgM
-  forget('maryCalls')
+  forget(mary_ob)
 
-  observe('burglary', False)
+  burglary_ob = observe(bernoulli_noise(~var('burglary'), noise_level), True)
   print follow_prior('johnCalls', 1000, 50)
   print 'Should be %f True' % pJgnB
-  forget('burglary')
+  forget(burglary_ob)
 
 def test_xor():
   print "\n XOR TEST\n"
@@ -238,13 +239,13 @@ def test_xor():
   assume('b', bernoulli(q)) 
   assume('c', (var('a') & ~var('b')) |(~var('a') & var('b'))) 
 
-  observe('c', True) 
+  xor_ob = observe(bernoulli_noise('c', .01), True) 
   print follow_prior('a', 1000, 50) 
   print 'should be 0.69 true'
   # should be True : p(1-q)/(p(1-q)+(1-p)q), False : q(1-p)/(p(1-q) + q(1-p)) 
   # I believe this gets skewed because it has to pass through illegal states, and the noise values get rounded badly 
 
-  forget('c') 
+  forget(xor_ob) 
   print follow_prior('a', 1000, 50) 
   print 'should be 0.60 true'
   # should be True : p, False : 1 - p
@@ -310,7 +311,7 @@ def test_geometric():
   assume('geometric', function(['x'], ifelse(bernoulli('decay'), 'x', apply('geometric', var('x') + 1))))
   print "decay", globals.env.lookup('decay')
   print [sample(apply('geometric', 0)) for i in xrange(10)]
-  observe(apply('geometric', 0), 3)
+  observe(bernoulli_noise(apply('geometric', 0) == 3, .01), True)
   print get_cumulative_dist(follow_prior('decay', 100, 25), 0, 1, .01)
 
 def test_DPmem():
@@ -349,9 +350,9 @@ def test_DPmem():
   assume('get-datapoint', mem( function(['id'], gaussian('gen-cluster-mean', 1.0))))
   assume('outer-noise', gaussian(1, 0.2)) # use vague-gamma?
   
-  observe(apply('get-datapoint', 0), 0.3)
+  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 0.3)
 
-  print get_cumulative_dist(follow_prior('expected-mean', 10, 10), -1, 3, .1) 
+  print get_cumulative_dist(follow_prior('expected-mean', 100, 100), -1, 3, .1) 
 
   #concentration = 1
   #uniform_base_measure = uniform_no_args_XRP(2)
@@ -369,11 +370,13 @@ def test():
 #test_expressions()
 #test_recursion()
 #test_beta_bernoulli()
-#
-#test_bayes_nets()
-#test_xor()
-#test_tricky()  # THIS SEEMS TO FAIL
-#test_geometric()
 #test_mem()
+
+#test_bayes_nets() 
+
+#test_xor()  # somewhat off.  probably b/c passes through low prob space?
+
+#test_tricky()  # THIS SEEMS TO FAIL
+#test_geometric()  # NOT YET SURE WHETHER THIS WORKS
 test_DPmem()
 

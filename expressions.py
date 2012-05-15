@@ -24,9 +24,9 @@ class Expression:
       self.type = 'variable' 
       self.name = tup 
       return
-    elif tup.__class__.__name__ == 'XRP':
-      self.type = 'xrp'
-      self.xrp = tup 
+    elif isinstance(tup, XRP):
+      self.type = 'value'
+      self.val = value(tup) 
       return
     elif tup.__class__.__name__ != 'tuple':
       self.type = 'value'
@@ -34,9 +34,7 @@ class Expression:
       return
 
     self.type = tup[0]
-    if self.type in ['xrp']:
-      self.type = 'xrp'
-    if self.type in ['constant', 'const', 'c', 'val', 'procedure']:
+    if self.type in ['value', 'constant', 'const', 'c', 'val', 'procedure', 'xrp']:
       self.type = 'value'
     elif self.type in ['variable', 'var', 'v']:
       self.type = 'variable'
@@ -71,9 +69,7 @@ class Expression:
     elif self.type in ['~', 'negation', 'not']: 
       self.type = '~'
 
-    if self.type == 'xrp':
-      self.xrp = tup[1]
-    elif self.type == 'value':
+    if self.type == 'value':
       if tup[1].__class__.__name__ == 'Value': 
         self.val = tup[1]
       else:
@@ -132,9 +128,7 @@ class Expression:
       return funstring + str(children)
     
   def __str__(self):
-    if self.type == 'xrp':
-      return '%s' % (str(self.xrp))
-    elif self.type == 'value':
+    if self.type == 'value':
       return str(self.val)
     elif self.type == 'variable':
       return self.name
@@ -233,3 +227,8 @@ def switch(switchvar, array):
 def function(vars, body):
   return expression(('function', vars, body))
 
+
+# OBSERVAITONS
+
+def bernoulli_noise(expression, error):
+  return bernoulli(ifelse(expression, 1, error))

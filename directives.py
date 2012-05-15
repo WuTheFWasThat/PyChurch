@@ -1,11 +1,10 @@
 import globals
-from globals import Environment, RandomDB, Observations
+from globals import Environment, RandomDB
 from expressions import *
 
 def reset():
   globals.env.assignments = {}
   globals.db.reset()
-  globals.obs.obs = {}
   globals.mem.reset()
 
 def assume_helper(varname, expr, reflip):
@@ -20,52 +19,24 @@ def assume(varname, expr):
 
 def observe_helper(expr, obs_val):
   # bit of a hack, here, to make it recognize same things as with noisy_expr
-  if expr.__class__.__name__ == 'Expression':
-    hashval = expr.hashval
-  else:
-    hashval = expr
+  val = evaluate(expr, globals.env, reflip = False, stack = ['obs', expr.hashval], xrp_force_val = obs_val)
 
-  val = evaluate(expr, globals.env, reflip = False, stack = ['obs', hashval, 0, 0])
-  noisy_expr = globals.obs.get_noisy(expr)
-  noise_xrp = globals.obs.get_xrp(expr)
-  args = globals.obs.get_args(expr)
-  off = True
-  if val != obs_val:
-    globals.db.insert(['obs', hashval, -1], noise_xrp, Value(False), args) 
-    if not off:
-      print "trying1", noisy_expr
-      print globals.db.db.keys()
-      print evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', hashval]) 
-      assert evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', hashval]) == value(True)
-  else:
-    globals.db.insert(['obs', hashval, -1], noise_xrp, Value(True), args) 
+def observe(expr, obs_val):
+  expr = expression(expr)
+  obs_val = value(obs_val)
+  assert expr.type == 'apply' and expr.op.type == 'value' 
+  assert expr.op.val.type == 'xrp'
+  globals.mem.add('observe', (expr, obs_val))
+  observe_helper(expr, obs_val)
+  return expr.hashval 
 
-    if not off:
-      print "trying2", noisy_expr
-      print globals.db.db.keys()
-      print evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', hashval]) 
-      assert evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', hashval]) == value(True)
-
-  if not off:
-    print "trying", noisy_expr
-    print globals.db.db.keys()
-    print evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', hashval]) 
-    assert evaluate(noisy_expr, globals.env, reflip = False, stack = ['obs', hashval]) 
-
-def observe(expr, obs_val, noise_xrp = None, args = []):
-  # expr can actually be a string as well
-  globals.obs.observe(expr, obs_val, noise_xrp, args)
-  globals.mem.add('observe', (expr, value(obs_val), noise_xrp, args))
-  observe_helper(expr, value(obs_val))
-
-def forget(expr):
-  globals.obs.forget(expr) 
-  globals.db.remove(['obs', expr, -1])
-  globals.mem.forget(expr)
+def forget(hashval):
+  globals.db.remove(['obs', hashval])
+  globals.mem.forget(hashval)
 
 # Replaces variables with the values from the environment 
 def replace(expr, env):
-  if expr.type in ['value', 'xrp']:
+  if expr.type == 'value':
     return expr
   elif expr.type == 'variable':
     val = env.lookup(expr.name)
@@ -101,7 +72,7 @@ def replace(expr, env):
 
 
 # Draws a sample value (without re-sampling other values) given its parents, and sets it
-def evaluate(expr, env = None, reflip = False, stack = []):
+def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None):
   if env is None:
     env = globals.env
 
@@ -122,8 +93,6 @@ def evaluate(expr, env = None, reflip = False, stack = []):
 
   if expr.type == 'value':
     return expr.val
-  if expr.type == 'xrp':
-    return Value(expr.xrp)
   elif expr.type == 'variable':
     var = expr.name
     val = env.lookup(var)
@@ -158,8 +127,13 @@ def evaluate(expr, env = None, reflip = False, stack = []):
         newenv.set(op.vars[i], args[i]) 
       return evaluate(op.body, newenv, reflip, stack + [-1, tuple(args)])
     elif op.type == 'xrp':
-      # NEED TO REMOVE THINGS?
-      # UNEVALUATE?
+
+      if xrp_force_val != None: 
+        if globals.db.has(stack):
+          globals.db.remove(stack)
+        globals.db.insert(stack, op.val, xrp_force_val, args, True) 
+        return xrp_force_val
+
       stack = stack + [-1, tuple(args)]
       if not globals.db.has(stack):
         val = value(op.val.apply(args))
@@ -222,18 +196,19 @@ def sample(expr, env = None, varname = None, reflip = False):
 def resample(expr, env = None, varname = None):
   return sample(expr, env, varname, True)
 
-def reject_infer():
-  flag = False
-  while not flag:
-    rerun(True)
-
-    # Reject if observations untrue
-    flag = True
-    for obs_expr in globals.obs.obs:
-      obsval = resample(obs_expr)
-      if obsval.val != globals.obs.get_val(obs_expr):
-        flag = False
-        break
+### OUTDATED
+##def reject_infer():
+##  flag = False
+##  while not flag:
+##    rerun(True)
+##
+##    # Reject if observations untrue
+##    flag = True
+##    for obs_expr in globals.obs.obs:
+##      obsval = resample(obs_expr)
+##      if obsval.val != globals.obs.get_val(obs_expr):
+##        flag = False
+##        break
 
 # Rejection based inference
 def reject_infer_many(name, niter = 1000):
@@ -262,14 +237,16 @@ def rerun(reflip):
 # Class representing environments
   for (varname, expr) in globals.mem.assumes:
     assume_helper(varname, expr, reflip)
-  for expr in globals.mem.observes:
-    (obs_val, xrp, args) = globals.mem.observes[expr] 
+  for hashval in globals.mem.observes:
+    (expr, obs_val) = globals.mem.observes[hashval] 
     observe_helper(expr, obs_val)
 
 def infer(): # RERUN AT END
   # reflip some coin
-  stack = globals.db.random_stack() 
-  (xrp, val, prob, args) = globals.db.get(stack)
+  is_obs_noise = True
+  while is_obs_noise:
+    stack = globals.db.random_stack() 
+    (xrp, val, prob, args, is_obs_noise) = globals.db.get(stack)
 
   #debug = True 
   debug = False 
@@ -342,19 +319,4 @@ def follow_prior(name, niter = 1001, burnin = 100):
     dict[val] = dict[val] / (z + 0.0) 
   return dict 
 
-"""
-# COPIED FROM CHAPEL PAPER
-def resample(context, db, args):
-  prev = db.lookup(context)
-  if not prev:
-    return db.remember(sample(args), args)
-  else:
-    prob = invert(prev, args)
-    # invert calculates probability of output (prev?), given inputs (args?)
-    if prob <=0:
-      return db.remember(sample(args), args)
-    else:
-      db.remember((prev, prob), args)
-      return prev
-"""
 
