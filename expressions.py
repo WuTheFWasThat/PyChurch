@@ -227,7 +227,6 @@ def switch(switchvar, array):
 def function(vars, body):
   return expression(('function', vars, body))
 
-
 # OBSERVAITONS
 
 def bernoulli_noise(expression, error):

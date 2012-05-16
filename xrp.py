@@ -90,8 +90,12 @@ class beta_args_XRP(XRP):
     check_pos(a)
     check_pos(b)
     check_prob(val.val)
-    log_prob = math.log(special.gamma(a + b)) + (a - 1) * math.log(val.val)  + (b - 1) * math.log(1 - val.val) \
+    if 0 < val.val < 1: 
+      log_prob = math.log(special.gamma(a + b)) + (a - 1) * math.log(val.val)  + (b - 1) * math.log(1 - val.val) \
            - math.log(special.gamma(a)) - math.log(special.gamma(b))
+    else:
+      print "beta(%f, %f) returning %f" % (a, b, val.val)
+      assert False 
     return log_prob
   def __str__(self):
     return 'beta'

@@ -3,7 +3,7 @@ from mem import *
 from time import *
 import matplotlib.pyplot as plot
 
-def get_cumulative_dist(valuedict, start, end, bucketsize):
+def get_pdf(valuedict, start, end, bucketsize):
   numbuckets = int(math.floor((end - start) / bucketsize))
   density = [0] * numbuckets 
   cumulative = [0] * numbuckets 
@@ -14,6 +14,10 @@ def get_cumulative_dist(valuedict, start, end, bucketsize):
       continue
     index = int(math.floor((value - start) / bucketsize))
     density[index] += valuedict[value]
+  return density
+
+def get_cdf(valuedict, start, end, bucketsize):
+  density = get_pdf(valuedict, start, end, bucketsize)
   cumulative[0] = density[0]
   for i in range(1, len(cumulative)):
     cumulative[i] = cumulative[i-1] + density[i]
@@ -63,13 +67,13 @@ def test_expressions():
 def test_tricky():
   print " \n COIN TEST\n "
   reset()
-  
-  assume('make-coin', function([], apply(function(['weight'], function([], bernoulli('weight'))), beta(10, 1))))
+
+  assume('make-coin', function([], apply(function(['weight'], function([], bernoulli('weight'))), beta(1, 1))))
   print globals.env.lookup('make-coin')
-  
-  #assume('tricky-coin', apply('make-coin'))
+
+  assume('tricky-coin', apply('make-coin'))
   print globals.env.lookup('tricky-coin')
-  #print "flips: ", [sample(apply('tricky-coin')) for i in xrange(10)]
+  print "flips: ", [sample(apply('tricky-coin')) for i in xrange(10)]
   
   #assume('my-coin-2', apply('make-coin'))
   #print globals.env.lookup('my-coin-2')
@@ -77,13 +81,13 @@ def test_tricky():
 
   assume('fair-coin', function([], bernoulli(0.5)))
   print globals.env.lookup('fair-coin')
-  #print "flips: ", [sample(apply('fair-coin')) for i in xrange(10)]
+  print "fair coin flips: ", [sample(apply('fair-coin')) for i in xrange(10)]
 
   assume('is-fair', bernoulli(0.5))
-  #assume('coin', ifelse('is-fair', 'fair-coin', 'tricky-coin')) 
-  assume('coin', ifelse('is-fair', 'fair-coin', apply('make-coin'))) 
+  assume('coin', ifelse('is-fair', 'fair-coin', 'tricky-coin')) 
+  #assume('coin', ifelse('is-fair', 'fair-coin', apply('make-coin'))) 
 
-  for i in xrange(10):
+  for i in xrange(2):
     observe(bernoulli_noise(apply('coin'), .01), True)
 
   print follow_prior('is-fair', 100, 100)
@@ -240,13 +244,13 @@ def test_xor():
   assume('c', (var('a') & ~var('b')) |(~var('a') & var('b'))) 
 
   xor_ob = observe(bernoulli_noise('c', .01), True) 
-  print follow_prior('a', 1000, 50) 
+  print follow_prior('a', 1000, 200) 
   print 'should be 0.69 true'
   # should be True : p(1-q)/(p(1-q)+(1-p)q), False : q(1-p)/(p(1-q) + q(1-p)) 
   # I believe this gets skewed because it has to pass through illegal states, and the noise values get rounded badly 
 
   forget(xor_ob) 
-  print follow_prior('a', 1000, 50) 
+  print follow_prior('a', 1000, 200) 
   print 'should be 0.60 true'
   # should be True : p, False : 1 - p
 
@@ -311,13 +315,14 @@ def test_geometric():
   assume('geometric', function(['x'], ifelse(bernoulli('decay'), 'x', apply('geometric', var('x') + 1))))
   print "decay", globals.env.lookup('decay')
   print [sample(apply('geometric', 0)) for i in xrange(10)]
-  observe(bernoulli_noise(apply('geometric', 0) == 3, .01), True)
-  print get_cumulative_dist(follow_prior('decay', 100, 25), 0, 1, .01)
+  observe(bernoulli_noise(apply('geometric', 0) == 10, .01), True)
+  print get_pdf(follow_prior('decay', 100, 100), 0, 1, .1)
 
 def test_DPmem():
   reset()
   print " \n TESTING DPMem\n"
 
+  """DEFINITION OF DP"""
   sticks_expr = mem(function('j', beta(1, 'concentration2')))
   atoms_expr = mem(function('j', apply('basemeasure2')))
 
@@ -326,21 +331,16 @@ def test_DPmem():
   assume('loophelper', function(['concentration2', 'basemeasure2'], loop_expr))
   assume( 'DP', function(['concentration', 'basemeasure'], apply(apply('loophelper', ['concentration', 'basemeasure']), 1)))
 
+  """DEFINITION OF DPMEM"""
   restaurants_expr = mem( function('args', apply('DP', ['alpha', function([], apply('proc', 'args'))])))
   assume('DPmem', function(['alpha', 'proc'], function('args', apply(restaurants_expr, 'args'))))
 
 
+  """TESTING DPMEM"""
 
-  concentration = 0.1 # when close to 0, just mem.  when close to infinity, sample 
-  assume('DPmemfib', apply('DPmem', [concentration, function(['x'], bernoulli(0.5))]))
-  print [sample(apply('DPmemfib', 5)) for i in xrange(10)]
-
-  #expr = beta_bernoulli_1()
-
-  #loop_body_expr = function('j', ifelse( bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), apply(apply('loophelper', ['concentration', 'basemeasure']), var('j') + 1)))
-  #loop_expr = apply(  function(['sticks', 'atoms'], loop_body_expr), [sticks_expr , atoms_expr])
-  #assume('loophelper', function(['concentration', 'basemeasure'], loop_expr))
-  #assume( 'DP', function(['concentration', 'basemeasure'], apply(apply('loophelper', ['concentration', 'basemeasure']), 1)))
+  concentration = 1 # when close to 0, just mem.  when close to infinity, sample 
+  assume('DPmemflip', apply('DPmem', [concentration, function(['x'], bernoulli(0.5))]))
+  print [sample(apply('DPmemflip', 5)) for i in xrange(10)]
 
   print "\n TESTING GAUSSIAN MIXTURE MODEL\n"
   assume('concentration', gaussian(1, 0.2)) # use vague-gamma? 
@@ -350,9 +350,11 @@ def test_DPmem():
   assume('get-datapoint', mem( function(['id'], gaussian('gen-cluster-mean', 1.0))))
   assume('outer-noise', gaussian(1, 0.2)) # use vague-gamma?
   
-  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 0.3)
+  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.3)
 
-  print get_cumulative_dist(follow_prior('expected-mean', 100, 100), -1, 3, .1) 
+  t = time()
+  print get_pdf(follow_prior('expected-mean', 100, 10), -4, 4, .5) 
+  print 'time taken', time() - t
 
   #concentration = 1
   #uniform_base_measure = uniform_no_args_XRP(2)
@@ -374,9 +376,9 @@ def test():
 
 #test_bayes_nets() 
 
-#test_xor()  # somewhat off.  probably b/c passes through low prob space?
+#test_xor()  # needs like 500 to mix 
 
-#test_tricky()  # THIS SEEMS TO FAIL
-#test_geometric()  # NOT YET SURE WHETHER THIS WORKS
-test_DPmem()
+#test_tricky() 
+#test_geometric()   
+#test_DPmem()
 
