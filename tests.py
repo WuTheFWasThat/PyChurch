@@ -3,6 +3,9 @@ from mem import *
 from time import *
 import matplotlib.pyplot as plot
 
+def bernoulli_noise(expression, error):
+  return bernoulli(ifelse(expression, 1, error))
+
 def get_pdf(valuedict, start, end, bucketsize):
   numbuckets = int(math.floor((end - start) / bucketsize))
   density = [0] * numbuckets 
@@ -24,6 +27,8 @@ def get_cdf(valuedict, start, end, bucketsize):
   plot.plot([start + i * bucketsize for i in range(numbuckets)], cumulative)
   return cumulative
   
+def format(list, format):
+  print [ format % x for x in list]
 
 """ TESTS """
 
@@ -349,11 +354,12 @@ def test_DPmem():
   assume('gen-cluster-mean', gaussian(0, 1))
   assume('get-datapoint', mem( function(['id'], gaussian('gen-cluster-mean', 1.0))))
   assume('outer-noise', gaussian(1, 0.2)) # use vague-gamma?
-  
+
   observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.3)
+  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.2)
 
   t = time()
-  print get_pdf(follow_prior('expected-mean', 100, 10), -4, 4, .5) 
+  print format(get_pdf(follow_prior('expected-mean', 100, 30), -4, 4, .5), '%0.2f') 
   print 'time taken', time() - t
 
   #concentration = 1
@@ -380,5 +386,5 @@ def test():
 
 #test_tricky() 
 #test_geometric()   
-#test_DPmem()
+test_DPmem()
 

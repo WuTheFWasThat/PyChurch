@@ -1,0 +1,209 @@
+
+\documentclass[11pt]{article}
+
+\usepackage[latin1]{inputenc}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amscd}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{enumerate}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage[breaklinks=true,hyperref]{hyperref}
+\usepackage{amssymb}
+\usepackage[dvips]{color}
+\usepackage{epsfig}
+\usepackage{mathrsfs}
+\usepackage{comment}
+
+\include{header}
+
+
+\begin{document}
+
+\title{{\bf Efficient Inference in Probabilistic Computing} \\ M.Eng Propsal}
+\author{Jeff Wu}
+%\address{}
+%\email{}
+\date{}
+\maketitle
+%
+%\begin{center} \begin{LARGE} {\sc \bf Title} \vs{6}
+
+%{\sc M.Eng Proposal} \vs{9}
+
+%\end{LARGE} { \Large \textsc{Jeff Wu}}
+
+%\end{center}
+
+\begin{abstract}
+\end{abstract}
+
+\section{Introduction}
+
+Probabilistic programming languages are generalizations of programming languages, in which procedures are replaced with random procedures that induce distributions.  Probabilistic computing thus allows for easy description and manipulation of probability distributions, letting one describe classical AI models in compact ways.  
+
+A core operation of probabilistic programming languages is inference, which is, in general, a difficult computational problem \cite{?}.  However, Markov chain Monte Carlo (MCMC) methods converge quite quickly to the posterior distribution for a large class of inference problems.  Much effort has been devoted to studying in which cases this inference is efficient, and how to make it so.  
+
+% introduction: restate goals from above, of course including which research direction (parallelism; noise variables; connections to deterministic algorithms like sorting) we actually did
+
+
+%INTRO
+%build pcp engine which i understand well
+%tested on variety of problems
+%study tractability of inference on other harder problems
+%do performance engineering / parallelism
+
+%write-up spec of language
+%write-up test cases
+
+%write mixture-model
+
+\subsection{subsection}
+
+
+\section{Language description}
+
+\subsection{Values and XRPs}
+
+A {\bf value} is a valid binding for a variable, in our language.  For example, integers, floats, and booleans are valid values, as are procedures --- functions which take in arguments and return values.  
+
+Our language allows for definition of something more general than random procedures, while retaining the ability to perform inference.   It allows for what we call an Exchangeable Random Procedure (XRP).  
+
+An XRP is like a random procedure, except that different applications of it are not guaranteed to be independent.  An XRP is allowed to maintain an internal state, which can be modified.  However, an XRP must maintain the exchangeability condition, which says that applications of the XRP gives an exchangeable sequence of random variables.  
+
+The exchangeable sequence 
+
+
+
+\subsection{Expressions and Environments}
+
+Expressions are syntactic building blocks which are evaluated into values.  An expression may be one of the following:
+\begin{itemize}
+\item Atomic expressions:
+\begin{itemize}
+\item A value itself.
+\item A variable name.
+\end{itemize}
+\item Non-atomic expressions
+\begin{itemize}
+\item An application of an expression to a list of argument expressions.
+\item A function, consisting of some variable arguments, and a body expression.
+\item An if statement, consisting of a branching expression, and two child expressions.
+\item An operator statement, consisting of an operator (e.g. == , $<$ , + , $\times$ , {\tt AND}, {\tt OR}, {\tt NOT}) and a list of argument expressions.
+% \item A switch statement, consisting of a branching expression, and a list of child expressions
+\end{itemize}
+\end{itemize}
+
+Expressions are evaluated relative to an {\bf environment}, in which variable names may be bound to values.  
+
+Evaluation happens recursively, resulting in return values.  When an invalid expression is given (e.g. the first expression in an application does not result in an XRP or procedure, or we call the equality operator with three arguments), an error is thrown.  
+
+\subsection{Directives}
+
+There are four primitive operations, called {\bf directives}, which the language supports.  They are:
+
+\begin{enumerate}
+\item {\tt assume(name, expression)}
+
+Binds {\tt name}, a string name, to the expression {\tt expression}.
+
+\item {\tt observe(expression, value)} : 
+
+Observes the expression {\tt expression} to have value {\tt value}.
+
+\item {\tt sample(expression)} : 
+
+Evaluates to sample a value for the expression {\tt expression}.
+
+\item {\tt infer()} : 
+
+Runs a single step of the Markov Chain.
+
+\end{enumerate}
+
+
+% if we observe(blah, true), observe(blah, false)
+
+%    - language definition with examples
+%                - XRPs: what they are, and how to add them
+
+
+%
+%        - test cases. for each test case, include:
+
+%            - a couple paragraphs and a figure explaining the purpose of the test
+%                - analytical calculations or invariants showing what you'd expect if the interpreter was behaving correctly
+%                - code for the program
+%                - results, compared to the analytical section
+\subsection{Architecture of inference}
+
+We now describe the way in which inference is implemented.  
+
+The idea is to run Metropolis-Hastings on the space of all possible executions of the program.  
+
+Our proposal density does the following:   
+\begin{enumerate}
+\item Pick, at random, one of the random choices made, at any point in the program's execution history.  Rerun the entire program, using the same randomness.  
+\item When we reach the random choice chosen above, resample a value for it.  If this causes us to evaluate different branches of the code (or to evaluate procedures called with different arguments), simply run these new branches, and also undo the evaluation of previously-evaluated branches which are no longer evaluated.   
+\item For all observations, use the outermost noise to force.  
+\end{enumerate}
+
+Notice that if there is no noise in our observations, this algorithm does not necessarily mix in finite time.  
+
+Consider the following example: \\
+
+
+
+
+Some executions are more likely than others, and so 
+
+Here pseudocode for a single iteration:
+
+\begin{verbatim}
+  stack = globals.db.random_stack()
+  (xrp, val, prob, args) = globals.db.get(stack)
+
+  old_p = globals.db.prob()
+  old_to_new_q = - math.log(globals.db.count)
+
+  globals.db.save()
+
+  globals.db.remove(stack)
+  new_val = xrp.apply(args)
+
+  if val == new_val:
+    globals.db.insert(stack, xrp, new_val, args)
+    return
+  globals.db.insert(stack, xrp, new_val, args)
+
+  rerun(False)
+  new_p = globals.db.prob() 
+  new_to_old_q = -math.log(globals.db.count) 
+  old_to_new_q += globals.db.eval_p 
+  new_to_old_q += globals.db.uneval_p 
+  if old_p * old_to_new_q > 0:
+    p = random.random()
+    if new_p + new_to_old_q - old_p - old_to_new_q < math.log(p):
+      globals.db.restore()
+  globals.db.save()
+\end{verbatim}
+% : MH on random worlds
+%            - pseudcode, reflecting what you learned (beyond what was in the AISTATS paper)
+%            - discuss eval, uneval, XRPs with state, mem as an example, etc
+%        - [[whatever focused experiments/results we come up with]]
+
+%\cite{Fagin1}:  
+
+\pagebreak
+
+\begin{thebibliography}{99}
+
+%\bibitem[1]{Fagin1} Fagin, R.  {\em Generalized first-order spectra and polynomial-time recognizable sets}. Complexity of Computation, ed. R. Karp, SIAM-AMS Proceedings 7, 1974, pp. 43--73. 
+
+
+\end{thebibliography}
+
+\end{document}
+

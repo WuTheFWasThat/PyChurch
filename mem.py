@@ -9,7 +9,7 @@ class mem_proc_XRP(XRP):
   def apply(self, args = None):
     assert len(args) == self.n and all([args[i].__class__.__name__ == 'Value' for i in xrange(self.n)])
     if tuple(args) in self.state:
-      val = self.state[tuple(args)]
+      (val, count) = self.state[tuple(args)]
     else:
       newenv = self.procedure.env.spawn_child()
       for i in range(self.n):
@@ -17,19 +17,24 @@ class mem_proc_XRP(XRP):
       val = evaluate(self.procedure.body, newenv, reflip = True)
     return val
   def incorporate(self, val, args = None):
-    self.state[tuple(args)] = val
+    if tuple(args) not in self.state:
+      self.state[tuple(args)] = (val, 1)
+    else:
+      (oldval, oldcount) = self.state[tuple(args)]
+      assert oldval == val
+      self.state[tuple(args)] = (oldval, oldcount + 1)
     return self.state
   def remove(self, val, args = None):
-    if tuple(args) in self.state:
-      assert self.state[tuple(args)] == val
+    assert tuple(args) in self.state
+    (oldval, oldcount) = self.state[tuple(args)]
+    assert oldval == val
+    if oldcount == 1:
       del self.state[tuple(args)]
     else:
-      # REMOVE DOESN'T STRICTLY UNDO ONE APPLY...
-      #warnings.warn('Couldn\'t remove %s' % (str(args)))
-      pass
+      self.state[tuple(args)] = (oldval, oldcount - 1)
     return self.state
   def prob(self, val, args = None):
-    return 0 # correct since other flips will be added to db? 
+    return 0 
   def __str__(self):
     return 'Memoization of procedure %s XRP' % str(self.procedure)
 

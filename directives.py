@@ -97,7 +97,9 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     var = expr.name
     val = env.lookup(var)
     if val is None:
-      warnings.warn('Variable %s undefined' % var)
+      #warnings.warn('Variable %s undefined' % var)
+      print 'Variable %s undefined' % var
+      assert False
     else:
       return val
   elif expr.type == 'if':
