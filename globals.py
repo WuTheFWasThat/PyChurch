@@ -1,4 +1,5 @@
 from expressions import *
+from random_choice_dict import *
 import sys
 
 # Class representing environments
@@ -28,7 +29,8 @@ class Environment:
 # Class representing random db
 class RandomDB:
   def __init__(self):
-    self.db = {}
+    self.db = RandomChoiceDict() 
+    self.db_noise = {}
     self.count = 0
     self.memory = []
     # ALWAYS WORKING WITH LOG PROBABILITIES
@@ -43,7 +45,10 @@ class RandomDB:
       self.remove(stack)
     prob = xrp.prob(value, args)
     xrp.incorporate(value, args)
-    self.db[tuple(stack)] = (xrp, value, prob, args, is_obs_noise)
+    if is_obs_noise:
+      self.db_noise[tuple(stack)] = (xrp, value, prob, args, True)
+    else:
+      self.db[tuple(stack)] = (xrp, value, prob, args, False)
     if not is_obs_noise:
       self.count += 1
       self.eval_p += prob # hmmm.. 
@@ -72,7 +77,10 @@ class RandomDB:
       assert self.count >= 0
       self.uneval_p += prob # previously unindented...
     xrp.remove(value, args)
-    del self.db[tuple(stack)]
+    if is_obs_noise:
+      del self.db_noise[tuple(stack)]
+    else:
+      del self.db[tuple(stack)]
     if memorize:
       self.memory.append(('remove', stack, xrp, value, args, is_obs_noise))
 
@@ -82,7 +90,10 @@ class RandomDB:
   def get(self, stack):
     if tuple(stack) in self.db:
       return self.db[tuple(stack)]
+    elif tuple(stack) in self.db_noise:
+      return self.db_noise[tuple(stack)]
     else:
+      warnings.warn('Failed to get stack %s' % str(stack))
       return None
 
   def get_val(self, stack):

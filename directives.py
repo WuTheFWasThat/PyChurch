@@ -87,10 +87,6 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     vals = [evaluate(expr.children[i], env, reflip, stack + [i]).val for i in xrange(len(expr.children))]
     return Value(reduce(op, vals))
 
-  # THIS IS NONSENSE
-  #if (not reflip) and globals.db.has(expr):
-  #  return globals.db.get_val(expr)
-
   if expr.type == 'value':
     return expr.val
   elif expr.type == 'variable':

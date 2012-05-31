@@ -61,7 +61,7 @@ def test_expressions():
   print [resample(c) for i in xrange(10)]
   print 
   
-  d = function(['x'], ('apply', f, [a,c,'x']))
+  d = function('x', ('apply', f, [a,c,'x']))
   print 'Sample of\n%s\n= %s\n' % (str(d), str(resample(d)))
   
   e = apply( d, b)
@@ -73,16 +73,21 @@ def test_tricky():
   print " \n COIN TEST\n "
   reset()
 
-  assume('make-coin', function([], apply(function(['weight'], function([], bernoulli('weight'))), beta(1, 1))))
-  print globals.env.lookup('make-coin')
+  noise_level = .001
 
-  assume('tricky-coin', apply('make-coin'))
-  print globals.env.lookup('tricky-coin')
-  print "flips: ", [sample(apply('tricky-coin')) for i in xrange(10)]
-  
+  #assume('make-coin', function([], apply(function('weight', function([], bernoulli('weight'))), beta(1, 1))))
+  #print globals.env.lookup('make-coin')
+
+  #assume('tricky-coin', apply('make-coin'))
+  #print globals.env.lookup('tricky-coin')
+  #print "flips: ", [sample(apply('tricky-coin')) for i in xrange(10)]
+  #
   #assume('my-coin-2', apply('make-coin'))
   #print globals.env.lookup('my-coin-2')
   #print "flips: ", [sample(apply('my-coin-2')) for i in xrange(10)]
+
+  assume('weight', beta(1, 1))
+  assume('tricky-coin', function([], bernoulli('weight')))
 
   assume('fair-coin', function([], bernoulli(0.5)))
   print globals.env.lookup('fair-coin')
@@ -92,10 +97,19 @@ def test_tricky():
   assume('coin', ifelse('is-fair', 'fair-coin', 'tricky-coin')) 
   #assume('coin', ifelse('is-fair', 'fair-coin', apply('make-coin'))) 
 
-  for i in xrange(2):
-    observe(bernoulli_noise(apply('coin'), .01), True)
+  nheads = 5
+  niters, burnin = 100, 10
 
-  print follow_prior('is-fair', 100, 100)
+  print 'running', niters, 'times,', burnin, 'burnin'
+
+  print '\nsaw', 0, 'heads'
+  print follow_prior('is-fair', niters, burnin)
+  
+  for i in xrange(nheads):
+    print '\nsaw', i+1, 'heads'
+    observe(bernoulli_noise(apply('coin'), noise_level), True)
+    print follow_prior('is-fair', niters, burnin)
+
 
 def test_beta_bernoulli():
   print " \n TESTING BETA-BERNOULLI XRPs\n"
@@ -118,13 +132,13 @@ def test_bayes_nets():
   
   assume('sprinkler', ifelse('cloudy', bernoulli(0.1), bernoulli(0.5)))
   
-  noise_level = .01
+  noise_level = .001
   sprinkler_ob = observe(bernoulli_noise('sprinkler', noise_level), True)
-  print follow_prior('cloudy', 1000, 50)
+  print follow_prior('cloudy', 1000, 100)
   print 'Should be .833 False, .166 True'
   
   forget(sprinkler_ob)
-  print follow_prior('cloudy', 1000, 50)
+  print follow_prior('cloudy', 1000, 100)
   print 'Should be .500 False, .500 True'
 
   print "\n TESTING BEACH NET\n"
@@ -136,11 +150,11 @@ def test_bayes_nets():
                                     ifelse('sunny', bernoulli(0.3), bernoulli(0.1))))
   
   observe(bernoulli_noise('weekend', noise_level), True)
-  print follow_prior('sunny', 1000, 50)
+  print follow_prior('sunny', 1000, 100)
   print 'Should be .5 False, .5 True'
   
   observe(bernoulli_noise('beach', noise_level), True)
-  print follow_prior('sunny', 1000, 50)
+  print follow_prior('sunny', 1000, 100)
   print 'Should be .357142857 False, .642857143 True'
 
   print "\n TESTING MODIFIED BURGLARY NET\n" # An example from AIMA
@@ -148,14 +162,9 @@ def test_bayes_nets():
 
   pB = 0.1
   pE = 0.2
-  pAgBE = 0.95
-  pAgBnE = 0.94
-  pAgnBE = 0.29
-  pAgnBnE = 0.10
-  pJgA = 0.9
-  pJgnA = 0.5
-  pMgA = 0.7
-  pMgnA = 0.1
+  pAgBE, pAgBnE, pAgnBE, pAgnBnE = 0.95, 0.94, 0.29, 0.10
+  pJgA, pJgnA = 0.9, 0.5
+  pMgA, pMgnA = 0.7, 0.1
   
   pA = pB * pE * pAgBE + (1-pB) * pE * pAgnBE + pB * (1 - pE) * pAgBnE + (1-pB) * (1-pE) * pAgnBnE
   
@@ -177,16 +186,16 @@ def test_bayes_nets():
   assume('johnCalls', ifelse('alarm',  bernoulli(pJgA), bernoulli(pJgnA)))
   assume('maryCalls', ifelse('alarm',  bernoulli(pMgA), bernoulli(pMgnA)))
 
-  print follow_prior('alarm', 10000, 1)
+  print follow_prior('alarm', 1000, 100)
   print 'Should be %f True' % pA
 
   mary_ob = observe(bernoulli_noise('maryCalls', noise_level), True)
-  print follow_prior('johnCalls', 1000, 50)
+  print follow_prior('johnCalls', 1000, 100)
   print 'Should be %f True' % pJgM
   forget(mary_ob)
 
   burglary_ob = observe(bernoulli_noise(~var('burglary'), noise_level), True)
-  print follow_prior('johnCalls', 1000, 50)
+  print follow_prior('johnCalls', 1000, 100)
   print 'Should be %f True' % pJgnB
   forget(burglary_ob)
 
@@ -224,16 +233,16 @@ def test_bayes_nets():
   assume('johnCalls', ifelse('alarm',  bernoulli(pJgA), bernoulli(pJgnA)))
   assume('maryCalls', ifelse('alarm',  bernoulli(pMgA), bernoulli(pMgnA)))
 
-  print follow_prior('alarm', 10000, 1)
+  print follow_prior('alarm', 1000, 100)
   print 'Should be %f True' % pA
 
   mary_ob = observe(bernoulli_noise('maryCalls', noise_level), True)
-  print follow_prior('johnCalls', 1000, 50)
+  print follow_prior('johnCalls', 1000, 100)
   print 'Should be %f True' % pJgM
   forget(mary_ob)
 
   burglary_ob = observe(bernoulli_noise(~var('burglary'), noise_level), True)
-  print follow_prior('johnCalls', 1000, 50)
+  print follow_prior('johnCalls', 1000, 100)
   print 'Should be %f True' % pJgnB
   forget(burglary_ob)
 
@@ -244,26 +253,27 @@ def test_xor():
  
   p = 0.6
   q = 0.4
+  noise_level = .01
   assume('a', bernoulli(p)) 
   assume('b', bernoulli(q)) 
   assume('c', (var('a') & ~var('b')) |(~var('a') & var('b'))) 
 
-  xor_ob = observe(bernoulli_noise('c', .01), True) 
-  print follow_prior('a', 1000, 200) 
+  #print follow_prior('a', 10000, 100) 
+  #print 'should be 0.60 true'
+  # should be True : p, False : 1 - p
+
+  xor_ob = observe(bernoulli_noise('c', noise_level), True) 
+  print follow_prior('a', 10000, 50) 
   print 'should be 0.69 true'
   # should be True : p(1-q)/(p(1-q)+(1-p)q), False : q(1-p)/(p(1-q) + q(1-p)) 
   # I believe this gets skewed because it has to pass through illegal states, and the noise values get rounded badly 
 
-  forget(xor_ob) 
-  print follow_prior('a', 1000, 200) 
-  print 'should be 0.60 true'
-  # should be True : p, False : 1 - p
 
 def test_recursion():
   print "\n TESTING RECURSION, FACTORIAL\n" 
   reset() 
   
-  factorial_expr = function(['x'], ifelse(var('x') == 0, 1, \
+  factorial_expr = function('x', ifelse(var('x') == 0, 1, \
               var('x') * apply('factorial', var('x') - 1))) 
   assume('factorial', factorial_expr) 
   
@@ -276,7 +286,7 @@ def test_mem():
   print "\n MEM TEST, FIBONACCI\n" 
   reset() 
   
-  fibonacci_expr = function(['x'], ifelse(var('x') <= 1, 1, \
+  fibonacci_expr = function('x', ifelse(var('x') <= 1, 1, \
                 apply('fibonacci', var('x') - 1) + apply('fibonacci', var('x') - 2) )) 
   assume('fibonacci', fibonacci_expr) 
   
@@ -299,7 +309,7 @@ def test_mem():
   print "bad_mem_fibonacci(20) =", sample(apply('bad_mem_fibonacci', 20))
   print "      took", time() - t, "seconds"
 
-  mem_fibonacci_expr = function(['x'], ifelse(var('x') <= 1, 1, \
+  mem_fibonacci_expr = function('x', ifelse(var('x') <= 1, 1, \
                 apply('mem_fibonacci', var('x') - 1) + apply('mem_fibonacci', var('x') - 2) )) 
   assume('mem_fibonacci', mem(mem_fibonacci_expr)) 
 
@@ -317,7 +327,7 @@ def test_geometric():
   assume('decay', beta(1, 1))
   #assume('decay', 0.5)
   #assume('decay', uniform(5))
-  assume('geometric', function(['x'], ifelse(bernoulli('decay'), 'x', apply('geometric', var('x') + 1))))
+  assume('geometric', function('x', ifelse(bernoulli('decay'), 'x', apply('geometric', var('x') + 1))))
   print "decay", globals.env.lookup('decay')
   print [sample(apply('geometric', 0)) for i in xrange(10)]
   observe(bernoulli_noise(apply('geometric', 0) == 10, .01), True)
@@ -378,13 +388,14 @@ def test():
 #test_expressions()
 #test_recursion()
 #test_beta_bernoulli()
+
 #test_mem()
 
 #test_bayes_nets() 
 
 #test_xor()  # needs like 500 to mix 
 
-#test_tricky() 
+test_tricky() 
 #test_geometric()   
-test_DPmem()
+#test_DPmem()
 

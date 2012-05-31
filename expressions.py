@@ -226,3 +226,6 @@ def switch(switchvar, array):
 
 def function(vars, body):
   return expression(('function', vars, body))
+
+def negation(expr):
+  return expression(('not', expr)) 
