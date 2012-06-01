@@ -68,25 +68,18 @@ A core operation of probabilistic programming languages is inference, which is, 
 
 \section{Language description}
 
-\subsection{Values and XRPs}
+\subsection{Values}
 
 A {\bf value} is a valid binding for a variable, in our language.  For example, integers, floats, and booleans are valid values.  We call these primitive values.  Another type of value is a {\bf procedure} --- a function which gets applied to arguments and returns (not necessarily primitive) values.  
 
-To specify value bindings, one can use randomness.  For example, I may declare in some program that {\tt x} is determined by a coin flip.  But on any given execution of the program, {\tt x} \vspace{6 pt}
+These procedures should be non-deterministic.  To allow for this, we can imagine that there is a special procedure which takes no arguments, and outputs 0 or 1, each with probability $\frac{1}{2}$.  Arbitrary random procedures can then be built using this one.   We will see later that we actually can and will allow for something much more general than this.
 
-Our language allows for the use of something more general than random procedures, while retaining the ability to perform inference.   It allows for what we call an {\bf exchangeable random procedure (XRP)}.  
-
-An XRP is like a random procedure, except that different applications of it are not guaranteed to be independent.  An XRP is allowed to maintain an internal state, which can be modified.  However, an XRP must maintain the exchangeability condition, which says that applications of the XRP gives an exchangeable sequence of random variables.  
-
-The role of XRPs will be motivated and discussed in detail later.  For now, it may be simpler to just imagine that values are either primitive values or (possibly random) procedures.  
-
-The exchangeable sequence 
-
+%Suppose I declare in some program that {\tt x} is determined by a coin flip.  But on any given execution of the program, {\tt x} must take on one of two values.  \vspace{6 pt}
 
 
 \subsection{Expressions and Environments}
 
-Expressions are syntactic building blocks which are evaluated into values.  An expression may be one of the following:
+{\bf Expressions} are syntactic building blocks, which specified as being one of the following:
 \begin{itemize}
 \item Atomic expressions:
 \begin{itemize}
@@ -103,33 +96,39 @@ Expressions are syntactic building blocks which are evaluated into values.  An e
 \end{itemize}
 \end{itemize}
 
-Expressions are evaluated relative to an {\bf environment}, in which variable names may be bound to values.  
+Expressions are {\bf evaluated}, so that they take on some value.  Their evaluation is relative to an {\bf environment}, in which variable names may be bound to values.  
 
-Evaluation happens recursively, resulting in return values.  When an invalid expression is given (e.g. the first expression in an application does not result in an XRP or procedure, or we call the equality operator with three arguments), an error is thrown.  
+Evaluation happens recursively.  If an invalid expression is ever given (e.g. the first expression in an application isn't a procedure, or we call the equality operator with three arguments), an error is thrown.  
 
 \subsection{Directives}
 
 There are four primitive operations, called {\bf directives}, which the language supports.  They are:
 
 \begin{enumerate}
-\item {\tt assume(name, expression)}
+\item {\tt sample(expr)} : 
 
-Binds {\tt name}, a string name, to the expression {\tt expression}.
+Evaluates with respect to the global environment to sample a value for the expression {\tt expr}.
 
-\item {\tt observe(expression, value)} : 
+\item {\tt assume(name, expr)} : 
 
-Observes the expression {\tt expression} to have value {\tt value}.
+Samples a value for the expression {\tt expr}, and then binds {\tt name}, a string variable name, to the resulting value in the global environment.
 
-\item {\tt sample(expression)} : 
+\item {\tt observe(expr, val)} : 
 
-Evaluates to sample a value for the expression {\tt expression}.
+Observes the expression {\tt expr} to have been evaluated to the value {\tt val}.
 
 \item {\tt infer()} : 
 
-Runs a single step of the Markov Chain.
+Runs a single step of the Markov Chain.  
 
 \end{enumerate}
 
+The result of calling {\tt infer()} sufficiently many times, should be that sampling gives the posterior distribution for expressions, conditioned on all the observed values.  
+%The {\tt observe} primitive is required to be 
+
+\section{Inference}
+
+Inference is by far the most complicated of the directives, and also the most important.  Performing inference is the reason we are interested in probabilistic programming languages in the first place.  
 
 % if we observe(blah, true), observe(blah, false)
 
@@ -144,18 +143,31 @@ Runs a single step of the Markov Chain.
 %                - analytical calculations or invariants showing what you'd expect if the interpreter was behaving correctly
 %                - code for the program
 %                - results, compared to the analytical section
-\subsection{Architecture of inference}
 
-We now describe the way in which inference is implemented.  
+%\subsection{Architecture of inference}
 
-The idea is to run Metropolis-Hastings on the space of all possible executions of the program.  
+\subsection{High-level description}
 
-Our proposal density does the following:   
+We now describe the way in which inference is implemented, at a high level.   The idea is to run Metropolis-Hastings on the space of all possible executions of the program.  \\
+
+Our proposal density, which chooses the new state (program execution) to potentially transition to, does the following:   
 \begin{enumerate}
-\item Pick, at random, one of the random choices made, at any point in the program's execution history.  Rerun the entire program, using the same randomness.  
-\item When we reach the random choice chosen above, resample a value for it.  If this causes us to evaluate different branches of the code (or to evaluate procedures called with different arguments), simply run these new branches, and also undo the evaluation of previously-evaluated branches which are no longer evaluated.   
-\item For all observations, use the outermost noise to force.  
+\item Pick, at random, one of the random choices made, at any point in the program's execution history.  Make a new choice for this randomness.  
+\item Rerun the entire program, changing only this choice.  If this causes us to evaluate new sections of the code (a different side of an if statement, or a procedure called with different arguments), simply run these new sections.  % Also ``undo" the evaluation of previously-evaluated sections which are no longer evaluated.   
+% \item For all observations, use the outermost noise to force.  
 \end{enumerate}
+
+Unfortunately, as I've described it, this random walk doesn't converge to the posterior.  Consider the following example, in which I flip two weighted coins and observe that they came up differently:  
+
+\begin{small}
+\begin{verbatim}
+>>> p, q = 0.6, 0.4
+>>> assume('a', bernoulli(p))
+>>> assume('b', bernoulli(q))
+>>> assume('c', xor('a', 'b'))
+>>> observe(bernoulli_noise('c', noise_level), True)
+\end{verbatim}
+\end{small}
 
 Notice that if there is no noise in our observations, this algorithm does not necessarily mix in finite time.  
 
@@ -196,6 +208,17 @@ Here pseudocode for a single iteration:
       globals.db.restore()
   globals.db.save()
 \end{verbatim}
+
+\subsection{XRPs}
+
+Our language allows for the use of something more general than random procedures, while retaining the ability to perform inference.   It allows for what we call an {\bf exchangeable random procedure (XRP)}.  
+
+An XRP is like a random procedure, except that different applications of it are not guaranteed to be independent.  An XRP is allowed to maintain an internal state, which can be modified.  However, an XRP must maintain the exchangeability condition, which says that applications of the XRP gives an exchangeable sequence of random variables.  
+
+The role of XRPs will be motivated and discussed in detail later.  For now, it may be simpler to just imagine that values are either primitive values or (possibly random) procedures.  
+
+The exchangeable sequence 
+
 % : MH on random worlds
 %            - pseudcode, reflecting what you learned (beyond what was in the AISTATS paper)
 %            - discuss eval, uneval, XRPs with state, mem as an example, etc

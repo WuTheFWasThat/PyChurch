@@ -262,18 +262,17 @@ def test_xor():
   noise_level = .01
   assume('a', bernoulli(p)) 
   assume('b', bernoulli(q)) 
-  assume('c', (var('a') & ~var('b')) |(~var('a') & var('b'))) 
+  assume('c', var('a') ^ var('b'))
 
   #print follow_prior('a', 10000, 100) 
   #print 'should be 0.60 true'
   # should be True : p, False : 1 - p
 
   xor_ob = observe(bernoulli_noise('c', noise_level), True) 
-  print follow_prior('a', 10000, 50) 
+  print follow_prior('a', 1000, 50) 
   print 'should be 0.69 true'
   # should be True : p(1-q)/(p(1-q)+(1-p)q), False : q(1-p)/(p(1-q) + q(1-p)) 
   # I believe this gets skewed because it has to pass through illegal states, and the noise values get rounded badly 
-
 
 def test_recursion():
   print "\n TESTING RECURSION, FACTORIAL\n" 
@@ -402,9 +401,9 @@ def test():
 #
 #test_mem()
 
-test_bayes_nets() 
+#test_bayes_nets() 
 
-#test_xor()  # needs like 500 to mix 
+test_xor()  # needs like 500 to mix 
 
 #test_tricky() 
 #test_geometric()   

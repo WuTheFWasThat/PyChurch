@@ -61,7 +61,7 @@ def replace(expr, env):
   elif expr.type == 'function':
     body = replace(expr.body, env)
     return Expression(('function', expr.vars, body)) 
-  elif expr.type in ['=', '<', '>', '>=', '<=', '&', '|', 'add', 'subtract', 'multiply']:
+  elif expr.type in ['=', '<', '>', '>=', '<=', '&', '^', '|', 'add', 'subtract', 'multiply']:
     children = [replace(x, env) for x in expr.children] 
     return Expression((expr.type, children)) 
   elif expr.type == '~':
@@ -165,6 +165,8 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     return binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x >= y)
   elif expr.type == '&':
     return list_op_evaluate(expr, env, reflip, stack, lambda x, y : x & y)
+  elif expr.type == '^':
+    return list_op_evaluate(expr, env, reflip, stack, lambda x, y : x ^ y)
   elif expr.type == '|':
     return list_op_evaluate(expr, env, reflip, stack, lambda x, y : x | y)
   elif expr.type == '~':

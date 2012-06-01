@@ -66,6 +66,8 @@ class Expression:
       self.type = '|'
     elif self.type in ['&', 'and']:
       self.type = '&'
+    elif self.type in ['^', 'xor']:
+      self.type = '^'
     elif self.type in ['~', 'negation', 'not']: 
       self.type = '~'
 
@@ -103,7 +105,7 @@ class Expression:
       else:
         self.vars = [tup[1]]
       self.body = expression(tup[2])
-    elif self.type in ['&', '|']:
+    elif self.type in ['&', '|', '^']:
       self.children = [expression(x) for x in tup[1]]
     elif self.type == '~':
       self.negation = expression(tup[1])
@@ -140,7 +142,7 @@ class Expression:
       return '(%s)%s' % (str(self.op), str(self.children))
     elif self.type == 'function':
       return 'lambda%s : (%s)' % (str(tuple(self.vars)), str(self.body))
-    elif self.type in ['=', '>', '<', '>=', '<=', '&', '|']: 
+    elif self.type in ['=', '>', '<', '>=', '<=', '&', '^', '|']: 
       return self.str_op(self.children, self.type)
     elif self.type == '~':
       return '~(%s)' % (str(self.negation))
@@ -187,6 +189,8 @@ class Expression:
     return self.operate(other, 'and')
   def __or__(self, other):
     return self.operate(other, 'or')
+  def __xor__(self, other):
+    return self.operate(other, 'xor')
   def __invert__(self):
     return Expression(('not', self))
 
