@@ -37,7 +37,7 @@ class RandomDB:
     self.uneval_p = 0
     self.eval_p = 0
     return
-  
+
   # implement tree data-structure?
   def insert(self, stack, xrp, value, args, is_obs_noise = False, memorize = True):
     assert value.__class__.__name__ == 'Value'
@@ -112,6 +112,9 @@ class RandomDB:
     for key in self.db:
       (xrp, value, prob, args, is_obs_noise) = self.db[key]
       ans += prob
+    for key in self.db_noise:
+      (xrp, value, prob, args, is_obs_noise) = self.db_noise[key]
+      ans += prob
     #  print '  ', xrp, prob
     #print ans 
     return ans
@@ -119,8 +122,10 @@ class RandomDB:
   def unevaluate(self, uneval_stack, args = None):
     if args is not None:
       args = tuple(args)
+
     to_delete = []
-    for tuple_stack in self.db.dict:
+
+    def unevaluate_helper(tuple_stack):
       stack = list(tuple_stack) 
       if len(stack) >= len(uneval_stack) and stack[:len(uneval_stack)] == uneval_stack:
         if args is None:
@@ -129,6 +134,11 @@ class RandomDB:
           assert len(stack) > len(uneval_stack)
           if stack[len(uneval_stack)] == args:
             to_delete.append(tuple_stack)
+
+    for tuple_stack in self.db:
+      unevaluate_helper(tuple_stack)
+    for tuple_stack in self.db_noise:
+      unevaluate_helper(tuple_stack)
     for tuple_stack in to_delete:
       self.remove(tuple_stack)
 

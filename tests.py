@@ -98,7 +98,7 @@ def test_tricky():
   #assume('coin', ifelse('is-fair', 'fair-coin', apply('make-coin'))) 
 
   nheads = 5
-  niters, burnin = 100, 10
+  niters, burnin = 1000, 100
 
   print 'running', niters, 'times,', burnin, 'burnin'
 
@@ -127,6 +127,8 @@ def test_beta_bernoulli():
 def test_bayes_nets():
   print "\n TESTING INFERENCE ON CLOUDY/SPRINKLER\n"
   
+  niters, burnin = 1000, 100
+
   reset()
   assume('cloudy', bernoulli(0.5))
   
@@ -134,15 +136,17 @@ def test_bayes_nets():
   
   noise_level = .001
   sprinkler_ob = observe(bernoulli_noise('sprinkler', noise_level), True)
-  print follow_prior('cloudy', 1000, 100)
+  print follow_prior('cloudy', niters, burnin)
   print 'Should be .833 False, .166 True'
   
   forget(sprinkler_ob)
-  print follow_prior('cloudy', 1000, 100)
+  print follow_prior('cloudy', niters, burnin)
   print 'Should be .500 False, .500 True'
 
   print "\n TESTING BEACH NET\n"
   
+  niters, burnin = 1000, 100
+
   reset()
   assume('sunny', bernoulli(0.5))
   assume('weekend', bernoulli(0.285714))
@@ -150,15 +154,17 @@ def test_bayes_nets():
                                     ifelse('sunny', bernoulli(0.3), bernoulli(0.1))))
   
   observe(bernoulli_noise('weekend', noise_level), True)
-  print follow_prior('sunny', 1000, 100)
+  print follow_prior('sunny', niters, burnin)
   print 'Should be .5 False, .5 True'
   
   observe(bernoulli_noise('beach', noise_level), True)
-  print follow_prior('sunny', 1000, 100)
+  print follow_prior('sunny', niters, burnin)
   print 'Should be .357142857 False, .642857143 True'
 
   print "\n TESTING MODIFIED BURGLARY NET\n" # An example from AIMA
   reset()
+
+  niters, burnin = 1000, 100
 
   pB = 0.1
   pE = 0.2
@@ -186,16 +192,16 @@ def test_bayes_nets():
   assume('johnCalls', ifelse('alarm',  bernoulli(pJgA), bernoulli(pJgnA)))
   assume('maryCalls', ifelse('alarm',  bernoulli(pMgA), bernoulli(pMgnA)))
 
-  print follow_prior('alarm', 1000, 100)
+  print follow_prior('alarm', niters, burnin)
   print 'Should be %f True' % pA
 
   mary_ob = observe(bernoulli_noise('maryCalls', noise_level), True)
-  print follow_prior('johnCalls', 1000, 100)
+  print follow_prior('johnCalls', niters, burnin)
   print 'Should be %f True' % pJgM
   forget(mary_ob)
 
   burglary_ob = observe(bernoulli_noise(~var('burglary'), noise_level), True)
-  print follow_prior('johnCalls', 1000, 100)
+  print follow_prior('johnCalls', niters, burnin)
   print 'Should be %f True' % pJgnB
   forget(burglary_ob)
 
@@ -233,16 +239,16 @@ def test_bayes_nets():
   assume('johnCalls', ifelse('alarm',  bernoulli(pJgA), bernoulli(pJgnA)))
   assume('maryCalls', ifelse('alarm',  bernoulli(pMgA), bernoulli(pMgnA)))
 
-  print follow_prior('alarm', 1000, 100)
+  print follow_prior('alarm', niters, burnin)
   print 'Should be %f True' % pA
 
   mary_ob = observe(bernoulli_noise('maryCalls', noise_level), True)
-  print follow_prior('johnCalls', 1000, 100)
-  print 'Should be %f True' % pJgM
+  print follow_prior('johnCalls', niters, burnin)
+  print 'Should be %f True (BUT WONT BE)' % pJgM
   forget(mary_ob)
 
   burglary_ob = observe(bernoulli_noise(~var('burglary'), noise_level), True)
-  print follow_prior('johnCalls', 1000, 100)
+  print follow_prior('johnCalls', niters, burnin)
   print 'Should be %f True' % pJgnB
   forget(burglary_ob)
 
@@ -324,14 +330,19 @@ def test_geometric():
   print " \n TESTING GEOMETRIC\n"
 
   print "Sampling from a geometric distribution"
+
   assume('decay', beta(1, 1))
   #assume('decay', 0.5)
   #assume('decay', uniform(5))
+
   assume('geometric', function('x', ifelse(bernoulli('decay'), 'x', apply('geometric', var('x') + 1))))
   print "decay", globals.env.lookup('decay')
   print [sample(apply('geometric', 0)) for i in xrange(10)]
-  observe(bernoulli_noise(apply('geometric', 0) == 10, .01), True)
-  print get_pdf(follow_prior('decay', 100, 100), 0, 1, .1)
+  observe(bernoulli_noise(apply('geometric', 0) == 3, .01), True)
+  a = follow_prior('decay', 10000, 1000)
+  print a
+  print 'pdf:', get_pdf(a, 0, 1, .01)
+  print 'cdf:', get_cdf(a, 0, 1, .01)
 
 def test_DPmem():
   reset()
@@ -388,7 +399,7 @@ def test():
 #test_expressions()
 #test_recursion()
 #test_beta_bernoulli()
-
+#
 #test_mem()
 
 #test_bayes_nets() 
@@ -396,6 +407,6 @@ def test():
 #test_xor()  # needs like 500 to mix 
 
 #test_tricky() 
-#test_geometric()   
-test_DPmem()
+test_geometric()   
+#test_DPmem()
 

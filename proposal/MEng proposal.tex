@@ -213,19 +213,19 @@ Consider the following scenario:  There is a coin that is fair with probability 
 
 \begin{small}
 \begin{verbatim}
-  noise_level = .001
-  nheads = 1
-  
-  assume('weight', beta(1, 1))
-  assume('tricky-coin', function([], bernoulli('weight')))
-  assume('fair-coin', function([], bernoulli(0.5)))
-  assume('is-fair', bernoulli(0.5))
-  assume('coin', ifelse('is-fair', 'fair-coin', 'tricky-coin')) 
-
-  for i in xrange(nheads):
-    observe(bernoulli_noise(apply('coin'), noise_level), True)
-
-  follow_prior('is-fair', 10000, 1000)
+>>>  noise_level = .001
+>>>  nheads = 1
+>>>  
+>>>  assume('weight', beta(1, 1))
+>>>  assume('tricky-coin', function([], bernoulli('weight')))
+>>>  assume('fair-coin', function([], bernoulli(0.5)))
+>>>  assume('is-fair', bernoulli(0.5))
+>>>  assume('coin', ifelse('is-fair', 'fair-coin', 'tricky-coin')) 
+>>>
+>>>  for i in xrange(nheads):
+>>>    observe(bernoulli_noise(apply('coin'), noise_level), True)
+>>>
+>>>  follow_prior('is-fair', 10000, 1000)
 \end{verbatim}
 \end{small}
 
@@ -244,7 +244,7 @@ Here are our results, when running {\tt follow\_prior('is-fair', 10000, 1000)}, 
 2 & 0.4286 &  0.4289 \\ \hline
 3 & 0.3333 &  0.3346 \\ \hline
 4 & 0.2381 &  0.2712 \\ \hline
-5 & 0.1579 &  0. \\ \hline
+5 & 0.1579 &  0.2528 \\ \hline
 \end{tabular}
 \end{center}
 
@@ -433,6 +433,20 @@ These results are slightly better than our prediction, but confirm the overall p
 
 
 \subsection{Testing a decaying atom}
+
+Suppose we are observing a radioactive atom in discrete time intervals, e.g. we look at it each second.  Each time we look at the atom, there is some chance that it 
+
+Suppose there is an atom whose decay rate we don't know.  Our prior over decay rates is uniform 
+
+\begin{small}
+\begin{verbatim}
+>>> assume('decay', beta(1, 1)) 
+>>> assume('geometric', function('x', ifelse(bernoulli('decay'), 'x', apply('geometric', var('x') + 1))))
+>>> observe(bernoulli_noise(apply('geometric', 0) == 10, .01), True)
+  print get_pdf(follow_prior('decay', 100, 100), 0, 1, .1) 
+
+\end{verbatim}
+\end{small}
 
 \subsection{Testing mem}
 
