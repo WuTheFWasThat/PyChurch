@@ -60,18 +60,25 @@ A core operation of probabilistic programming languages is inference, which is, 
 
 %write mixture-model
 
-\subsection{subsection}
+%\subsection{Outline}
 
+%In this paper, we first give an overview of our language and its implementation.  
+
+\pagebreak
 
 \section{Language description}
 
 \subsection{Values and XRPs}
 
-A {\bf value} is a valid binding for a variable, in our language.  For example, integers, floats, and booleans are valid values, as are procedures --- functions which take in arguments and return values.  
+A {\bf value} is a valid binding for a variable, in our language.  For example, integers, floats, and booleans are valid values.  We call these primitive values.  Another type of value is a {\bf procedure} --- a function which gets applied to arguments and returns (not necessarily primitive) values.  
 
-Our language allows for definition of something more general than random procedures, while retaining the ability to perform inference.   It allows for what we call an Exchangeable Random Procedure (XRP).  
+To specify value bindings, one can use randomness.  For example, I may declare in some program that {\tt x} is determined by a coin flip.  But on any given execution of the program, {\tt x} \vspace{6 pt}
+
+Our language allows for the use of something more general than random procedures, while retaining the ability to perform inference.   It allows for what we call an {\bf exchangeable random procedure (XRP)}.  
 
 An XRP is like a random procedure, except that different applications of it are not guaranteed to be independent.  An XRP is allowed to maintain an internal state, which can be modified.  However, an XRP must maintain the exchangeability condition, which says that applications of the XRP gives an exchangeable sequence of random variables.  
+
+The role of XRPs will be motivated and discussed in detail later.  For now, it may be simpler to just imagine that values are either primitive values or (possibly random) procedures.  
 
 The exchangeable sequence 
 

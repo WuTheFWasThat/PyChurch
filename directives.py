@@ -194,19 +194,20 @@ def sample(expr, env = None, varname = None, reflip = False):
 def resample(expr, env = None, varname = None):
   return sample(expr, env, varname, True)
 
-### OUTDATED
-##def reject_infer():
-##  flag = False
-##  while not flag:
-##    rerun(True)
-##
-##    # Reject if observations untrue
-##    flag = True
-##    for obs_expr in globals.obs.obs:
-##      obsval = resample(obs_expr)
-##      if obsval.val != globals.obs.get_val(obs_expr):
-##        flag = False
-##        break
+# OUTDATED
+def reject_infer():
+  flag = False
+  while not flag:
+    rerun(True)
+
+    # Reject if observations untrue
+    flag = True
+    for obs_hash in globals.mem.observes:
+      (obs_expr, obs_val) = globals.mem.observes[obs_hash] 
+      val = resample(obs_expr)
+      if val.val != obs_val:
+        flag = False
+        break
 
 # Rejection based inference
 def reject_infer_many(name, niter = 1000):
@@ -240,11 +241,10 @@ def rerun(reflip):
     observe_helper(expr, obs_val)
 
 def infer(): # RERUN AT END
+  
   # reflip some coin
-  is_obs_noise = True
-  while is_obs_noise:
-    stack = globals.db.random_stack() 
-    (xrp, val, prob, args, is_obs_noise) = globals.db.get(stack)
+  stack = globals.db.random_stack() 
+  (xrp, val, prob, args, is_obs_noise) = globals.db.get(stack)
 
   #debug = True 
   debug = False 
@@ -291,6 +291,8 @@ def infer(): # RERUN AT END
     print "\n-----------------------------------------\n"
 
 def follow_prior(name, niter = 1000, burnin = 100):
+
+  #return reject_infer_many(name, niter)
 
   if name in globals.mem.vars:
     expr = globals.mem.vars[name]
