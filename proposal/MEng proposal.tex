@@ -157,6 +157,10 @@ Our proposal density, which chooses the new state (program execution) to potenti
 % \item For all observations, use the outermost noise to force.  
 \end{enumerate}
 
+If the new execution history doesn't agree with our observations, we assign it a probability of 0, so we never transition to that state.  Otherwise, we look at all the choices of randomness in the program, take their product, and assign it probability which is the product of all the 
+
+We then use the update rule of Metropolis-Hastings to decide whether we enter this new state, or whether we keep the old one.  
+
 Unfortunately, as I've described it, this random walk doesn't converge to the posterior.  Consider the following example, in which I flip two weighted coins and observe that they came up differently:  
 
 \begin{small}
@@ -164,7 +168,7 @@ Unfortunately, as I've described it, this random walk doesn't converge to the po
 >>> p, q = 0.6, 0.4
 >>> assume('a', bernoulli(p))
 >>> assume('b', bernoulli(q))
->>> assume('c', xor('a', 'b'))
+>>> assume('c', var('a') ^ var('b'))
 >>> observe(bernoulli_noise('c', noise_level), True)
 \end{verbatim}
 \end{small}
@@ -427,7 +431,7 @@ To verify that this is the explanation, we can alter the probabilities so that M
 >>>
 >>> assume('a', bernoulli(p))
 >>> assume('b', bernoulli(q))
->>> assume('c', (var('a') & ~var('b')) |(~var('a') & var('b')))
+>>> assume('c', var('a') ^ var('b'))
 >>>
 >>> follow_prior('a', 10000, 100) # should be 0.60 True
 {False: 0.3977, True: 0.60229999999999995}

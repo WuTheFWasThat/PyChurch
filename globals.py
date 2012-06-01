@@ -36,6 +36,7 @@ class RandomDB:
     # ALWAYS WORKING WITH LOG PROBABILITIES
     self.uneval_p = 0
     self.eval_p = 0
+    self.p = 0
     return
 
   # implement tree data-structure?
@@ -44,6 +45,7 @@ class RandomDB:
     if self.has(stack):
       self.remove(stack)
     prob = xrp.prob(value, args)
+    self.p += prob
     xrp.incorporate(value, args)
     if is_obs_noise:
       self.db_noise[tuple(stack)] = (xrp, value, prob, args, True)
@@ -72,6 +74,7 @@ class RandomDB:
   def remove(self, stack, memorize = True):
     assert self.has(stack)
     (xrp, value, prob, args, is_obs_noise) = self.get(stack)
+    self.p -= prob
     if not is_obs_noise:
       self.count -= 1
       assert self.count >= 0
@@ -108,16 +111,7 @@ class RandomDB:
 
   # gets log probability
   def prob(self):
-    ans = 0
-    for key in self.db:
-      (xrp, value, prob, args, is_obs_noise) = self.db[key]
-      ans += prob
-    for key in self.db_noise:
-      (xrp, value, prob, args, is_obs_noise) = self.db_noise[key]
-      ans += prob
-    #  print '  ', xrp, prob
-    #print ans 
-    return ans
+    return self.p
 
   def unevaluate(self, uneval_stack, args = None):
     if args is not None:
@@ -148,6 +142,8 @@ class RandomDB:
     self.db_noise = {}
     self.count = 0
     self.save()
+    self.p = 0
+
 
   def __str__(self):
     string = 'DB with state:'
