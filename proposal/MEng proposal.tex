@@ -64,15 +64,15 @@ A core operation of probabilistic programming languages is inference, which is, 
 
 %In this paper, we first give an overview of our language and its implementation.  
 
-\pagebreak
+
 
 \section{Language description}
 
 \subsection{Values}
 
-A {\bf value} is a valid binding for a variable, in our language.  For example, integers, floats, and booleans are valid values.  We call these primitive values.  Another type of value is a {\bf procedure} --- a function which gets applied to arguments and returns (not necessarily primitive) values.  
+A {\bf value} is a valid binding for a variable, in our language.  For example, integers, floats, and booleans are valid values.  We call these primitive values.  Another type of value is a {\bf procedure}, a function which gets applied to arguments and returns (not necessarily primitive) values.  
 
-These procedures should be non-deterministic.  To allow for this, we can imagine that there is a special procedure which takes no arguments, and outputs 0 or 1, each with probability $\frac{1}{2}$.  Arbitrary random procedures can then be built using this one.   We will see later that we actually can and will allow for something much more general than this.
+These procedures should be non-deterministic.  To allow for this, we can imagine that there is a special procedure, call it {\tt bernoulli}, which takes an argument $p$, and outputs 0 or 1, with probabilities $1-p$ and $p$, respectively.  Arbitrary random procedures can then be built up using this one.   We will see later that we actually can and will allow for something far more general than this.
 
 %Suppose I declare in some program that {\tt x} is determined by a coin flip.  But on any given execution of the program, {\tt x} must take on one of two values.  \vspace{6 pt}
 
@@ -153,15 +153,16 @@ We now describe the way in which inference is implemented, at a high level.   Th
 Our proposal density, which chooses the new state (program execution) to potentially transition to, does the following:   
 \begin{enumerate}
 \item Pick, at random, one of the random choices made, at any point in the program's execution history.  Make a new choice for this randomness.  
-\item Rerun the entire program, changing only this choice.  If this causes us to evaluate new sections of the code (a different side of an if statement, or a procedure called with different arguments), simply run these new sections.  % Also ``undo" the evaluation of previously-evaluated sections which are no longer evaluated.   
+\item Rerun the entire program, changing only this choice.  If this causes us to evaluate new sections of the code (a different side of an if statement, or a procedure called with different arguments), simply run these new sections.  
+Also ``unevaluate" the evaluation of previously-evaluated sections which are no longer evaluated.   
 % \item For all observations, use the outermost noise to force.  
 \end{enumerate}
 
-If the new execution history doesn't agree with our observations, we assign it a probability of 0, so we never transition to that state.  Otherwise, we look at all the choices of randomness in the program, take their product, and assign it probability which is the product of all the 
+We then use the update rule of Metropolis-Hastings to decide whether we enter this new state, or whether we keep the old one.  It is simple to assign probabilities proportional to the posterior:  If the new execution history doesn't agree with our observations, we assign it a probability of 0 (so we never transition to such a state).  Otherwise, we look at all the choices of randomness in the program, see how likely those choices were, and take the product over all these choices.   
 
-We then use the update rule of Metropolis-Hastings to decide whether we enter this new state, or whether we keep the old one.  
+\subsection{Adding noise to observations}
 
-Unfortunately, as I've described it, this random walk doesn't converge to the posterior.  Consider the following example, in which I flip two weighted coins and observe that they came up differently:  
+Unfortunately, as it has been described, this random walk doesn't converge to the posterior!  Consider the following example, in which I flip two weighted coins and observe that they came up differently:  
 
 \begin{small}
 \begin{verbatim}
@@ -169,21 +170,35 @@ Unfortunately, as I've described it, this random walk doesn't converge to the po
 >>> assume('a', bernoulli(p))
 >>> assume('b', bernoulli(q))
 >>> assume('c', var('a') ^ var('b'))
->>> observe(bernoulli_noise('c', noise_level), True)
+>>> observe('c', True)
 \end{verbatim}
 \end{small}
 
-Notice that if there is no noise in our observations, this algorithm does not necessarily mix in finite time.  
+It is easy to verify that the posterior distribution should have the state {\tt \{a:True, b:False\}} with probability $\frac{9}{13}$ and {\tt \{a:False, b:True\}} with probability $\frac{4}{13}$.  However, we can see that if we start in the state {\tt \{a:True, b:False\}}, we will never walk to either of the two adjacent states {\tt \{a:True, True\}} and {\tt \{a:False, b:False\}}.  So the random walk stays in that state forever!  The same argument applies for {\tt \{a:False, b:True\}}.  Thus if we draw a state from the prior, and run any number of steps of the random walk, the resulting distribution is identical to the prior.  \vspace{6 pt}
 
-Consider the following example: \\
+To fix this problem, we should allow some small probability of transitioning to states where observations are false.  After all, a Bayesian should never trust their eyes 100\%.  For example, suppose that whenever we had an observation
 
+\begin{small}
+\begin{verbatim}
+>>> observe(expr, val)
+\end{verbatim}
+\end{small}
 
+We instead always use:
 
+\begin{small}
+\begin{verbatim}
+>>> observe(bernoulli(ifelse(expr == val, 1, noise_level)), True)
+\end{verbatim}
+\end{small}
 
-Some executions are more likely than others, and so 
+Now, when we run our walk, if the expression {\tt expr == val} evaluates to false (so the original observation would've failed), we force the outermost {\tt bernoulli} application to be {\tt True}.
+
+suppose 
+Then, the space of states is always connected in the random walk and we should get convergence.  % I don't know if there is any formal sense in which this is really true...
 
 Here pseudocode for a single iteration:
-
+\begin{small}
 \begin{verbatim}
   stack = globals.db.random_stack()
   (xrp, val, prob, args) = globals.db.get(stack)
@@ -212,7 +227,7 @@ Here pseudocode for a single iteration:
       globals.db.restore()
   globals.db.save()
 \end{verbatim}
-
+\end{small}
 \subsection{XRPs}
 
 Our language allows for the use of something more general than random procedures, while retaining the ability to perform inference.   It allows for what we call an {\bf exchangeable random procedure (XRP)}.  
@@ -223,12 +238,18 @@ The role of XRPs will be motivated and discussed in detail later.  For now, it m
 
 The exchangeable sequence 
 
+% what we actually require is that our observed expressions all have an outermost xrp application
+
+
 % : MH on random worlds
 %            - pseudcode, reflecting what you learned (beyond what was in the AISTATS paper)
 %            - discuss eval, uneval, XRPs with state, mem as an example, etc
 %        - [[whatever focused experiments/results we come up with]]
 
 %\cite{Fagin1}:  
+
+\subsection{The randomness database}
+
 
 \pagebreak
 

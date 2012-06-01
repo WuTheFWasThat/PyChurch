@@ -379,7 +379,7 @@ def test_DPmem():
   observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.2)
 
   t = time()
-  print format(get_pdf(follow_prior('expected-mean', 100, 30), -4, 4, .5), '%0.2f') 
+  print format(get_pdf(follow_prior('expected-mean', 1000, 100), -4, 4, .5), '%0.2f') 
   print 'time taken', time() - t
 
   #concentration = 1
@@ -403,9 +403,9 @@ def test():
 
 #test_bayes_nets() 
 
-test_xor()  # needs like 500 to mix 
+#test_xor()  # needs like 500 to mix 
 
 #test_tricky() 
 #test_geometric()   
-#test_DPmem()
+test_DPmem()
 

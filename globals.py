@@ -5,10 +5,8 @@ import sys
 # Class representing environments
 class Environment:
   def __init__(self, parent = None):
-    # The parent environment
-    self.parent = parent
-    # Dictionary from names to values
-    self.assignments = {}
+    self.parent = parent # The parent environment
+    self.assignments = {} # Dictionary from names to values
     return
 
   def set(self, name, expression):
@@ -29,6 +27,7 @@ class Environment:
 # Class representing random db
 class RandomDB:
   def __init__(self):
+    #self.db = {} 
     self.db = RandomChoiceDict() 
     self.db_noise = {}
     self.count = 0
@@ -36,10 +35,9 @@ class RandomDB:
     # ALWAYS WORKING WITH LOG PROBABILITIES
     self.uneval_p = 0
     self.eval_p = 0
-    self.p = 0
+    self.p = 0 
     return
 
-  # implement tree data-structure?
   def insert(self, stack, xrp, value, args, is_obs_noise = False, memorize = True):
     assert value.__class__.__name__ == 'Value'
     if self.has(stack):
@@ -104,13 +102,17 @@ class RandomDB:
     return self.get(tuple(stack))[1]
 
   def random_stack(self):
-    #keys = self.db.keys()
-    #index = random.randint(0, len(self.db)-1)
-    #return list(keys[index])
+    #return list(random.choice(self.db.keys()))
     return self.db.randomKey()
 
-  # gets log probability
   def prob(self):
+    #ans = 0
+    #for key in self.db:
+    #  (xrp, value, prob, args, is_obs_noise) = self.db[key]
+    #  ans += prob
+    #for key in self.db_noise:
+    #  (xrp, value, prob, args, is_obs_noise) = self.db_noise[key]
+    #  ans += prob
     return self.p
 
   def unevaluate(self, uneval_stack, args = None):
@@ -138,12 +140,12 @@ class RandomDB:
       self.remove(tuple_stack)
 
   def reset(self):
+    #self.db = {} 
     self.db = RandomChoiceDict() 
     self.db_noise = {}
     self.count = 0
     self.save()
     self.p = 0
-
 
   def __str__(self):
     string = 'DB with state:'
@@ -191,4 +193,3 @@ db = RandomDB()
 mem = Directives_Memory() 
 
 sys.setrecursionlimit(10000)
-

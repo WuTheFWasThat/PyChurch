@@ -45,21 +45,28 @@ class Value:
     else:
       return hash(self.val)
 
-  def __cmp__(self, other):
-    if other.__class__.__name__ == 'Value':
-      if (self.val == other.val):
-        return 0
-      elif (self.val > other.val):
-        return 1
-      else:
-        return -1
+  def __eq__(self, other):
+    other = value(other)
+    if self.type != other.type:
+      return False # change this perhaps? 
+    elif self.type == 'xrp':
+      return self.val is other.val
+    elif self.type == 'procedure':
+      return self.hash == other.hash
     else:
-      if (self.val == other):
-        return 0
-      elif (self.val > other):
-        return 1
-      else:
-        return -1
+      return self.val == other.val
+
+  def __gt__(self, other):
+    other = value(other)
+    assert self.type in ['int', 'float']
+    assert other.type in ['int', 'float']
+    return self.val > other.val
+
+  def __lt__(self, other):
+    other = value(other)
+    assert self.type in ['int', 'float']
+    assert other.type in ['int', 'float']
+    return self.val < other.val
 
   def __and__(self, other):
     return Value(self.val & other.val)

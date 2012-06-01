@@ -25,9 +25,8 @@ class RandomChoiceDict(object):
         delId = self.keyToId.pop(key)
         lastKey = self.idToKey.pop()
 
-        if lastKey == key:
-          return
-        else:
+        # alternatively, check if delId < len(self.idToKey)
+        if lastKey != key:
           self.idToKey[delId] = lastKey
           self.keyToId[lastKey] = delId 
 
