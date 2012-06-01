@@ -339,7 +339,7 @@ def test_geometric():
   print "decay", globals.env.lookup('decay')
   print [sample(apply('geometric', 0)) for i in xrange(10)]
   observe(bernoulli_noise(apply('geometric', 0) == 3, .01), True)
-  a = follow_prior('decay', 10000, 1000)
+  a = follow_prior('decay', 1000, 1000)
   print a
   print 'pdf:', get_pdf(a, 0, 1, .01)
   print 'cdf:', get_cdf(a, 0, 1, .01)

@@ -139,6 +139,7 @@ class RandomDB:
       unevaluate_helper(tuple_stack)
     for tuple_stack in self.db_noise:
       unevaluate_helper(tuple_stack)
+
     for tuple_stack in to_delete:
       self.remove(tuple_stack)
 
@@ -147,6 +148,16 @@ class RandomDB:
     self.db_noise = {}
     self.count = 0
     self.save()
+
+  def __str__(self):
+    string = 'DB with state:'
+    string += '\n  Regular Flips:'
+    for s in self.db:
+      string += '\n    %s <- %s' % (self.db[s][1].val, s) 
+    string += '\n  Observe Flips:'
+    for s in self.db_noise:
+      string += '\n    %s <- %s' % (self.db_noise[s][1].val, s) 
+    return string
 
 class Directives_Memory:
   def __init__(self):

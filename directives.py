@@ -252,8 +252,7 @@ def infer(): # RERUN AT END
   old_p = globals.db.prob() 
   old_to_new_q = - math.log(globals.db.count) 
   if debug:
-    old_db = [(s, globals.db.db[s][1].val) for s in globals.db.db] 
-    print len(globals.db.db)
+    print  "old_db", globals.db
 
   globals.db.save()
 
@@ -261,8 +260,7 @@ def infer(): # RERUN AT END
   new_val = xrp.apply(args)
 
   if debug:
-    print "\nchanging", stack, "to", new_val
-    print  "old_db", old_db
+    print "\nCHANGING ", stack, "\n  TO   :  ", new_val, "\n"
   if val == new_val:
     globals.db.insert(stack, xrp, new_val, args)
     return
@@ -274,10 +272,12 @@ def infer(): # RERUN AT END
   old_to_new_q += globals.db.eval_p 
   new_to_old_q += globals.db.uneval_p 
   if debug:
-    print "new db", [(s, globals.db.db[s][1]) for s in globals.db.db] 
-    print "q(o -> n)", old_to_new_q, "q(n -> o)", new_to_old_q 
-    print "p(old)", old_p, "p(new)", new_p
-    print 'log transition prob',  new_p + new_to_old_q - old_p - old_to_new_q 
+    print "new db", globals.db
+    print "\nq(old -> new) : ", old_to_new_q
+    print "q(new -> old) : ", new_to_old_q 
+    print "p(old) : ", old_p
+    print "p(new) : ", new_p
+    print 'log transition prob : ',  new_p + new_to_old_q - old_p - old_to_new_q , "\n"
 
   if old_p * old_to_new_q > 0:
     p = random.random()
@@ -287,9 +287,10 @@ def infer(): # RERUN AT END
         print 'restore'
   globals.db.save()
   if debug: 
-    print "new db", [(s, globals.db.db[s][1]) for s in globals.db.db] 
+    print "new db", globals.db
+    print "\n-----------------------------------------\n"
 
-def follow_prior(name, niter = 1001, burnin = 100):
+def follow_prior(name, niter = 1000, burnin = 100):
 
   if name in globals.mem.vars:
     expr = globals.mem.vars[name]
@@ -298,7 +299,7 @@ def follow_prior(name, niter = 1001, burnin = 100):
 
   dict = {}
   for n in xrange(niter):
-    #if n % 100 == 0: print n
+    if n % 100 == 0: print n
 
     # re-draw from prior
     rerun(True)
