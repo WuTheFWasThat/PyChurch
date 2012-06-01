@@ -192,7 +192,7 @@ We instead always use:
 \end{verbatim}
 \end{small}
 
-Now, when we run our walk, if the expression {\tt expr == val} evaluates to false (so the original observation would've failed), we force the outermost {\tt bernoulli} application to be {\tt True}.
+Now, when we run our walk, if the expression {\tt expr == val} evaluates to {\tt False} (so the original observation would've failed), we force the outermost {\tt bernoulli} application to be {\tt True}.  
 
 suppose 
 Then, the space of states is always connected in the random walk and we should get convergence.  % I don't know if there is any formal sense in which this is really true...

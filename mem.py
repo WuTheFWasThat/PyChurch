@@ -5,7 +5,6 @@ class mem_proc_XRP(XRP):
     self.procedure = procedure
     self.n = len(procedure.vars)
     self.state = {}
-    self.hash = random.randint(0, 2**32 - 1)
   def apply(self, args = None):
     assert len(args) == self.n and all([args[i].__class__.__name__ == 'Value' for i in xrange(self.n)])
     if tuple(args) in self.state:
@@ -41,7 +40,6 @@ class mem_proc_XRP(XRP):
 class mem_XRP(XRP):
   def __init__(self):
     self.state = {}
-    self.hash = random.randint(0, 2**32 - 1)
   def apply(self, args = None):
     procedure = args[0]
     assert procedure.__class__.__name__ == 'Value' and procedure.type == 'procedure'

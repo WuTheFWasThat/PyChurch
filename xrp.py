@@ -5,7 +5,6 @@ from values import *
 class gaussian_args_XRP(XRP):
   def __init__(self):
     self.state = None
-    self.hash = random.randint(0, 2**64 - 1)
     return
   def apply(self, args = None):
     (mu , sigma) = (args[0].val, args[1].val)
@@ -29,7 +28,6 @@ class gaussian_args_XRP(XRP):
 class gaussian_no_args_XRP(XRP):
   def __init__(self, mu, sigma):
     self.state = None
-    self.hash = random.randint(0, 2**64 - 1)
     check_num(mu)
     check_pos(sigma)
     (self.mu , self.sigma) = (mu, sigma + 0.0)
@@ -55,7 +53,6 @@ class gaussian_no_args_XRP(XRP):
 class gaussian_XRP(XRP):
   def __init__(self):
     self.state = None
-    self.hash = random.randint(0, 2**64 - 1)
     return
   def apply(self, args = None):
     (mu,sigma) = (args[0].val, args[1].val)
@@ -74,7 +71,6 @@ class gaussian_XRP(XRP):
 class beta_args_XRP(XRP):
   def __init__(self):
     self.state = None
-    self.hash = random.randint(0, 2**64 - 1)
     return
   def apply(self, args = None):
     (a,b) = (args[0].val, args[1].val)
@@ -103,7 +99,6 @@ class beta_args_XRP(XRP):
 class beta_no_args_XRP(XRP):
   def __init__(self, a, b):
     self.state = None
-    self.hash = random.randint(0, 2**64 - 1)
     check_pos(a)
     check_pos(b)
     self.a, self.b = a, b 
@@ -129,7 +124,6 @@ class beta_no_args_XRP(XRP):
 class beta_XRP(XRP):
   def __init__(self):
     self.state = None
-    self.hash = random.randint(0, 2**64 - 1)
     return
   def apply(self, args = None):
     (a,b) = (args[0].val, args[1].val)
@@ -148,7 +142,6 @@ class beta_XRP(XRP):
 class bernoulli_args_XRP(XRP):
   def __init__(self):
     self.state = None
-    self.hash = random.randint(0, 2**64 - 1)
     return
   def apply(self, args = None):
     p = args[0].val
@@ -174,7 +167,6 @@ class bernoulli_no_args_XRP(XRP):
     self.state = None
     self.p = p
     check_prob(p)
-    self.hash = random.randint(0, 2**64 - 1)
     return
   def apply(self, args = None):
     if args != None and len(args) != 0:
@@ -198,7 +190,6 @@ class bernoulli_no_args_XRP(XRP):
 class beta_XRP(XRP):
   def __init__(self):
     self.state = None
-    self.hash = random.randint(0, 2**64 - 1)
     return
   def apply(self, args = None):
     p = args[0].val
@@ -216,7 +207,6 @@ class beta_XRP(XRP):
 class uniform_args_XRP(XRP):
   def __init__(self):
     self.state = None
-    self.hash = random.randint(0, 2**64 - 1)
     return
   def apply(self, args = None):
     n = args[0].val
@@ -237,7 +227,6 @@ class uniform_args_XRP(XRP):
 class uniform_no_args_XRP(XRP):
   def __init__(self, n):
     self.state = None
-    self.hash = random.randint(0, 2**64 - 1)
     check_nat(n)
     self.n = n
     return
@@ -260,7 +249,6 @@ class uniform_no_args_XRP(XRP):
 class uniform_XRP(XRP):
   def __init__(self):
     self.state = None
-    self.hash = random.randint(0, 2**64 - 1)
     return
   def apply(self, args = None):
     n = args[0].val
@@ -280,7 +268,6 @@ class beta_bernoulli_1(XRP):
     (a, b) = start_state
     self.state = random.betavariate(a, b)
     check_prob(self.state)
-    self.hash = random.randint(0, 2**64 - 1)
   def apply(self, args = None):
     return value((random.random() < self.state))
   def incorporate(self, val, args = None):
@@ -299,7 +286,6 @@ class beta_bernoulli_1(XRP):
 class beta_bernoulli_2(XRP):
   def __init__(self, start_state = (1, 1)):
     self.state = start_state
-    self.hash = random.randint(0, 2**64 - 1)
   def apply(self, args = None):
     (h, t) = self.state
     if (h | t == 0):
