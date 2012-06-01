@@ -64,12 +64,12 @@ class RandomDB:
     self.memory.reverse()
     for (type, stack, xrp, value, args, is_obs_noise) in self.memory:
       if type == 'insert':
-        self.remove(stack, False, is_obs_noise)
+        self.remove(stack, False)
       else:
         assert type == 'remove'
         self.insert(stack, xrp, value, args, False, is_obs_noise)
 
-  def remove(self, stack, is_obs_noise = False, memorize = True):
+  def remove(self, stack, memorize = True):
     assert self.has(stack)
     (xrp, value, prob, args, is_obs_noise) = self.get(stack)
     if not is_obs_noise:
@@ -85,7 +85,8 @@ class RandomDB:
       self.memory.append(('remove', stack, xrp, value, args, is_obs_noise))
 
   def has(self, stack):
-    return tuple(stack) in self.db
+    stack = tuple(stack)
+    return ((stack in self.db) or (stack in self.db_noise)) 
 
   def get(self, stack):
     if tuple(stack) in self.db:
@@ -100,9 +101,10 @@ class RandomDB:
     return self.get(tuple(stack))[1]
 
   def random_stack(self):
-    keys = self.db.keys()
-    index = random.randint(0, len(self.db)-1)
-    return list(keys[index])
+    #keys = self.db.keys()
+    #index = random.randint(0, len(self.db)-1)
+    #return list(keys[index])
+    return self.db.randomKey()
 
   # gets log probability
   def prob(self):
@@ -118,7 +120,7 @@ class RandomDB:
     if args is not None:
       args = tuple(args)
     to_delete = []
-    for tuple_stack in self.db:
+    for tuple_stack in self.db.dict:
       stack = list(tuple_stack) 
       if len(stack) >= len(uneval_stack) and stack[:len(uneval_stack)] == uneval_stack:
         if args is None:
@@ -131,7 +133,8 @@ class RandomDB:
       self.remove(tuple_stack)
 
   def reset(self):
-    self.db = {}
+    self.db = RandomChoiceDict() 
+    self.db_noise = {}
     self.count = 0
     self.save()
 

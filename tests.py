@@ -395,7 +395,7 @@ def test():
 
 #test_xor()  # needs like 500 to mix 
 
-test_tricky() 
+#test_tricky() 
 #test_geometric()   
-#test_DPmem()
+test_DPmem()
 

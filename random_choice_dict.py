@@ -36,3 +36,12 @@ class RandomChoiceDict(object):
 
     def __str__(self):
         return self.dict.__str__()
+
+    def __iter__(self):
+        return self.dict.__iter__()
+
+    def __contains__(self, x):
+        return self.dict.__contains__(x)
+
+    def __len__(self):
+        return self.dict.__len__()
