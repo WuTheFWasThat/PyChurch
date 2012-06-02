@@ -254,6 +254,8 @@ and maintains the following variables:
 \begin{itemize}
 \item {\tt count}:  Keeps track of the number of XRP applications which aren't outermost noise applications.
 \item {\tt prob}:  Keeps track of the product of all probabilities stored, i.e. the probability of the current execution history.  
+\item {\tt eval\_prob}:  Keeps track of the product of all probabilities which were newly evaluated since the last save.
+\item {\tt uneval\_prob}:  Keeps track of the product of all probabilities stored, i.e. the probability of the current execution history.  
 \end{itemize}
 
 Implementation of this database is not important, although there are some clever algorithmic tricks which go into it (especially in order to support {\tt random\_stack} in constant time).  %All data is stored in a hash table.  Furthermore, we use an algorithmic trick to augment hash tables to be able to choose a random key in $O(1)$, in order to support {\tt random\_stack()}.  Outermost noise applications are stored separately.  The products of the probabilities is calculated in a rolling manner.  Furthermore, all probabilities are kept as log probabilities (in fact, we require that the {\tt prob()} function of XRPs return the log probability).  Save does not literally remember the state.  We simply start remembering all inserts and removes, and undo them when we restore.  
@@ -268,8 +270,8 @@ def infer():
   stack = globals.db.random_stack()
   (xrp, args, val, prob, obs) = globals.db.get(stack)
 
-  old_p = globals.db.prob()
-  old_to_new_q = - math.log(globals.db.count)
+  old_p = globals.db.prob
+  old_to_new_q = 1 / globals.db.count
 
   globals.db.save()
 
@@ -283,9 +285,9 @@ def infer():
 
   rerun(False)
   new_p = globals.db.prob() 
-  new_to_old_q = -math.log(globals.db.count) 
-  old_to_new_q += globals.db.eval_p 
-  new_to_old_q += globals.db.uneval_p 
+  new_to_old_q = 1 / globals.db.count
+  old_to_new_q *= globals.db.eval_prob
+  new_to_old_q *= globals.db.uneval_prob
   if old_p * old_to_new_q > 0:
     p = random.random()
     if new_p + new_to_old_q - old_p - old_to_new_q < math.log(p):
@@ -293,7 +295,8 @@ def infer():
   globals.db.save()
 \end{verbatim}
 \end{small}
-\subsection{XRPs}
+
+Technically, we use log probabilities instead of probabilities, as suggested here.  
 
 % what we actually require is that our observed expressions all have an outermost xrp application
 

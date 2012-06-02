@@ -272,7 +272,7 @@ def infer(): # RERUN AT END
   #debug = True 
   debug = False 
 
-  old_p = globals.db.prob() 
+  old_p = globals.db.p
   old_to_new_q = - math.log(globals.db.count) 
   if debug:
     print  "old_db", globals.db
@@ -290,7 +290,7 @@ def infer(): # RERUN AT END
   globals.db.insert(stack, xrp, new_val, args)
 
   rerun(False)
-  new_p = globals.db.prob() 
+  new_p = globals.db.p
   new_to_old_q = -math.log(globals.db.count) 
   old_to_new_q += globals.db.eval_p 
   new_to_old_q += globals.db.uneval_p 
