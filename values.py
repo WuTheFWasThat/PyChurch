@@ -36,6 +36,9 @@ class Value:
     else:
       return str(self.val)
 
+  def __repr__(self):
+    return self.__str__()
+
   def __hash__(self):
     if self.type == 'procedure':
       return self.hash 

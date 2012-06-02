@@ -78,19 +78,23 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
 
   expr = expression(expr)
 
-  def evaluate_recurse(subexpr, env, reflip, stack, addition):
+  def evaluate_recurse(subexpr, env, reflip, stack, addition, secondaddition = None):
     stack.append(addition)
+    if secondaddition is not None:
+      stack.append(secondaddition)
     val = evaluate(subexpr, env, reflip, stack)
+    if secondaddition is not None:
+      stack.pop()
     stack.pop()
     return val
 
   def binary_op_evaluate(expr, env, reflip, stack, op): 
-    val1 = evaluate_recurse(expr.children[0], env, reflip, stack , 0)
-    val2 = evaluate_recurse(expr.children[1], env, reflip, stack , 1)
-    return Value(op(val1.val , val2.val))
+    val1 = evaluate_recurse(expr.children[0], env, reflip, stack , 0).val
+    val2 = evaluate_recurse(expr.children[1], env, reflip, stack , 1).val
+    return Value(op(val1 , val2))
 
   def list_op_evaluate(expr, env, reflip, stack, op):
-    vals = [evaluate(expr.children[i], env, reflip, stack + [i]).val for i in xrange(len(expr.children))]
+    vals = [evaluate_recurse(expr.children[i], env, reflip, stack , i).val for i in xrange(len(expr.children))]
     return Value(reduce(op, vals))
 
   if expr.type == 'value':
@@ -105,31 +109,31 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     else:
       return val
   elif expr.type == 'if':
-    cond = evaluate(expr.cond, env, reflip, stack + [-1])
+    cond = evaluate_recurse(expr.cond, env, reflip, stack , -1)
     assert type(cond.val) in [bool] 
     if cond.val: 
       globals.db.unevaluate(stack + [0])
-      return evaluate(expr.true, env, reflip, stack + [1])
+      return evaluate_recurse(expr.true, env, reflip, stack , 1)
     else:
       globals.db.unevaluate(stack + [1])
-      return evaluate(expr.false, env, reflip, stack + [0])
+      return evaluate_recurse(expr.false, env, reflip, stack , 0)
   elif expr.type == 'switch':
-    index = evaluate(expr.index, env, reflip, stack + [-1])
+    index = evaluate_recurse(expr.index, env, reflip, stack , -1)
     assert type(index.val) in [int] 
     assert 0 <= index.val < expr.n
     # unevaluate?
-    return evaluate(expr.children[index.val], env, reflip, stack + [index.val])
+    return evaluate_recurse(expr.children[index.val], env, reflip, stack , index.val)
   elif expr.type == 'apply':
     n = len(expr.children)
-    args = [evaluate(expr.children[i], env, reflip, stack + [i]) for i in range(n)]
-    op = evaluate(expr.op, env, reflip, stack + [-2])
+    args = [evaluate_recurse(expr.children[i], env, reflip, stack , i) for i in range(n)]
+    op = evaluate_recurse(expr.op, env, reflip, stack , -2)
     if op.type == 'procedure':
       globals.db.unevaluate(stack + [-1], args)
       assert n == len(op.vars)
       newenv = op.env.spawn_child()
       for i in range(n):
         newenv.set(op.vars[i], args[i]) 
-      return evaluate(op.body, newenv, reflip, stack + [-1, tuple(args)])
+      return evaluate_recurse(op.body, newenv, reflip, stack , -1, tuple(args))
     elif op.type == 'xrp':
 
       if xrp_force_val != None: 
@@ -138,7 +142,7 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
         globals.db.insert(stack, op.val, xrp_force_val, args, True) 
         return xrp_force_val
 
-      stack = stack + [-1, tuple(args)]
+      stack.extend([-1, tuple(args)])
       if not globals.db.has(stack):
         val = value(op.val.apply(args))
         globals.db.insert(stack, op.val, val, args)
@@ -149,6 +153,8 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
           globals.db.insert(stack, op.val, val, args)
         else:
           val = globals.db.get_val(stack) 
+      stack.pop()
+      stack.pop()
       return val
     else:
       warnings.warn('Must apply either a procedure or xrp')
@@ -176,14 +182,14 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
   elif expr.type == '|':
     return list_op_evaluate(expr, env, reflip, stack, lambda x, y : x | y)
   elif expr.type == '~':
-    neg = evaluate(expr.negation, env, reflip, stack)
-    return Value(not neg.val)
+    negval = evaluate_recurse(expr.negation, env, reflip, stack, 0).val
+    return Value(not negval)
   elif expr.type == 'add':
     return list_op_evaluate(expr, env, reflip, stack, lambda x, y : x + y)
   elif expr.type == 'subtract':
-    val1 = evaluate(expr.children[0], env, reflip, stack + [0])
-    val2 = evaluate(expr.children[1], env, reflip, stack + [1])
-    return Value(val1.val - val2.val)
+    val1 = evaluate_recurse(expr.children[0], env, reflip, stack , 0).val
+    val2 = evaluate_recurse(expr.children[1], env, reflip, stack , 1).val
+    return Value(val1 - val2)
   elif expr.type == 'multiply':
     return list_op_evaluate(expr, env, reflip, stack, lambda x, y : x * y)
   else:
@@ -309,7 +315,7 @@ def follow_prior(name, niter = 1000, burnin = 100):
 
   dict = {}
   for n in xrange(niter):
-    if n % 100 == 0: print n
+    if n % 10 == 0: print n
 
     # re-draw from prior
     rerun(True)

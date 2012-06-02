@@ -39,6 +39,7 @@ class RandomDB:
     return
 
   def insert(self, stack, xrp, value, args, is_obs_noise = False, memorize = True):
+    stack = tuple(stack)
     assert value.__class__.__name__ == 'Value'
     if self.has(stack):
       self.remove(stack)
@@ -46,9 +47,9 @@ class RandomDB:
     self.p += prob
     xrp.incorporate(value, args)
     if is_obs_noise:
-      self.db_noise[tuple(stack)] = (xrp, value, prob, args, True)
+      self.db_noise[stack] = (xrp, value, prob, args, True)
     else:
-      self.db[tuple(stack)] = (xrp, value, prob, args, False)
+      self.db[stack] = (xrp, value, prob, args, False)
     if not is_obs_noise:
       self.count += 1
       self.eval_p += prob # hmmm.. 
@@ -70,6 +71,7 @@ class RandomDB:
         self.insert(stack, xrp, value, args, False, is_obs_noise)
 
   def remove(self, stack, memorize = True):
+    stack = tuple(stack)
     assert self.has(stack)
     (xrp, value, prob, args, is_obs_noise) = self.get(stack)
     self.p -= prob
@@ -79,9 +81,9 @@ class RandomDB:
       self.uneval_p += prob # previously unindented...
     xrp.remove(value, args)
     if is_obs_noise:
-      del self.db_noise[tuple(stack)]
+      del self.db_noise[stack]
     else:
-      del self.db[tuple(stack)]
+      del self.db[stack]
     if memorize:
       self.memory.append(('remove', stack, xrp, value, args, is_obs_noise))
 
@@ -90,10 +92,11 @@ class RandomDB:
     return ((stack in self.db) or (stack in self.db_noise)) 
 
   def get(self, stack):
-    if tuple(stack) in self.db:
-      return self.db[tuple(stack)]
-    elif tuple(stack) in self.db_noise:
-      return self.db_noise[tuple(stack)]
+    stack = tuple(stack)
+    if stack in self.db:
+      return self.db[stack]
+    elif stack in self.db_noise:
+      return self.db_noise[stack]
     else:
       warnings.warn('Failed to get stack %s' % str(stack))
       return None

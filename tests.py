@@ -28,7 +28,7 @@ def get_cdf(valuedict, start, end, bucketsize):
   return cumulative
   
 def format(list, format):
-  print [ format % x for x in list]
+  return [ format % x for x in list]
 
 """ TESTS """
 
@@ -379,7 +379,7 @@ def test_DPmem():
   observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.2)
 
   t = time()
-  print format(get_pdf(follow_prior('expected-mean', 1000, 100), -4, 4, .5), '%0.2f') 
+  print format(get_pdf(follow_prior('expected-mean', 100, 30), -4, 4, .5), '%0.2f') 
   print 'time taken', time() - t
 
   #concentration = 1
@@ -395,9 +395,9 @@ def test():
   expr = beta_bernoulli_1()
   print [sample(apply(coin_1)) for i in xrange(10)]
   
-test_expressions()
-test_recursion()
-test_beta_bernoulli()
+#test_expressions()
+#test_recursion()
+#test_beta_bernoulli()
 #
 #test_mem()
 
@@ -407,5 +407,5 @@ test_beta_bernoulli()
 
 #test_tricky() 
 #test_geometric()   
-#test_DPmem()
+test_DPmem()
 
