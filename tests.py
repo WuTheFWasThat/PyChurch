@@ -395,9 +395,9 @@ def test():
   expr = beta_bernoulli_1()
   print [sample(apply(coin_1)) for i in xrange(10)]
   
-#test_expressions()
-#test_recursion()
-#test_beta_bernoulli()
+test_expressions()
+test_recursion()
+test_beta_bernoulli()
 #
 #test_mem()
 
@@ -407,5 +407,5 @@ def test():
 
 #test_tricky() 
 #test_geometric()   
-test_DPmem()
+#test_DPmem()
 

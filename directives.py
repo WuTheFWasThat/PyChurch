@@ -78,9 +78,15 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
 
   expr = expression(expr)
 
+  def evaluate_recurse(subexpr, env, reflip, stack, addition):
+    stack.append(addition)
+    val = evaluate(subexpr, env, reflip, stack)
+    stack.pop()
+    return val
+
   def binary_op_evaluate(expr, env, reflip, stack, op): 
-    val1 = evaluate(expr.children[0], env, reflip, stack + [0])
-    val2 = evaluate(expr.children[1], env, reflip, stack + [1])
+    val1 = evaluate_recurse(expr.children[0], env, reflip, stack , 0)
+    val2 = evaluate_recurse(expr.children[1], env, reflip, stack , 1)
     return Value(op(val1.val , val2.val))
 
   def list_op_evaluate(expr, env, reflip, stack, op):
