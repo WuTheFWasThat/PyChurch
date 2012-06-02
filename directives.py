@@ -59,6 +59,8 @@ def replace(expr, env):
     children = [replace(x, env) for x in expr.children] 
     return Expression(('apply', expr.op, children)) 
   elif expr.type == 'function':
+    # hmm .. replace variables?  maybe wipe those assignments out ...
+    children = [replace(x, env) for x in expr.children] 
     body = replace(expr.body, env)
     return Expression(('function', expr.vars, body)) 
   elif expr.type in ['=', '<', '>', '>=', '<=', '&', '^', '|', 'add', 'subtract', 'multiply']:
@@ -129,7 +131,11 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     op = evaluate_recurse(expr.op, env, reflip, stack , -2)
     if op.type == 'procedure':
       globals.db.unevaluate(stack + [-1], args)
-      assert n == len(op.vars)
+      if n != len(op.vars):
+        print 'Should have %d arguments' % n
+        print op.vars
+        print expr.children
+        assert False
       newenv = op.env.spawn_child()
       for i in range(n):
         newenv.set(op.vars[i], args[i]) 
@@ -152,7 +158,10 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
           val = value(op.val.apply(args))
           globals.db.insert(stack, op.val, val, args)
         else:
-          val = globals.db.get_val(stack) 
+          (xrp, val, prob, dbargs, is_obs_noise) = globals.db.get(stack) 
+          #assert xrp == op.val 
+          #assert dbargs == args 
+          assert not is_obs_noise
       stack.pop()
       stack.pop()
       return val
@@ -315,7 +324,7 @@ def follow_prior(name, niter = 1000, burnin = 100):
 
   dict = {}
   for n in xrange(niter):
-    if n % 10 == 0: print n
+    if n % 100 == 0: print n
 
     # re-draw from prior
     rerun(True)

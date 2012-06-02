@@ -235,19 +235,27 @@ The noisy expressions obtained with {\tt noisy} are a special case of this, so l
 
 In order to perform inference, we must store all random choices (XRP applications) in the execution of our program, so that we can evaluate and unevaluate.  
 
-The first challenge is figuring out how to specify points in the execution history.  Essentially, we use a stack, 
+The first challenge is figuring out how to specify points in the execution history.  Essentially, we use a call stack, augmented with things telling us the location being considered within an expression.  
+
+Then, our database supports the following operations:
+
+\begin{itemize}
+\item {\tt insert(stack, xrp, value, args, obs)}:  Records that the {\tt xrp} applied to {\tt args}, at execution point specified by {\tt stack}, returned {\tt value}.  The argument {\tt obs} specifies whether this was an outermost ``noise" XRP application in an observation.  
+\item {\tt remove(stack)}:  Removes the random choice at the execution point specified by {\tt stack}.  
+\item {\tt has(stack)}:  Checks whether the current execution history reaches the execution point specified by {\tt stack}.  
+\item {\tt get(stack)}:  Gets a tuple {\tt (xrp, args, value, prob, obs)} containing all the relevant data corresponding to the random choice stored at {\tt stack}.  The elements of the tuple are, in order:  the XRP applied, the list of arguments, the resulting value, the probability of getting that value, and whether it was an outermost ``noise" application in an observation.
+\item {\tt random\_stack()}:  Return a random stack in the database such that {\tt obs = False}.  
+\item {\tt prob()}:  Returns the products of all the probabilities stored, i.e. the probability of the current execution history.  
+\item {\tt unevaluate(stack, args)}: Unevaluates everything in the database which was evaluated as a result of reaching the execution point {\tt stack}.  If {\tt args} is provided, then we unevaluate anything evaluated as a result of reaching a procedure at {\tt stack}, and having arguments different from {\tt args}.
+\item {\tt save()}: Saves the current state of the database.
+\item {\tt restore()}: Restores the saved version of the database.
+\item {\tt reset()}: Resets the database, as if the program has not been executed at all.  
+\end{itemize}
+
+Implementation of this database is not important, although there are some clever algorithmic tricks which go into it (especially in order to support {\tt random\_stack} in constant time).  %All data is stored in a hash table.  Furthermore, we use an algorithmic trick to augment hash tables to be able to choose a random key in $O(1)$, in order to support {\tt random\_stack()}.  Outermost noise applications are stored separately.  The products of the probabilities is calculated in a rolling manner.  Save does not literally remember the state.  We simply start remembering all inserts and removes, and undo them when we restore.  
 
 
-
-
-
-
-
-
-
-
-
-Here pseudocode for a single iteration:
+We can now give pseudocode for {\tt infer}, which runs a single step in the Markov chain:
 \begin{small}
 \begin{verbatim}
   stack = globals.db.random_stack()

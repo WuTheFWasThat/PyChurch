@@ -1,7 +1,7 @@
 from directives import * 
 from mem import *
 from time import *
-import matplotlib.pyplot as plot
+#import matplotlib.pyplot as plot
 
 def noisy(expression, error):
   return bernoulli(ifelse(expression, 1, error))
@@ -24,7 +24,7 @@ def get_cdf(valuedict, start, end, bucketsize):
   cumulative[0] = density[0]
   for i in range(1, len(cumulative)):
     cumulative[i] = cumulative[i-1] + density[i]
-  plot.plot([start + i * bucketsize for i in range(numbuckets)], cumulative)
+  #plot.plot([start + i * bucketsize for i in range(numbuckets)], cumulative)
   return cumulative
   
 def format(list, format):
@@ -127,7 +127,7 @@ def test_beta_bernoulli():
 def test_bayes_nets():
   print "\n TESTING INFERENCE ON CLOUDY/SPRINKLER\n"
   
-  niters, burnin = 1000, 100
+  niters, burnin = 100, 100
 
   reset()
   assume('cloudy', bernoulli(0.5))
@@ -145,7 +145,7 @@ def test_bayes_nets():
 
   print "\n TESTING BEACH NET\n"
   
-  niters, burnin = 1000, 100
+  niters, burnin = 100, 100
 
   reset()
   assume('sunny', bernoulli(0.5))
@@ -164,7 +164,7 @@ def test_bayes_nets():
   print "\n TESTING MODIFIED BURGLARY NET\n" # An example from AIMA
   reset()
 
-  niters, burnin = 1000, 100
+  niters, burnin = 100, 100
 
   pB = 0.1
   pE = 0.2
@@ -365,21 +365,30 @@ def test_DPmem():
 
   concentration = 1 # when close to 0, just mem.  when close to infinity, sample 
   assume('DPmemflip', apply('DPmem', [concentration, function(['x'], bernoulli(0.5))]))
-  print [sample(apply('DPmemflip', 5)) for i in xrange(10)]
+  print [sample(apply('DPmemflip', 222)) for i in xrange(10)]
 
   print "\n TESTING GAUSSIAN MIXTURE MODEL\n"
-  assume('concentration', gaussian(1, 0.2)) # use vague-gamma? 
+  assume('alpha', gaussian(1, 0.2)) # use vague-gamma? 
   assume('expected-mean', gaussian(0, 1))
   assume('expected-variance', gaussian(0, 1))
-  assume('gen-cluster-mean', gaussian(0, 1))
-  assume('get-datapoint', mem( function(['id'], gaussian('gen-cluster-mean', 1.0))))
+  assume('gen-cluster-mean', apply('DPmem', ['alpha', function(['x'], gaussian(0, 1))]))
+  assume('get-datapoint', mem( function(['id'], gaussian(apply('gen-cluster-mean', 222), 1.0))))
   assume('outer-noise', gaussian(1, 0.2)) # use vague-gamma?
 
   observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.3)
   observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.2)
+  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.1)
+  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.15)
+  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.15)
+
+  niters, burnin = 100, 100
+
+  #print format(get_pdf(follow_prior('expected-mean', 1, burnin), -4, 4, .5), '%0.2f') 
+
+  print 'running', niters, 'times,', burnin, 'burnin'
 
   t = time()
-  print format(get_pdf(follow_prior('expected-mean', 100, 30), -4, 4, .5), '%0.2f') 
+  print format(get_pdf(follow_prior('expected-mean', niters, burnin), -4, 4, .5), '%0.2f') 
   print 'time taken', time() - t
 
   #concentration = 1
@@ -395,17 +404,17 @@ def test():
   expr = beta_bernoulli_1()
   print [sample(apply(coin_1)) for i in xrange(10)]
   
-#test_expressions()
-#test_recursion()
-#test_beta_bernoulli()
+test_expressions()
+test_recursion()
+test_beta_bernoulli()
 #
-#test_mem()
+test_mem()
 
-#test_bayes_nets() 
+test_bayes_nets() 
 
-#test_xor()  # needs like 500 to mix 
+test_xor()  # needs like 500 to mix 
 
-#test_tricky() 
-#test_geometric()   
+test_tricky() 
+test_geometric()   
 test_DPmem()
 

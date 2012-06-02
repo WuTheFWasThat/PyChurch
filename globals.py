@@ -56,20 +56,6 @@ class RandomDB:
     if memorize:
       self.memory.append(('insert', stack, xrp, value, args, is_obs_noise))
 
-  def save(self):
-    self.memory = []
-    self.uneval_p = 0
-    self.eval_p = 0
-
-  def restore(self):
-    self.memory.reverse()
-    for (type, stack, xrp, value, args, is_obs_noise) in self.memory:
-      if type == 'insert':
-        self.remove(stack, False)
-      else:
-        assert type == 'remove'
-        self.insert(stack, xrp, value, args, False, is_obs_noise)
-
   def remove(self, stack, memorize = True):
     stack = tuple(stack)
     assert self.has(stack)
@@ -101,9 +87,6 @@ class RandomDB:
       warnings.warn('Failed to get stack %s' % str(stack))
       return None
 
-  def get_val(self, stack):
-    return self.get(tuple(stack))[1]
-
   def random_stack(self):
     #return list(random.choice(self.db.keys()))
     return self.db.randomKey()
@@ -131,7 +114,7 @@ class RandomDB:
           to_delete.append(tuple_stack)
         else:
           assert len(stack) > len(uneval_stack)
-          if stack[len(uneval_stack)] == args:
+          if stack[len(uneval_stack)] != args:
             to_delete.append(tuple_stack)
 
     for tuple_stack in self.db:
@@ -141,6 +124,20 @@ class RandomDB:
 
     for tuple_stack in to_delete:
       self.remove(tuple_stack)
+
+  def save(self):
+    self.memory = []
+    self.uneval_p = 0
+    self.eval_p = 0
+
+  def restore(self):
+    self.memory.reverse()
+    for (type, stack, xrp, value, args, is_obs_noise) in self.memory:
+      if type == 'insert':
+        self.remove(stack, False)
+      else:
+        assert type == 'remove'
+        self.insert(stack, xrp, value, args, is_obs_noise, False)
 
   def reset(self):
     #self.db = {} 
