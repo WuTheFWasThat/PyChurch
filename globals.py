@@ -91,15 +91,15 @@ class RandomDB:
     #return list(random.choice(self.db.keys()))
     return self.db.randomKey()
 
-  def prob(self):
-    #ans = 0
-    #for key in self.db:
-    #  (xrp, value, prob, args, is_obs_noise) = self.db[key]
-    #  ans += prob
-    #for key in self.db_noise:
-    #  (xrp, value, prob, args, is_obs_noise) = self.db_noise[key]
-    #  ans += prob
-    return self.p
+  #def prob(self):
+  #  ans = 0
+  #  for key in self.db:
+  #    (xrp, value, prob, args, is_obs_noise) = self.db[key]
+  #    ans += prob
+  #  for key in self.db_noise:
+  #    (xrp, value, prob, args, is_obs_noise) = self.db_noise[key]
+  #    ans += prob
+  #  return ans 
 
   def unevaluate(self, uneval_stack, args = None):
     if args is not None:
