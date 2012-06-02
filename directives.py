@@ -284,10 +284,11 @@ def infer(): # RERUN AT END
 
   if debug:
     print "\nCHANGING ", stack, "\n  TO   :  ", new_val, "\n"
-  if val == new_val:
-    globals.db.insert(stack, xrp, new_val, args)
-    return
+
   globals.db.insert(stack, xrp, new_val, args)
+
+  if val == new_val:
+    return
 
   rerun(False)
   new_p = globals.db.p
