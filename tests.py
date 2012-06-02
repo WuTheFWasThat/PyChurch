@@ -3,7 +3,7 @@ from mem import *
 from time import *
 import matplotlib.pyplot as plot
 
-def bernoulli_noise(expression, error):
+def noisy(expression, error):
   return bernoulli(ifelse(expression, 1, error))
 
 def get_pdf(valuedict, start, end, bucketsize):
@@ -107,7 +107,7 @@ def test_tricky():
   
   for i in xrange(nheads):
     print '\nsaw', i+1, 'heads'
-    observe(bernoulli_noise(apply('coin'), noise_level), True)
+    observe(noisy(apply('coin'), noise_level), True)
     print follow_prior('is-fair', niters, burnin)
 
 
@@ -135,7 +135,7 @@ def test_bayes_nets():
   assume('sprinkler', ifelse('cloudy', bernoulli(0.1), bernoulli(0.5)))
   
   noise_level = .001
-  sprinkler_ob = observe(bernoulli_noise('sprinkler', noise_level), True)
+  sprinkler_ob = observe(noisy('sprinkler', noise_level), True)
   print follow_prior('cloudy', niters, burnin)
   print 'Should be .833 False, .166 True'
   
@@ -153,11 +153,11 @@ def test_bayes_nets():
   assume('beach', ifelse('weekend', ifelse('sunny', bernoulli(0.9), bernoulli(0.5)), \
                                     ifelse('sunny', bernoulli(0.3), bernoulli(0.1))))
   
-  observe(bernoulli_noise('weekend', noise_level), True)
+  observe(noisy('weekend', noise_level), True)
   print follow_prior('sunny', niters, burnin)
   print 'Should be .5 False, .5 True'
   
-  observe(bernoulli_noise('beach', noise_level), True)
+  observe(noisy('beach', noise_level), True)
   print follow_prior('sunny', niters, burnin)
   print 'Should be .357142857 False, .642857143 True'
 
@@ -195,12 +195,12 @@ def test_bayes_nets():
   print follow_prior('alarm', niters, burnin)
   print 'Should be %f True' % pA
 
-  mary_ob = observe(bernoulli_noise('maryCalls', noise_level), True)
+  mary_ob = observe(noisy('maryCalls', noise_level), True)
   print follow_prior('johnCalls', niters, burnin)
   print 'Should be %f True' % pJgM
   forget(mary_ob)
 
-  burglary_ob = observe(bernoulli_noise(~var('burglary'), noise_level), True)
+  burglary_ob = observe(noisy(~var('burglary'), noise_level), True)
   print follow_prior('johnCalls', niters, burnin)
   print 'Should be %f True' % pJgnB
   forget(burglary_ob)
@@ -242,12 +242,12 @@ def test_bayes_nets():
   print follow_prior('alarm', niters, burnin)
   print 'Should be %f True' % pA
 
-  mary_ob = observe(bernoulli_noise('maryCalls', noise_level), True)
+  mary_ob = observe(noisy('maryCalls', noise_level), True)
   print follow_prior('johnCalls', niters, burnin)
   print 'Should be %f True (BUT WONT BE)' % pJgM
   forget(mary_ob)
 
-  burglary_ob = observe(bernoulli_noise(~var('burglary'), noise_level), True)
+  burglary_ob = observe(noisy(~var('burglary'), noise_level), True)
   print follow_prior('johnCalls', niters, burnin)
   print 'Should be %f True' % pJgnB
   forget(burglary_ob)
@@ -268,7 +268,7 @@ def test_xor():
   #print 'should be 0.60 true'
   # should be True : p, False : 1 - p
 
-  xor_ob = observe(bernoulli_noise('c', noise_level), True) 
+  xor_ob = observe(noisy('c', noise_level), True) 
   print follow_prior('a', 1000, 50) 
   print 'should be 0.69 true'
   # should be True : p(1-q)/(p(1-q)+(1-p)q), False : q(1-p)/(p(1-q) + q(1-p)) 
@@ -337,7 +337,7 @@ def test_geometric():
   assume('geometric', function('x', ifelse(bernoulli('decay'), 'x', apply('geometric', var('x') + 1))))
   print "decay", globals.env.lookup('decay')
   print [sample(apply('geometric', 0)) for i in xrange(10)]
-  observe(bernoulli_noise(apply('geometric', 0) == 3, .01), True)
+  observe(noisy(apply('geometric', 0) == 3, .01), True)
   a = follow_prior('decay', 100, 100)
   print a
   print 'pdf:', get_pdf(a, 0, 1, .01)

@@ -72,7 +72,7 @@ A core operation of probabilistic programming languages is inference, which is, 
 
 A {\bf value} is a valid binding for a variable, in our language.  For example, integers, floats, and booleans are valid values.  We call these primitive values.  Another type of value is a {\bf procedure}, a function which gets applied to arguments and returns (not necessarily primitive) values.  
 
-These procedures should be non-deterministic.  To allow for this, we can imagine that there is a special procedure, call it {\tt bernoulli}, which takes an argument $p$, and outputs 0 or 1, with probabilities $1-p$ and $p$, respectively.  Arbitrary random procedures can then be built up using this one.   We will see later that we actually can and will allow for something far more general than this.
+These procedures should be non-deterministic.  To allow for this, we can imagine that there is a special procedure, call it {\tt bernoulli}, which takes an argument $p$, and outputs 0 or 1, with probabilities $1-p$ and $p$, respectively.  Arbitrary random procedures can then be built up using this one.   We will see later that we actually can and will allow for something far more general than random procedures.
 
 %Suppose I declare in some program that {\tt x} is determined by a coin flip.  But on any given execution of the program, {\tt x} must take on one of two values.  \vspace{6 pt}
 
@@ -176,7 +176,7 @@ Unfortunately, as it has been described, this random walk doesn't converge to th
 
 It is easy to verify that the posterior distribution should have the state {\tt \{a:True, b:False\}} with probability $\frac{9}{13}$ and {\tt \{a:False, b:True\}} with probability $\frac{4}{13}$.  However, we can see that if we start in the state {\tt \{a:True, b:False\}}, we will never walk to either of the two adjacent states {\tt \{a:True, True\}} and {\tt \{a:False, b:False\}}.  So the random walk stays in that state forever!  The same argument applies for {\tt \{a:False, b:True\}}.  Thus if we draw a state from the prior, and run any number of steps of the random walk, the resulting distribution is identical to the prior.  \vspace{6 pt}
 
-To fix this problem, we should allow some small probability of transitioning to states where observations are false.  After all, a Bayesian should never trust their eyes 100\%.  For example, suppose that whenever we had an observation
+To fix this problem, we should allow some small probability of transitioning to states where observations are false.  After all, a Bayesian should never trust their eyes 100\%.  Thus suppose whenever we had an observation
 
 \begin{small}
 \begin{verbatim}
@@ -184,7 +184,7 @@ To fix this problem, we should allow some small probability of transitioning to 
 \end{verbatim}
 \end{small}
 
-We instead always use:
+we instead always used:
 
 \begin{small}
 \begin{verbatim}
@@ -192,10 +192,60 @@ We instead always use:
 \end{verbatim}
 \end{small}
 
-Now, when we run our walk, if the expression {\tt expr == val} evaluates to {\tt False} (so the original observation would've failed), we force the outermost {\tt bernoulli} application to be {\tt True}.  
+Now, when we run our walk, if the expression {\tt expr == val} evaluates to {\tt False} (so the original observation would've failed), we force the outermost {\tt bernoulli} application to be {\tt True}.   If the noise level is small, this should not affect results much, since the execution histories in which the original observation was false are weighted against heavily.  
 
-suppose 
-Then, the space of states is always connected in the random walk and we should get convergence.  % I don't know if there is any formal sense in which this is really true...
+Now, the space of states is always connected in the random walk and we should get convergence.\vspace{6 pt}% I don't know if there is any formal sense in which this is really true...
+
+We provide the function {\tt noisy(obs, noise\_level)} as shorthand for {\tt bernoulli(ifelse(obs, 1, noise\_level))}, where you have observed some expression {\tt obs} to be true.  
+
+
+
+\subsection{XRPs}
+
+Evaluating and unevaluating sections of code is very easy when all random choices are made independently of one another.  But actually, it is easy to evaluate and unevaluate so long as the sequence of random choices is {\bf exchangeable sequence}, meaning roughly that the probabilities of making a set of choices is the same, regardless of what order we chose to make the choices.  
+
+Thus instead of merely being able to flip independent coins as a source of randomness for procedures, the most general thing we are able to allow what is called an {\bf exchangeable random procedure (XRP)}.  An XRP is a type of random procedure, but different applications of it are not guaranteed to be independent; they are guaranteed merely to be exchangeable.  
+
+For example, if $f$ is an XRP taking one argument, we may find that $f(1) = 3$, and later that $f(2) = 4$.  Unlike a typical procedure, the result $f(2) = 4$ was not necessarily independent of the earlier result $f(1) = 3$.  However, the probability that this execution history happens should be the same as the probability that we first apply $f(2)$ and get $4$, and then later apply $f(1)$ and get $3$.  \footnote{Notice that $f(2)$ can be replaced everywhere with $f(1)$ in this paragraph --- multiple applications to the same arguments can also be different and non-independent, so long as they are exchangeable.}  \\
+
+XRPs used in our probabilistic programs are formally specified by the following four functions:
+
+\begin{itemize}
+\item {\tt init()}, which returns an initial state.  
+\item {\tt get(state, args)}, which returns a value.
+\item {\tt prob(state, value, args)}, which returns a probability.
+\item {\tt inc(state, value, args)}, which returns a new state.
+\item {\tt rem(state, value, args)}, which returns a new state.
+\end{itemize}
+
+The state of the XRP is a sufficient state, meaning it alone lets you determine the XRP's behavior.  Minimally, the state may be a history of all previous applications of the XRP, although in most cases, it is much more succinct.  Whenever we apply the XRP, we use {\tt get} to determine the resulting value, and we may use {\tt prob} to determine the probability that we got that value, conditioning on all previous applications.  This value can then incorporated into the XRP using {\tt inc}, and the state is updated.  Finally, {\tt rem} lets you remove a value, undoing an incorporate.
+
+Notice that if applications are independent, then we do not need a state, and both incorporate and remove can do nothing.  Thus this recovers the special case of normal random procedures.  \\
+
+We can see why this exchangeability condition still lets us do inference.  During inference, when we unevaluate, we may want to remove a value from the XRP's state, undoing the corresponding incorporate.  But we may have incorporated new values since then.  The key is that the exchangeability condition still lets us pretend the XRP application in question was the most recent one, and thus we can safely remove the value as if it were the most recent one.  \\
+
+XRPs are quite a general object, and replacing random procedures with them significantly increase the expressive power of our language.   They also come in a variety of flavors, and we will see some examples later.   Of course, we now allow defining procedures which use and return other XRPs, since XRPs are valid values.  \\
+
+Lastly, we allow for something much more general than the noisy observations above.  Suppose that I observe that the sky is pink, and also that the ocean is yellow.  Chances are, either my vision has gone crazy, or the world has underwent drastic changes.  The correctness of my observations is highly correlated, and so we should allow for non-independent noise.  Luckily, XRPs allow for this.  We now simply require that all observed expressions have an outermost XRP application.  When running inference, we always force the XRP to give the observed value by using {\tt inc} (without using {\tt get}).  The probability of getting this observed value should always be non-zero.  
+
+The noisy expressions obtained with {\tt noisy} are a special case of this, so long as {\tt noise\_level} is non-zero.  
+
+
+\subsection{The randomness database}
+
+In order to perform inference, we must store all random choices (XRP applications) in the execution of our program, so that we can evaluate and unevaluate.  
+
+The first challenge is figuring out how to specify points in the execution history.  Essentially, we use a stack, 
+
+
+
+
+
+
+
+
+
+
 
 Here pseudocode for a single iteration:
 \begin{small}
@@ -230,14 +280,6 @@ Here pseudocode for a single iteration:
 \end{small}
 \subsection{XRPs}
 
-Our language allows for the use of something more general than random procedures, while retaining the ability to perform inference.   It allows for what we call an {\bf exchangeable random procedure (XRP)}.  
-
-An XRP is like a random procedure, except that different applications of it are not guaranteed to be independent.  An XRP is allowed to maintain an internal state, which can be modified.  However, an XRP must maintain the exchangeability condition, which says that applications of the XRP gives an exchangeable sequence of random variables.  
-
-The role of XRPs will be motivated and discussed in detail later.  For now, it may be simpler to just imagine that values are either primitive values or (possibly random) procedures.  
-
-The exchangeable sequence 
-
 % what we actually require is that our observed expressions all have an outermost xrp application
 
 
@@ -248,7 +290,6 @@ The exchangeable sequence
 
 %\cite{Fagin1}:  
 
-\subsection{The randomness database}
 
 
 \pagebreak
