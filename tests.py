@@ -398,8 +398,8 @@ def test_geometric():
 
   print "Sampling from a geometric distribution"
 
-  a, b = 4, 2
-  timetodecay = 2
+  a, b = 3, 2
+  timetodecay = 1
   bucketsize = .01
 
   niters, burnin = 100, 100 
