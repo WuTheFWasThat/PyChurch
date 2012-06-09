@@ -38,7 +38,7 @@ def get_cdf(valuedict, start, end, bucketsize):
   assert 0.999 < cumulative[-1] < 1.001
   return cumulative
   
-def plot(xs, ys, name = 'plot.png', minx = None, maxx = None, miny = None, maxy = None):
+def plot(xs, ys, name = 'graphs/plot.png', minx = None, maxx = None, miny = None, maxy = None):
   if minx is None: minx = xs[0] 
   if maxx is None: maxx = xs[-1] 
   if miny is None: miny = min(ys) 
@@ -48,15 +48,15 @@ def plot(xs, ys, name = 'plot.png', minx = None, maxx = None, miny = None, maxy 
   plt.savefig(name)
   plt.close()
 
-def plot_dist(ys, start, end, bucketsize, name = 'plot.png'):
+def plot_dist(ys, start, end, bucketsize, name = 'graphs/plot.png'):
   numbuckets = int(math.floor((end - start) / bucketsize))
   xs = [start + i * bucketsize for i in range(numbuckets+1)]
   plot(xs, ys, name, start, end, 0, 1) 
 
-def plot_cdf(valuedict, start, end, bucketsize, name = 'plot.png'):
+def plot_cdf(valuedict, start, end, bucketsize, name = 'graphs/plot.png'):
   plot_dist(get_cdf(valuedict, start, end, bucketsize), start, end, bucketsize, name) 
 
-def plot_beta_cdf(a, b, bucketsize, name = 'betaplot.png'):
+def plot_beta_cdf(a, b, bucketsize, name = 'graphs/betaplot.png'):
   plot_dist(get_beta_cdf(a, b, bucketsize), 0, 1, bucketsize, name) 
   
 def get_beta_cdf(a, b, bucketsize):
@@ -415,9 +415,9 @@ def test_geometric():
   print 'pdf:', get_pdf(dist, 0, 1, .1)
   print 'cdf:', get_cdf(dist, 0, 1, .1)
 
-  plot_beta_cdf(a, b, bucketsize, name = 'prior.png')
-  plot_cdf(dist, 0, 1, bucketsize, name = 'cumulative_plot_geometric.png')
-  plot_beta_cdf(a + 1, b + timetodecay - 1, bucketsize, name = 'posterior.png')
+  plot_beta_cdf(a, b, bucketsize, name = 'graphs/prior.png')
+  plot_cdf(dist, 0, 1, bucketsize, name = 'graphs/cumulative_plot_geometric.png')
+  plot_beta_cdf(a + 1, b + timetodecay - 1, bucketsize, name = 'graphs/posterior.png')
 
 def test_DPmem():
   reset()
