@@ -1,15 +1,25 @@
 from directives import * 
 from mem import *
 from time import *
-#import matplotlib.pyplot as plot
+from scipy import special 
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages 
+
+trivialtests = False
 
 def noisy(expression, error):
   return bernoulli(ifelse(expression, 1, error))
 
+def normalize(dict):
+  z = sum([dict[val] for val in dict])
+  for val in dict:
+    dict[val] = dict[val] / (z + 0.0) 
+  return dict
+
 def get_pdf(valuedict, start, end, bucketsize):
+  valuedict = normalize(valuedict)
   numbuckets = int(math.floor((end - start) / bucketsize))
   density = [0] * numbuckets 
-  cumulative = [0] * numbuckets 
   for value in valuedict:
     if not start <= value <= end:
       print 'value %s is not in the interval [%s, %s]' % (str(value), str(start), str(end))
@@ -20,15 +30,70 @@ def get_pdf(valuedict, start, end, bucketsize):
   return density
 
 def get_cdf(valuedict, start, end, bucketsize):
+  numbuckets = int(math.floor((end - start) / bucketsize))
   density = get_pdf(valuedict, start, end, bucketsize)
-  cumulative[0] = density[0]
-  for i in range(1, len(cumulative)):
-    cumulative[i] = cumulative[i-1] + density[i]
-  #plot.plot([start + i * bucketsize for i in range(numbuckets)], cumulative)
+  cumulative = [0] 
+  for i in range(numbuckets):
+    cumulative.append(cumulative[-1] + density[i])
+  assert 0.999 < cumulative[-1] < 1.001
   return cumulative
   
+def plot(xs, ys, name = 'plot.png', minx = None, maxx = None, miny = None, maxy = None):
+  if minx is None: minx = xs[0] 
+  if maxx is None: maxx = xs[-1] 
+  if miny is None: miny = min(ys) 
+  if maxy is None: maxy = max(ys) 
+  plt.axis([minx, maxx, miny, maxy])
+  plt.plot(xs, ys) 
+  plt.savefig(name)
+  plt.close()
+
+def plot_dist(ys, start, end, bucketsize, name = 'plot.png'):
+  numbuckets = int(math.floor((end - start) / bucketsize))
+  xs = [start + i * bucketsize for i in range(numbuckets+1)]
+  plot(xs, ys, name, start, end, 0, 1) 
+
+def plot_cdf(valuedict, start, end, bucketsize, name = 'plot.png'):
+  plot_dist(get_cdf(valuedict, start, end, bucketsize), start, end, bucketsize, name) 
+
+def plot_beta_cdf(a, b, bucketsize, name = 'betaplot.png'):
+  plot_dist(get_beta_cdf(a, b, bucketsize), 0, 1, bucketsize, name) 
+  
+def get_beta_cdf(a, b, bucketsize):
+  assert type(a) == type(b) == int
+
+  coeffs = [special.gamma(a+b) / (special.gamma(i + 1) * special.gamma(a+b-i)) for i in range(a, a+b)]
+
+  numbuckets = int(math.floor(1.0 / bucketsize))
+  xs = [i * bucketsize for i in range(numbuckets)]
+
+  cumulative = [0]
+  for x in xs: 
+    ppows = [1] 
+    npows = [1]
+    for i in range(a + b):
+      ppows.append(ppows[-1] * x)
+      npows.append(npows[-1] * (1-x))
+    sum = 0
+    for i in range(a, a+b):
+      sum += coeffs[i-a] * ppows[i] * npows[a + b - 1 - i]
+    cumulative.append(sum)
+  return cumulative 
+
 def format(list, format):
   return [ format % x for x in list]
+
+#
+  #empiric_cdf = get_cdf(
+
+
+  return
+
+def L0test(cdf1, cdf2):  # Kolmogorov-Smirnov test 
+  return max(abs(cdf1[i] - cdf2[i]) for i in xrange(len(cdf1)))
+
+def L1norm(cdf2, cdf1):   
+  return sum(abs(cdf1[i] - cdf2[i]) for i in xrange(len(cdf1)))
 
 """ TESTS """
 
@@ -285,7 +350,9 @@ def test_recursion():
   print "factorial" 
   print factorial_expr 
   print "factorial(5) =", sample(apply('factorial', 5)) 
+  print "should be 120"
   print "factorial(10) =", sample(apply('factorial', 10)) 
+  print "should be 3628800"
 
 def test_mem():
   print "\n MEM TEST, FIBONACCI\n" 
@@ -294,6 +361,7 @@ def test_mem():
   fibonacci_expr = function('x', ifelse(var('x') <= 1, 1, \
                 apply('fibonacci', var('x') - 1) + apply('fibonacci', var('x') - 2) )) 
   assume('fibonacci', fibonacci_expr) 
+  print "fib(20) should be 10946\n"
   
   print "fibonacci" 
   print fibonacci_expr 
@@ -330,49 +398,69 @@ def test_geometric():
 
   print "Sampling from a geometric distribution"
 
-  assume('decay', beta(1, 1))
+  a, b = 4, 2
+  timetodecay = 3
+  bucketsize = .01
+
+  assume('decay', beta(a, b))
   #assume('decay', 0.5)
   #assume('decay', uniform(5))
 
   assume('geometric', function('x', ifelse(bernoulli('decay'), 'x', apply('geometric', var('x') + 1))))
   print "decay", globals.env.lookup('decay')
   print [sample(apply('geometric', 0)) for i in xrange(10)]
-  observe(noisy(apply('geometric', 0) == 3, .01), True)
-  a = follow_prior('decay', 100, 100)
-  print a
-  print 'pdf:', get_pdf(a, 0, 1, .01)
-  print 'cdf:', get_cdf(a, 0, 1, .01)
+  observe(noisy(apply('geometric', 0) == timetodecay, .01), True)
+  dist = follow_prior('decay', 100, 5)
+  print dist 
+  print 'pdf:', get_pdf(dist, 0, 1, .1)
+  print 'cdf:', get_cdf(dist, 0, 1, .1)
+
+  plot_beta_cdf(a, b, bucketsize, name = 'prior.png')
+  plot_cdf(dist, 0, 1, bucketsize, name = 'cumulative_plot_geometric.png')
+  plot_beta_cdf(a + 1, b + timetodecay - 1, bucketsize, name = 'posterior.png')
 
 def test_DPmem():
   reset()
-  print " \n TESTING DPMem\n"
+  print " \n TESTING DP\n"
 
   """DEFINITION OF DP"""
-  sticks_expr = mem(function('j', beta(1, 'concentration2')))
-  atoms_expr = mem(function('j', apply('basemeasure2')))
+  sticks_expr = mem(function('j', beta(1, 'concentration')))
+  atoms_expr = mem(function('j', apply('basemeasure')))
 
-  loop_body_expr = function('j', ifelse( bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), apply(apply('loophelper', ['concentration2', 'basemeasure2']), var('j') + 1))) 
-  loop_expr = apply(  function(['sticks', 'atoms'], loop_body_expr), [sticks_expr , atoms_expr])
-  assume('loophelper', function(['concentration2', 'basemeasure2'], loop_expr))
-  assume( 'DP', function(['concentration', 'basemeasure'], apply(apply('loophelper', ['concentration', 'basemeasure']), 1)))
+  loop_body_expr = function('j', ifelse(bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), apply(apply('DPloophelper', ['concentration', 'basemeasure']), var('j') + 1))) 
+  loop_expr = apply(function(['sticks', 'atoms'], loop_body_expr), [sticks_expr , atoms_expr])
+  assume('DPloophelper', function(['concentration', 'basemeasure'], loop_expr))
+  assume( 'DP', function(['concentration', 'basemeasure'], apply(function('x', function([], apply('x', 1))), apply('DPloophelper', ['concentration', 'basemeasure']))))
+
+  """TESTING DP"""
+  if trivialtests:
+    concentration = 1 # when close to 0, just mem.  when close to infinity, sample 
+    assume('DPgaussian', apply('DP', [concentration, function([], gaussian(0, 1))]))
+    print [sample(apply('DPgaussian')) for i in xrange(10)]
+
+    concentration = 1 # when close to 0, just mem.  when close to infinity, sample 
+    assume('DPgaussian', apply('DP', [concentration, function([], gaussian(0, 1))]))
+    print [sample(apply('DPgaussian')) for i in xrange(10)]
+
+  print " \n TESTING DPMem\n"
 
   """DEFINITION OF DPMEM"""
-  restaurants_expr = mem( function('args', apply('DP', ['alpha', function([], apply('proc', 'args'))])))
-  assume('DPmem', function(['alpha', 'proc'], function('args', apply(restaurants_expr, 'args'))))
-
+  DParg_expr = mem( function('args', apply('DP', ['concentration', function([], apply('proc', 'args'))])))
+  assume('DPmem', function(['concentration', 'proc'], apply(function(['DParg'], function('args', apply('DParg', 'args'))), DParg_expr)))
 
   """TESTING DPMEM"""
-
   concentration = 1 # when close to 0, just mem.  when close to infinity, sample 
-  assume('DPmemflip', apply('DPmem', [concentration, function(['x'], bernoulli(0.5))]))
-  print [sample(apply('DPmemflip', 222)) for i in xrange(10)]
+  assume('DPmemflip', apply('DPmem', [concentration, function(['x'], gaussian(0, 1))]))
+  print [sample(apply(apply('DPmemflip', 222))) for i in xrange(10)]
+  print [sample(apply(apply('DPmemflip', 22))) for i in xrange(10)]
+  print [sample(apply(apply('DPmemflip', 222))) for i in xrange(10)]
 
   print "\n TESTING GAUSSIAN MIXTURE MODEL\n"
-  assume('alpha', gaussian(1, 0.2)) # use vague-gamma? 
-  assume('expected-mean', gaussian(0, 1))
-  assume('expected-variance', gaussian(0, 1))
-  assume('gen-cluster-mean', apply('DPmem', ['alpha', function(['x'], gaussian(0, 1))]))
-  assume('get-datapoint', mem( function(['id'], gaussian(apply('gen-cluster-mean', 222), 1.0))))
+  assume('alpha', 0.1) #gaussian(1, 0.2)) # use vague-gamma? 
+  assume('expected-mean', 0) #gaussian(0, 1))
+  assume('expected-variance', 10) # gaussian(10, 1))
+  assume('gen-cluster-mean', apply('DPmem', ['alpha', function(['x'], gaussian('expected-mean', 'expected-variance'))]))
+  assume('get-datapoint', mem( function(['id'], gaussian(apply(apply('gen-cluster-mean', 222)), 1.0))))
   assume('outer-noise', gaussian(1, 0.2)) # use vague-gamma?
 
   observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.3)
@@ -383,12 +471,15 @@ def test_DPmem():
 
   niters, burnin = 100, 100
 
-  #print format(get_pdf(follow_prior('expected-mean', 1, burnin), -4, 4, .5), '%0.2f') 
+
+  #a = follow_prior('expected-mean', 1, burnin)
+  #print format(get_pdf(a, -4, 4, .5), '%0.2f') 
 
   print 'running', niters, 'times,', burnin, 'burnin'
 
   t = time()
-  print format(get_pdf(follow_prior('expected-mean', niters, burnin), -4, 4, .5), '%0.2f') 
+  a = follow_prior('expected-mean', niters, burnin)
+  print format(get_pdf(a, -4, 4, .5), '%0.2f') 
   print 'time taken', time() - t
 
   #concentration = 1
@@ -404,17 +495,16 @@ def test():
   expr = beta_bernoulli_1()
   print [sample(apply(coin_1)) for i in xrange(10)]
   
-test_expressions()
-test_recursion()
-test_beta_bernoulli()
-#
-test_mem()
+if trivialtests:
+  test_expressions()
+  test_recursion()
+  test_beta_bernoulli()
 
-test_bayes_nets() 
-
-test_xor()  # needs like 500 to mix 
-
-test_tricky() 
+#test_mem()
+#test_bayes_nets() 
+#test_xor()  # needs like 500 to mix 
+#test_tricky() 
 test_geometric()   
-test_DPmem()
+#test_DPmem()
 
+#L0test([], [])

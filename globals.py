@@ -24,6 +24,12 @@ class Environment:
   def spawn_child(self): 
     return Environment(self)
 
+  def __setitem__(self, name, expression):
+    self.set(name, expression) 
+
+  def __getitem__(self, name):
+    self.lookup(name) 
+
 # Class representing random db
 class RandomDB:
   def __init__(self):
@@ -157,6 +163,12 @@ class RandomDB:
       string += '\n    %s <- %s' % (self.db_noise[s][1].val, s) 
     return string
 
+  def __contains__(self, stack):
+    return self.has(self, stack)
+
+  def __getitem__(self, stack):
+    return self.get(self, stack)
+
 class Directives_Memory:
   def __init__(self):
     self.assumes = []
@@ -177,11 +189,10 @@ class Directives_Memory:
       if expr.hashval in self.observes:
         warnings.warn('Already observed %s' % str(expr))
       self.observes[expr.hashval] = tup 
-  
+
   def forget(self, hashval):
     assert hashval in self.observes
     del self.observes[hashval]
-
 
 # The global environment. Has assignments of names to expressions, and parent pointer 
 env = Environment()

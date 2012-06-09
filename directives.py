@@ -35,10 +35,12 @@ def forget(hashval):
   globals.mem.forget(hashval)
 
 # Replaces variables with the values from the environment 
-def replace(expr, env):
+def replace(expr, env, bound = set()):
   if expr.type == 'value':
     return expr
   elif expr.type == 'variable':
+    if expr.name in bound:
+      return expr
     val = env.lookup(expr.name)
     if val is None:
       return expr
@@ -61,7 +63,11 @@ def replace(expr, env):
   elif expr.type == 'function':
     # hmm .. replace variables?  maybe wipe those assignments out ...
     children = [replace(x, env) for x in expr.children] 
-    body = replace(expr.body, env)
+
+    for var in expr.vars: # do we really want this?  probably.  (this is the only reason we use 'bound' at all
+      bound.add(var)
+
+    body = replace(expr.body, env, bound)
     return Expression(('function', expr.vars, body)) 
   elif expr.type in ['=', '<', '>', '>=', '<=', '&', '^', '|', 'add', 'subtract', 'multiply']:
     children = [replace(x, env) for x in expr.children] 
@@ -71,7 +77,6 @@ def replace(expr, env):
   else:
     warnings.warn('Invalid expression type %s' % expr.type)
     return None
-
 
 # Draws a sample value (without re-sampling other values) given its parents, and sets it
 def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None):
@@ -281,20 +286,18 @@ def infer(): # RERUN AT END
 
   globals.db.remove(stack)
   new_val = xrp.apply(args)
+  globals.db.insert(stack, xrp, new_val, args)
 
   if debug:
     print "\nCHANGING ", stack, "\n  TO   :  ", new_val, "\n"
-
-  globals.db.insert(stack, xrp, new_val, args)
 
   if val == new_val:
     return
 
   rerun(False)
   new_p = globals.db.p
-  new_to_old_q = -math.log(globals.db.count) 
+  new_to_old_q = globals.db.uneval_p - math.log(globals.db.count) 
   old_to_new_q += globals.db.eval_p 
-  new_to_old_q += globals.db.uneval_p 
   if debug:
     print "new db", globals.db
     print "\nq(old -> new) : ", old_to_new_q
@@ -309,7 +312,7 @@ def infer(): # RERUN AT END
       globals.db.restore()
       if debug: 
         print 'restore'
-  globals.db.save()
+
   if debug: 
     print "new db", globals.db
     print "\n-----------------------------------------\n"
@@ -339,9 +342,6 @@ def follow_prior(name, niter = 1000, burnin = 100):
     else:
       dict[val.val] = 1
 
-  z = sum([dict[val] for val in dict])
-  for val in dict:
-    dict[val] = dict[val] / (z + 0.0) 
   return dict 
 
 

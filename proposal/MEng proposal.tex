@@ -258,46 +258,41 @@ Our database also maintains the following variables:
 \item {\tt uneval\_prob}:  The product of all probabilities which were unevaluated since the last save.
 \end{itemize}
 
-Implementation of this database is not important, although there are some clever algorithmic tricks which go into it (especially in order to support {\tt random\_stack} in constant time).  %All data is stored in a hash table.  Furthermore, we use an algorithmic trick to augment hash tables to be able to choose a random key in $O(1)$, in order to support {\tt random\_stack()}.  Outermost noise applications are stored separately.  The products of the probabilities is calculated in a rolling manner.  Furthermore, all probabilities are kept as log probabilities (in fact, we require that the {\tt prob()} function of XRPs return the log probability).  Save does not literally remember the state.  We simply start remembering all inserts and removes, and undo them when we restore.  
+Implementation of this database is not important, although there are some clever algorithmic tricks which go into it (especially in order to support {\tt random\_stack} in constant time).  %All data is stored in a hash table.  Furthermore, we use an algorithmic trick to augment hash tables to be able to choose a random key in $O(1)$, in order to support {\tt random\_stack()}.  Outermost noise applications are stored separately.   Save does not literally remember the state.  We simply start remembering all inserts and removes, and undo them when we restore.  
 
 \subsection{Revisiting inference}
 
-We can now give pseudocode for {\tt infer}, which runs a single step in the Markov chain:
+We can now give code for {\tt infer}, which runs a single step in the Markov chain:
 
 \begin{small}
 \begin{verbatim}
 def infer():
-  stack = globals.db.random_stack()
-  (xrp, args, val, prob, obs) = globals.db.get(stack)
+  stack = randomDB.random_stack()
+  (xrp, args, val, prob, obs) = randomDB.get(stack)
 
-  old_p = globals.db.prob
-  old_to_new_q = 1 / globals.db.count
+  old_p = randomDB.prob
+  old_count = randomDB.count
 
-  globals.db.save()
+  randomDB.save()
 
-  globals.db.remove(stack)
+  randomDB.remove(stack)
   new_val = xrp.apply(args)
+  randomDB.insert(stack, xrp, new_val, args)
 
-  globals.db.insert(stack, xrp, new_val, args)
+  rerun()
   
-  if val == new_val:
-    return
-
-  rerun(False)
-  new_p = globals.db.prob() 
-  new_to_old_q = 1 / globals.db.count
-  old_to_new_q *= globals.db.eval_prob
-  new_to_old_q *= globals.db.uneval_prob
+  new_p = randomDB.prob
+  new_to_old_q = randomDB.uneval_prob / randomDB.count
+  old_to_new_q = randomDB.eval_prob / old_count
   
   if new_p * new_to_old_q < old_p * old_to_new_q * random.random():
-    globals.db.restore()
-  globals.db.save()
+    randomDB.restore()
 \end{verbatim}
 \end{small}
 
-Technically, we use log probabilities instead of probabilities, as suggested here.  
+\noindent Here, {\tt rerun()} simply reruns the entire program, using the new randomness in the DB, evaluating new things and unevaluating neglected things as needed.  It is not hard to verify that this uses the correct probability of transitioning, according to Metropolis-Hastings.  
 
-% what we actually require is that our observed expressions all have an outermost xrp application
+Technically, we use log probabilities instead of probabilities, as done here, to avoid precision errors.  In fact, we require that the {\tt prob()} function of XRPs return the log probability.
 
 
 % : MH on random worlds
@@ -549,7 +544,7 @@ These results are slightly better than our prediction, but confirm the overall p
 
 Suppose we are observing a radioactive atom in discrete time intervals, e.g. we look at it each second.  Each time we look at the atom, there is some chance $p$ that it decays, called its decay rate.  
 
-Suppose there is an atom whose decay rate we don't know.  So our prior over decay rates is uniform.  
+Suppose there is an atom whose decay rate we don't know.  We then observe that it decays in the $n$th time interval.  Suppose that the prior over decay rates is the distributed as $\text{Be}(\alpha, \beta)$, the beta distribution with parameters $\alpha$ and $\beta$.  Then a simple calculation shows the posterior distribution for decay rates should now be $\text{Be}(\alpha + 1, \beta + n - 1)$. 
 
 \begin{small}
 \begin{verbatim}
@@ -557,7 +552,6 @@ Suppose there is an atom whose decay rate we don't know.  So our prior over deca
 >>> assume('geometric', function('x', ifelse(bernoulli('decay'), 'x', apply('geometric', var('x') + 1))))
 >>> observe(bernoulli_noise(apply('geometric', 0) == 10, .01), True)
   print get_pdf(follow_prior('decay', 100, 100), 0, 1, .1) 
-
 \end{verbatim}
 \end{small}
 
@@ -600,7 +594,7 @@ Here, we test that the memoization procedure works.
 \end{verbatim}
 \end{small}
 
-\noindent Notice that the second call to this mem'd fibonacci is much faster, since mem remembers the value.  However, the first call is just as slow as before.  Since Fibonacci is recursive, we really want to memoize all the recursive subcalls as well.  The canonical introduction to dynamic programming shows how Fibonacci can be computed in linear time this way.  We can write the program easily:
+\noindent Notice that the second call to this mem'd fibonacci is much faster, since mem remembers the value.  However, the first call is just as slow as before.  Since Fibonacci is recursive, we really want to memoize all the recursive subcalls as well, making the Fibonacci function a linear time computation.  We can write the program without much trouble, using mem:
 
 \begin{small}
 \begin{verbatim}
@@ -623,14 +617,15 @@ Let's now implement the Dirichlet process.
 
 \begin{small}
 \begin{verbatim}
->>> sticks_expr = mem(function('j', beta(1, 'concentration2')))
->>> atoms_expr = mem(function('j', apply('basemeasure2')))
+
+>>> sticks_expr = mem(function('j', beta(1, 'concentration')))
+>>> atoms_expr = mem(function('j', apply('basemeasure')))
 >>> loop_body_expr = function('j', ifelse(bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), \
-...                  apply(apply('loophelper', ['concentration2', 'basemeasure2']), var('j')+1)))
+... apply(apply('DPloophelper', ['concentration', 'basemeasure']), var('j') + 1))) 
 >>> loop_expr = apply(function(['sticks', 'atoms'], loop_body_expr), [sticks_expr , atoms_expr])
->>> assume('loophelper', function(['concentration2', 'basemeasure2'], loop_expr))
->>> assume( 'DP', function(['concentration', 'basemeasure'], \
-...                        apply(apply('loophelper', ['concentration', 'basemeasure']), 1)))
+>>> assume('DPloophelper', function(['concentration', 'basemeasure'], loop_expr))
+>>> assume( 'DP', function(['concentration', 'basemeasure'], apply(function('x', \
+... function([], apply('x', 1))), apply('DPloophelper', ['concentration', 'basemeasure']))))
 \end{verbatim}
 \end{small}
 
@@ -639,9 +634,8 @@ We can now use the Dirichlet process to create something we call DPmem.  DPmem i
 \begin{small}
 \begin{verbatim}
   """DEFINITION OF DPMEM"""
-  restaurants_expr = mem(function('args', apply('DP', ['alpha', function([], apply('proc', 'args'))])))
-  assume('DPmem', function(['alpha', 'proc'], function('args', apply(restaurants_expr, 'args'))))
-
+  DParg_expr = mem( function('args', apply('DP', ['concentration', function([], apply('proc', 'args'))])))
+  assume('DPmem', function(['concentration', 'proc'], apply(function(['DParg'], function('args', apply('DParg', 'args'))), DParg_expr)))
 
   """TESTING DPMEM"""
 
@@ -650,15 +644,17 @@ We can now use the Dirichlet process to create something we call DPmem.  DPmem i
   print [sample(apply('DPmemflip', 5)) for i in xrange(10)]
 
   print "\n TESTING GAUSSIAN MIXTURE MODEL\n"
-  assume('concentration', gaussian(1, 0.2)) # use vague-gamma? 
+  assume('alpha', gaussian(1, 0.2)) # use vague-gamma? 
   assume('expected-mean', gaussian(0, 1)) 
-  assume('expected-variance', gaussian(0, 1))
-  assume('gen-cluster-mean', gaussian(0, 1))
-  assume('get-datapoint', mem( function(['id'], gaussian('gen-cluster-mean', 1.0))))
+  assume('expected-variance', gaussian(0, 1)) 
+  assume('gen-cluster-mean', apply('DPmem', ['alpha', function(['x'], gaussian(0, 1))]))
+  assume('get-datapoint', mem( function(['id'], gaussian(apply('gen-cluster-mean', 222), 1.0))))
   assume('outer-noise', gaussian(1, 0.2)) # use vague-gamma?
 
   observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.3)
   observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.2)
+  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.1)
+  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.15)
 
   t = time()
   print format(get_pdf(follow_prior('expected-mean', 100, 30), -4, 4, .5), '%0.2f')
