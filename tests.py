@@ -89,10 +89,10 @@ def format(list, format):
 
   return
 
-def L0test(cdf1, cdf2):  # Kolmogorov-Smirnov test 
+def L0distance(cdf1, cdf2):  # Kolmogorov-Smirnov test 
   return max(abs(cdf1[i] - cdf2[i]) for i in xrange(len(cdf1)))
 
-def L1norm(cdf2, cdf1):   
+def L1distance(cdf2, cdf1):   
   return sum(abs(cdf1[i] - cdf2[i]) for i in xrange(len(cdf1)))
 
 """ TESTS """
@@ -399,8 +399,10 @@ def test_geometric():
   print "Sampling from a geometric distribution"
 
   a, b = 4, 2
-  timetodecay = 3
+  timetodecay = 2
   bucketsize = .01
+
+  niters, burnin = 100, 100 
 
   assume('decay', beta(a, b))
   #assume('decay', 0.5)
@@ -409,15 +411,27 @@ def test_geometric():
   assume('geometric', function('x', ifelse(bernoulli('decay'), 'x', apply('geometric', var('x') + 1))))
   print "decay", globals.env.lookup('decay')
   print [sample(apply('geometric', 0)) for i in xrange(10)]
-  observe(noisy(apply('geometric', 0) == timetodecay, .01), True)
-  dist = follow_prior('decay', 100, 5)
+  observe(noisy(apply('geometric', 0) == timetodecay, .001), True)
+  dist = follow_prior('decay', niters, burnin)
   print dist 
   print 'pdf:', get_pdf(dist, 0, 1, .1)
   print 'cdf:', get_cdf(dist, 0, 1, .1)
 
   plot_beta_cdf(a, b, bucketsize, name = 'graphs/prior.png')
-  plot_cdf(dist, 0, 1, bucketsize, name = 'graphs/cumulative_plot_geometric.png')
-  plot_beta_cdf(a + 1, b + timetodecay - 1, bucketsize, name = 'graphs/posterior.png')
+  plot_cdf(dist, 0, 1, bucketsize, name = 'graphs/geometric%d.png' % burnin)
+  plot_beta_cdf(a + 1, b + timetodecay, bucketsize, name = 'graphs/posterior.png')
+
+  prior_cdf = get_beta_cdf(a, b, bucketsize)
+  posterior_cdf = get_beta_cdf(a + 1, b+timetodecay, bucketsize)
+  dist_cdf = get_cdf(dist, 0, 1, bucketsize)
+
+  print "L0 distance from prior     = %0.3f" % L0distance(prior_cdf, dist_cdf)
+
+  print "L0 distance from posterior = %0.3f" % L0distance(posterior_cdf, dist_cdf)   
+
+  print "L1 distance from prior     = %0.3f" % L1distance(prior_cdf, dist_cdf)
+
+  print "L1 distance from posterior = %0.3f" % L1distance(posterior_cdf, dist_cdf)   
 
 def test_DPmem():
   reset()
