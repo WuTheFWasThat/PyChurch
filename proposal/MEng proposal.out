@@ -1,0 +1,20 @@
+\BOOKMARK [1][-]{section.1}{Introduction}{}
+\BOOKMARK [1][-]{section.2}{Language description}{}
+\BOOKMARK [2][-]{subsection.2.1}{Values}{section.2}
+\BOOKMARK [2][-]{subsection.2.2}{Expressions and Environments}{section.2}
+\BOOKMARK [2][-]{subsection.2.3}{Directives}{section.2}
+\BOOKMARK [1][-]{section.3}{Inference}{}
+\BOOKMARK [2][-]{subsection.3.1}{High-level description}{section.3}
+\BOOKMARK [2][-]{subsection.3.2}{Adding noise to observations}{section.3}
+\BOOKMARK [2][-]{subsection.3.3}{XRPs}{section.3}
+\BOOKMARK [2][-]{subsection.3.4}{The randomness database}{section.3}
+\BOOKMARK [2][-]{subsection.3.5}{Revisiting inference}{section.3}
+\BOOKMARK [1][-]{section.4}{Test Cases}{}
+\BOOKMARK [2][-]{subsection.4.1}{Testing a tricky coin}{section.4}
+\BOOKMARK [2][-]{subsection.4.2}{Bayes nets}{section.4}
+\BOOKMARK [3][-]{subsubsection.4.2.1}{Sprinkler net}{subsection.4.2}
+\BOOKMARK [3][-]{subsubsection.4.2.2}{Alarm net}{subsection.4.2}
+\BOOKMARK [2][-]{subsection.4.3}{Testing xor}{section.4}
+\BOOKMARK [2][-]{subsection.4.4}{Testing a decaying atom}{section.4}
+\BOOKMARK [2][-]{subsection.4.5}{Testing mem}{section.4}
+\BOOKMARK [2][-]{subsection.4.6}{Testing DPMem}{section.4}
