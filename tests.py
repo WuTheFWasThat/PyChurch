@@ -5,7 +5,7 @@ from scipy import special
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages 
 
-trivialtests = False
+simpletests = False
 
 def noisy(expression, error):
   return bernoulli(ifelse(expression, 1, error))
@@ -83,12 +83,6 @@ def get_beta_cdf(a, b, bucketsize):
 def format(list, format):
   return [ format % x for x in list]
 
-#
-  #empiric_cdf = get_cdf(
-
-
-  return
-
 def L0distance(cdf1, cdf2):  # Kolmogorov-Smirnov test 
   return max(abs(cdf1[i] - cdf2[i]) for i in xrange(len(cdf1)))
 
@@ -133,6 +127,28 @@ def test_expressions():
   print 'Some samples of\n%s:' % (str(e))
   print [resample(e) for i in xrange(10)]
   print
+
+  #testing closure
+  f = function(('x', 'y'), apply('x', 'y'))
+  g = function('x', var('x') + 1)
+  print sample(apply(f, [g, 21]))
+  print 'Should be 22'
+  assume('f', f)
+  assume('g', g)
+
+  a = let('b', 1, var('b') + 3)
+  print sample(a)
+  print 'Should be 4'
+  print
+  b = let(['c', 'd'], [21, 'f'], apply('d', ['g', 'c']))
+  print sample(b)
+  print 'Should be 22'
+  print
+  e = let(['a', 'b', 'c', 'd'], [function(['x', 'y', 'z'], ifelse(bernoulli('x'), 'y', 'z')), beta(1, 1), uniform(3), gaussian(5, .1)], apply('a', ['b', 'c', 'd']))
+  print 'Some samples of\n%s:' % (str(e))
+  print [resample(e) for i in xrange(10)]
+  print
+
 
 def test_tricky():
   print " \n COIN TEST\n "
@@ -437,6 +453,39 @@ def test_DPmem():
   reset()
   print " \n TESTING DP\n"
 
+  def count_distinct(ls):
+    d = set()
+    dd = set()
+    count = 0
+    duplicates = 0
+    for x in ls:
+      if x not in d:
+        d.add(x)
+        count += 1
+      else:
+        if x not in dd:
+          dd.add(x)
+          duplicates += 1
+    return duplicates 
+
+  testconcentration = 1
+  testfunction = function([], gaussian(0, 1))
+
+  """TESTING"""
+  sticks_expr = mem(function('j', beta(1, 'concentration')))
+  atoms_expr = mem(function('j', apply('basemeasure')))
+
+  loop_body_expr = function('j', ifelse(bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), apply(apply('DPloophelper', ['concentration', 'basemeasure']), var('j') + 1))) 
+  loop_expr = apply(function(['sticks', 'atoms'], loop_body_expr), [sticks_expr , atoms_expr])
+  assume('DPloophelper', function(['concentration', 'basemeasure'], loop_expr))
+  assume( 'DP', function(['concentration', 'basemeasure'], apply(function('x', function([], apply('x', 1))), apply('DPloophelper', ['concentration', 'basemeasure']))))
+
+  print "TEST VERSION"
+  assume('DPgaussian', apply('DP', [1, testfunction]))
+  ls = [sample(apply('DPgaussian')) for i in xrange(10)]
+  print ls
+  print count_distinct(ls)
+
   """DEFINITION OF DP"""
   sticks_expr = mem(function('j', beta(1, 'concentration')))
   atoms_expr = mem(function('j', apply('basemeasure')))
@@ -446,8 +495,14 @@ def test_DPmem():
   assume('DPloophelper', function(['concentration', 'basemeasure'], loop_expr))
   assume( 'DP', function(['concentration', 'basemeasure'], apply(function('x', function([], apply('x', 1))), apply('DPloophelper', ['concentration', 'basemeasure']))))
 
+  print "ACTUAL VERSION"
+  assume('DPgaussian', apply('DP', [1, testfunction]))
+  ls = [sample(apply('DPgaussian')) for i in xrange(10)]
+  print ls
+  print count_distinct(ls)
+
   """TESTING DP"""
-  if trivialtests:
+  if simpletests:
     concentration = 1 # when close to 0, just mem.  when close to infinity, sample 
     assume('DPgaussian', apply('DP', [concentration, function([], gaussian(0, 1))]))
     print [sample(apply('DPgaussian')) for i in xrange(10)]
@@ -465,36 +520,40 @@ def test_DPmem():
   """TESTING DPMEM"""
   concentration = 1 # when close to 0, just mem.  when close to infinity, sample 
   assume('DPmemflip', apply('DPmem', [concentration, function(['x'], gaussian(0, 1))]))
-  print [sample(apply(apply('DPmemflip', 222))) for i in xrange(10)]
-  print [sample(apply(apply('DPmemflip', 22))) for i in xrange(10)]
-  print [sample(apply(apply('DPmemflip', 222))) for i in xrange(10)]
+  #print [sample(apply(apply('DPmemflip', 222))) for i in xrange(10)]
+  #print [sample(apply(apply('DPmemflip', 22))) for i in xrange(10)]
+  #print [sample(apply(apply('DPmemflip', 222))) for i in xrange(10)]
 
   print "\n TESTING GAUSSIAN MIXTURE MODEL\n"
   assume('alpha', 0.1) #gaussian(1, 0.2)) # use vague-gamma? 
   assume('expected-mean', 0) #gaussian(0, 1))
-  assume('expected-variance', 10) # gaussian(10, 1))
+  assume('expected-variance', 1) # beta(1, 10) ? should never be negative
   assume('gen-cluster-mean', apply('DPmem', ['alpha', function(['x'], gaussian('expected-mean', 'expected-variance'))]))
-  assume('get-datapoint', mem( function(['id'], gaussian(apply(apply('gen-cluster-mean', 222)), 1.0))))
-  assume('outer-noise', gaussian(1, 0.2)) # use vague-gamma?
+  assume('get-datapoint', mem( function(['id'], gaussian(apply(apply('gen-cluster-mean', 222)), 0.1))))
+  assume('outer-noise', 0.1) # gaussian(1, 0.2)) # use vague-gamma?
 
-  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.3)
-  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.2)
-  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.1)
-  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.15)
-  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.15)
+  #for i in range(20):
+  #  print sample(apply(apply('gen-cluster-mean', 222)))
 
-  niters, burnin = 100, 100
+  #observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.3)
+  #observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.2)
+  #observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.1)
+  #observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.15)
+  #observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.15)
+
+  #niters, burnin = 100, 100
 
 
-  #a = follow_prior('expected-mean', 1, burnin)
+  #a = follow_prior(apply('get-datapoint', 0), 1, 1000)
+  #print a
   #print format(get_pdf(a, -4, 4, .5), '%0.2f') 
 
-  print 'running', niters, 'times,', burnin, 'burnin'
+  #print 'running', niters, 'times,', burnin, 'burnin'
 
-  t = time()
-  a = follow_prior('expected-mean', niters, burnin)
-  print format(get_pdf(a, -4, 4, .5), '%0.2f') 
-  print 'time taken', time() - t
+  #t = time()
+  #a = follow_prior('expected-mean', niters, burnin)
+  #print format(get_pdf(a, -4, 4, .5), '%0.2f') 
+  #print 'time taken', time() - t
 
   #concentration = 1
   #uniform_base_measure = uniform_no_args_XRP(2)
@@ -509,7 +568,7 @@ def test():
   expr = beta_bernoulli_1()
   print [sample(apply(coin_1)) for i in xrange(10)]
   
-if trivialtests:
+if simpletests:
   test_expressions()
   test_recursion()
   test_beta_bernoulli()
@@ -518,7 +577,7 @@ if trivialtests:
 #test_bayes_nets() 
 #test_xor()  # needs like 500 to mix 
 #test_tricky() 
-test_geometric()   
-#test_DPmem()
+#test_geometric()   
+test_DPmem()
 
 #L0test([], [])

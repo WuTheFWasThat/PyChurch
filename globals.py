@@ -30,6 +30,9 @@ class Environment:
   def __getitem__(self, name):
     self.lookup(name) 
 
+  def __str__(self):
+    return self.assignments.__str__()
+
 # Class representing random db
 class RandomDB:
   def __init__(self):

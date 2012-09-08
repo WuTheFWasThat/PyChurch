@@ -86,13 +86,14 @@ class beta_args_XRP(XRP):
     check_pos(a)
     check_pos(b)
     check_prob(val.val)
-    if 0 < val.val < 1: 
-      log_prob = math.log(special.gamma(a + b)) + (a - 1) * math.log(val.val)  + (b - 1) * math.log(1 - val.val) \
+    if val.val == 0:
+      warnings.warn('beta(%f, %f) returning %f' % (a, b, val.val))
+      val.val = .0000000000000001
+    elif val.val == 1:
+      warnings.warn('beta(%f, %f) returning %f' % (a, b, val.val))
+      val.val = .9999999999999999
+    return math.log(special.gamma(a + b)) + (a - 1) * math.log(val.val)  + (b - 1) * math.log(1 - val.val) \
            - math.log(special.gamma(a)) - math.log(special.gamma(b))
-    else:
-      print "beta(%f, %f) returning %f" % (a, b, val.val)
-      assert False 
-    return log_prob
   def __str__(self):
     return 'beta'
 
@@ -116,8 +117,13 @@ class beta_no_args_XRP(XRP):
     if args != None and len(args) != 0:
       warnings.warn('Warning: beta_no_args_XRP has no need to take in arguments %s' % str(args))
     check_prob(val.val)
-    log_prob = self.prob_help + (self.a - 1) * math.log(val.val) + (self.b - 1) * math.log(1 - val.val) 
-    return log_prob
+    if val.val == 0:
+      warnings.warn('beta(%f, %f) returning %f' % (a, b, val.val))
+      val.val = .0000000000000001
+    elif val.val == 1:
+      warnings.warn('beta(%f, %f) returning %f' % (a, b, val.val))
+      val.val = .9999999999999999
+    return self.prob_help + (self.a - 1) * math.log(val.val) + (self.b - 1) * math.log(1 - val.val) 
   def __str__(self):
     return 'beta(%d, %d)' % (self.a, self.b)
 

@@ -48,21 +48,27 @@ def replace(expr, env, bound = set()):
     else:
       return Expression(val)
   elif expr.type == 'if':
-    cond = replace(expr.cond, env)
-    true = replace(expr.true, env)
-    false = replace(expr.false, env)
+    cond = replace(expr.cond, env, bound)
+    true = replace(expr.true, env, bound)
+    false = replace(expr.false, env, bound)
     return Expression(('if', cond, true, false)) 
   elif expr.type == 'switch':
-    index = replace(expr.index, env)
-    children = [replace(x, env) for x in expr.children]
+    index = replace(expr.index, env, bound)
+    children = [replace(x, env, bound) for x in expr.children]
     return Expression(('switch', index, children)) 
+  elif expr.type == 'let':
+    expressions = [replace(x, env, bound) for x in expr.expressions]
+    for var in expr.vars:
+      bound.add(var)
+    body = replace(expr.body, env, bound)
+    return Expression(('let', expr.vars, expressions, body)) 
   elif expr.type == 'apply':
     # hmm .. replace non-bound things in op?  causes recursion to break...
-    children = [replace(x, env) for x in expr.children] 
+    children = [replace(x, env, bound) for x in expr.children] 
     return Expression(('apply', expr.op, children)) 
   elif expr.type == 'function':
     # hmm .. replace variables?  maybe wipe those assignments out ...
-    children = [replace(x, env) for x in expr.children] 
+    children = [replace(x, env, bound) for x in expr.children] 
 
     for var in expr.vars: # do we really want this?  probably.  (this is the only reason we use 'bound' at all
       bound.add(var)
@@ -70,10 +76,10 @@ def replace(expr, env, bound = set()):
     body = replace(expr.body, env, bound)
     return Expression(('function', expr.vars, body)) 
   elif expr.type in ['=', '<', '>', '>=', '<=', '&', '^', '|', 'add', 'subtract', 'multiply']:
-    children = [replace(x, env) for x in expr.children] 
+    children = [replace(x, env, bound) for x in expr.children] 
     return Expression((expr.type, children)) 
   elif expr.type == '~':
-    return Expression(('not', replace(expr.negation, env))) 
+    return Expression(('not', replace(expr.negation, env, bound))) 
   else:
     warnings.warn('Invalid expression type %s' % expr.type)
     return None
@@ -112,6 +118,7 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     if val is None:
       #warnings.warn('Variable %s undefined' % var)
       print 'Variable %s undefined' % var
+      print env
       assert False
     else:
       return val
@@ -129,10 +136,19 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     assert type(index.val) in [int] 
     assert 0 <= index.val < expr.n
     # unevaluate?
-    return evaluate_recurse(expr.children[index.val], env, reflip, stack , index.val)
+    return evaluate_recurse(expr.children[index.val], env, reflip, stack, index.val)
+  elif expr.type == 'let':
+    n = len(expr.vars)
+    assert len(expr.expressions) == n
+    values = [evaluate_recurse(expr.expressions[i], env, reflip, stack, i) for i in range(n)]
+    new_env = env.spawn_child()
+    for i in range(n): # Bind variables
+      new_env.set(expr.vars[i], values[i])
+    new_body = replace(expr.body, new_env)
+    return evaluate_recurse(new_body, new_env, reflip, stack, -1)
   elif expr.type == 'apply':
     n = len(expr.children)
-    args = [evaluate_recurse(expr.children[i], env, reflip, stack , i) for i in range(n)]
+    args = [evaluate_recurse(expr.children[i], env, reflip, stack, i) for i in range(n)]
     op = evaluate_recurse(expr.op, env, reflip, stack , -2)
     if op.type == 'procedure':
       globals.db.unevaluate(stack + [-1], args)
@@ -141,10 +157,10 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
         print op.vars
         print expr.children
         assert False
-      newenv = op.env.spawn_child()
+      new_env = op.env.spawn_child()
       for i in range(n):
-        newenv.set(op.vars[i], args[i]) 
-      return evaluate_recurse(op.body, newenv, reflip, stack , -1, tuple(args))
+        new_env.set(op.vars[i], args[i]) 
+      return evaluate_recurse(op.body, new_env, reflip, stack , -1, tuple(args))
     elif op.type == 'xrp':
 
       if xrp_force_val != None: 
@@ -174,10 +190,10 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
       warnings.warn('Must apply either a procedure or xrp')
   elif expr.type == 'function':
     n = len(expr.vars)
-    newenv = env.spawn_child()
+    new_env = env.spawn_child()
     for i in range(n): # Bind variables
-      newenv.set(expr.vars[i], expr.vars[i])
-    procedure_body = replace(expr.body, newenv)
+      new_env.set(expr.vars[i], expr.vars[i])
+    procedure_body = replace(expr.body, new_env)
     return Value((expr.vars, procedure_body), env)
   elif expr.type == '=':
     return binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x == y)
@@ -343,5 +359,3 @@ def follow_prior(name, niter = 1000, burnin = 100):
       dict[val.val] = 1
 
   return dict 
-
-

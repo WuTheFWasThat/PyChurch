@@ -46,6 +46,8 @@ class Expression:
       self.type = 'if'
     elif self.type in ['case', 'switch']:
       self.type = 'switch'
+    elif self.type in ['let']:
+      self.type = 'let'
     elif self.type in ['eq', 'equals', 'e', '=']: 
       self.type = '='
     elif self.type in ['l', 'less', '<']: 
@@ -56,11 +58,11 @@ class Expression:
       self.type = '<='
     elif self.type in ['ge', 'greaterequals', '>=']: 
       self.type = '>='
-    elif self.type in ['add', 'sum']: 
+    elif self.type in ['+', 'add', 'sum']: 
       self.type = 'add'
-    elif self.type in ['subtract', 'sub']: 
+    elif self.type in ['-', 'subtract', 'sub']: 
       self.type = 'subtract'
-    elif self.type in ['mul', 'multiply', 'product']: 
+    elif self.type in ['*', 'mul', 'multiply', 'product']: 
       self.type = 'multiply'
     elif self.type in ['|', 'or']:
       self.type = '|'
@@ -88,6 +90,17 @@ class Expression:
       self.index = expression(tup[1])
       self.children = [expression(x) for x in tup[2]]
       self.n = len(self.children)
+    elif self.type == 'let':
+      if type(tup[1]) == list or type(tup[1]) == tuple:
+        self.vars = list(tup[1])
+      else:
+        self.vars = [tup[1]]
+      if type(tup[2]) == list or type(tup[2]) == tuple:
+        self.expressions = [expression(x) for x in tup[2]]
+      else:
+        self.expressions = [expression(tup[2])]
+      assert len(self.expressions) == len(self.vars)
+      self.body = expression(tup[3])
     elif self.type == 'apply':
       self.op = expression(tup[1])
       if type(tup[2]) == list or type(tup[2]) == tuple:
@@ -137,7 +150,9 @@ class Expression:
     elif self.type == 'if':
       return 'if (%s), then (%s), else (%s)' % (str(self.cond), str(self.true), str(self.false))
     elif self.type == 'switch':
-      return 'switch of (%s) into (%s)' % (str(self.index), str(self.children))
+      return 'switch of (%s) into %s' % (str(self.index), str(self.children))
+    elif self.type == 'let':
+      return 'let %s = %s in (%s)' % (str(self.vars), str(self.expressions), str(self.body))
     elif self.type == 'apply':
       return '(%s)%s' % (str(self.op), str(self.children))
     elif self.type == 'function':
@@ -227,6 +242,9 @@ def ifelse(ifvar, truevar, falsevar):
 
 def switch(switchvar, array):
   return expression(('switch', switchvar, array))
+
+def let(vars, expressions, body):
+  return expression(('let', vars, expressions, body))
 
 def function(vars, body):
   return expression(('function', vars, body))
