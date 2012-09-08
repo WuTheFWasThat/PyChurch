@@ -91,16 +91,25 @@ class Expression:
       self.children = [expression(x) for x in tup[2]]
       self.n = len(self.children)
     elif self.type == 'let':
-      if type(tup[1]) == list or type(tup[1]) == tuple:
-        self.vars = list(tup[1])
+      if len(tup) == 4:
+        if type(tup[1]) == list or type(tup[1]) == tuple:
+          self.vars = list(tup[1])
+        else:
+          self.vars = [tup[1]]
+        if type(tup[2]) == list or type(tup[2]) == tuple:
+          self.expressions = [expression(x) for x in tup[2]]
+        else:
+          self.expressions = [expression(tup[2])]
+        assert len(self.expressions) == len(self.vars)
+        self.body = expression(tup[3])
       else:
-        self.vars = [tup[1]]
-      if type(tup[2]) == list or type(tup[2]) == tuple:
-        self.expressions = [expression(x) for x in tup[2]]
-      else:
-        self.expressions = [expression(tup[2])]
-      assert len(self.expressions) == len(self.vars)
-      self.body = expression(tup[3])
+        assert type(tup[1]) == list
+        self.vars = []
+        self.expressions = []
+        for (var, expr) in tup[1]:
+          self.vars.append(var)
+          self.expressions.append(expression(expr))
+        self.body = expression(tup[2])
     elif self.type == 'apply':
       self.op = expression(tup[1])
       if type(tup[2]) == list or type(tup[2]) == tuple:
@@ -243,8 +252,8 @@ def ifelse(ifvar, truevar, falsevar):
 def switch(switchvar, array):
   return expression(('switch', switchvar, array))
 
-def let(vars, expressions, body):
-  return expression(('let', vars, expressions, body))
+def let(letmap, body):
+  return expression(('let', letmap, body))
 
 def function(vars, body):
   return expression(('function', vars, body))

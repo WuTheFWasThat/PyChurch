@@ -5,7 +5,7 @@ from scipy import special
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages 
 
-simpletests = False
+simpletests = True
 
 def noisy(expression, error):
   return bernoulli(ifelse(expression, 1, error))
@@ -136,15 +136,15 @@ def test_expressions():
   assume('f', f)
   assume('g', g)
 
-  a = let('b', 1, var('b') + 3)
+  a = let([('b', 1)], var('b') + 3)
   print sample(a)
   print 'Should be 4'
   print
-  b = let(['c', 'd'], [21, 'f'], apply('d', ['g', 'c']))
+  b = let([('c', 21), ('d', 'f')], apply('d', ['g', 'c']))
   print sample(b)
   print 'Should be 22'
   print
-  e = let(['a', 'b', 'c', 'd'], [function(['x', 'y', 'z'], ifelse(bernoulli('x'), 'y', 'z')), beta(1, 1), uniform(3), gaussian(5, .1)], apply('a', ['b', 'c', 'd']))
+  e = let([('a', function(['x', 'y', 'z'], ifelse(bernoulli('x'), 'y', 'z'))), ('b', beta(1, 1)), ('c', uniform(3)), ('d', gaussian(5, .1))], apply('a', ['b', 'c', 'd']))
   print 'Some samples of\n%s:' % (str(e))
   print [resample(e) for i in xrange(10)]
   print
@@ -468,46 +468,36 @@ def test_DPmem():
           duplicates += 1
     return duplicates 
 
-  testconcentration = 1
-  testfunction = function([], gaussian(0, 1))
-
-  """TESTING"""
-  sticks_expr = mem(function('j', beta(1, 'concentration')))
-  atoms_expr = mem(function('j', apply('basemeasure')))
-
-  loop_body_expr = function('j', ifelse(bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), apply(apply('DPloophelper', ['concentration', 'basemeasure']), var('j') + 1))) 
-  loop_expr = apply(function(['sticks', 'atoms'], loop_body_expr), [sticks_expr , atoms_expr])
-  assume('DPloophelper', function(['concentration', 'basemeasure'], loop_expr))
-  assume( 'DP', function(['concentration', 'basemeasure'], apply(function('x', function([], apply('x', 1))), apply('DPloophelper', ['concentration', 'basemeasure']))))
-
-  print "TEST VERSION"
-  assume('DPgaussian', apply('DP', [1, testfunction]))
-  ls = [sample(apply('DPgaussian')) for i in xrange(10)]
-  print ls
-  print count_distinct(ls)
+  concentration = 10
+  measure = function([], gaussian(0, 1))
 
   """DEFINITION OF DP"""
-  sticks_expr = mem(function('j', beta(1, 'concentration')))
-  atoms_expr = mem(function('j', apply('basemeasure')))
 
-  loop_body_expr = function('j', ifelse(bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), apply(apply('DPloophelper', ['concentration', 'basemeasure']), var('j') + 1))) 
-  loop_expr = apply(function(['sticks', 'atoms'], loop_body_expr), [sticks_expr , atoms_expr])
-  assume('DPloophelper', function(['concentration', 'basemeasure'], loop_expr))
-  assume( 'DP', function(['concentration', 'basemeasure'], apply(function('x', function([], apply('x', 1))), apply('DPloophelper', ['concentration', 'basemeasure']))))
+  assume('DP', function(['concentration', 'basemeasure'], \
+               let([('sticks', mem(function('j', beta(1, 'concentration')))),
+                    ('atoms',  mem(function('j', apply('basemeasure'))))],
+                    let([('loop', \
+                         function('j', ifelse(bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), apply('loop', var('j')+1))) \
+                         )], \
+                        function([], apply('loop', 1)) \
+                    ) \
+               )) \
+        )
 
-  print "ACTUAL VERSION"
-  assume('DPgaussian', apply('DP', [1, testfunction]))
+  print "TEST VERSION"
+  assume('DPgaussian', apply('DP', [concentration, measure]))
+  print 'DPGaussian = ', sample('DPgaussian')
   ls = [sample(apply('DPgaussian')) for i in xrange(10)]
   print ls
   print count_distinct(ls)
 
   """TESTING DP"""
   if simpletests:
-    concentration = 1 # when close to 0, just mem.  when close to infinity, sample 
+    concentration = .1 # when close to 0, just mem.  when close to infinity, sample 
     assume('DPgaussian', apply('DP', [concentration, function([], gaussian(0, 1))]))
     print [sample(apply('DPgaussian')) for i in xrange(10)]
 
-    concentration = 1 # when close to 0, just mem.  when close to infinity, sample 
+    concentration = 10 # when close to 0, just mem.  when close to infinity, sample 
     assume('DPgaussian', apply('DP', [concentration, function([], gaussian(0, 1))]))
     print [sample(apply('DPgaussian')) for i in xrange(10)]
 
@@ -535,20 +525,20 @@ def test_DPmem():
   #for i in range(20):
   #  print sample(apply(apply('gen-cluster-mean', 222)))
 
-  #observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.3)
-  #observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.2)
-  #observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.1)
-  #observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.15)
-  #observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.15)
+  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.3)
+  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.2)
+  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.1)
+  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.15)
+  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.15)
 
-  #niters, burnin = 100, 100
+  niters, burnin = 100, 100
 
 
-  #a = follow_prior(apply('get-datapoint', 0), 1, 1000)
-  #print a
-  #print format(get_pdf(a, -4, 4, .5), '%0.2f') 
+  a = follow_prior(apply('get-datapoint', 0), 10, 1000)
+  print a
+  print format(get_pdf(a, -4, 4, .5), '%0.2f') 
 
-  #print 'running', niters, 'times,', burnin, 'burnin'
+  print 'running', niters, 'times,', burnin, 'burnin'
 
   #t = time()
   #a = follow_prior('expected-mean', niters, burnin)

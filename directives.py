@@ -119,6 +119,7 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
       #warnings.warn('Variable %s undefined' % var)
       print 'Variable %s undefined' % var
       print env
+      print stack
       assert False
     else:
       return val
@@ -138,12 +139,18 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     # unevaluate?
     return evaluate_recurse(expr.children[index.val], env, reflip, stack, index.val)
   elif expr.type == 'let':
+    # TODO:think more about the behavior with environments here...
     n = len(expr.vars)
     assert len(expr.expressions) == n
-    values = [evaluate_recurse(expr.expressions[i], env, reflip, stack, i) for i in range(n)]
-    new_env = env.spawn_child()
+    values = []
+    new_env = env
     for i in range(n): # Bind variables
+      new_env = new_env.spawn_child()
+      val = evaluate_recurse(expr.expressions[i], new_env, reflip, stack, i)
+      values.append(val)
       new_env.set(expr.vars[i], values[i])
+      if val.type == 'procedure':
+        val.env = new_env
     new_body = replace(expr.body, new_env)
     return evaluate_recurse(new_body, new_env, reflip, stack, -1)
   elif expr.type == 'apply':

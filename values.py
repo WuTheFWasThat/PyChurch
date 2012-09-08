@@ -16,7 +16,7 @@ class Value:
       self.type = 'int'
     elif type(val) == float:
       self.type = 'float'
-      # SHOULD DISTINGUISH BETWEEN SMOOTH COUNT (POSITIVE REAL) AND PROBABILITY 
+      # TODO: SHOULD DISTINGUISH BETWEEN SMOOTH COUNT (POSITIVE REAL) AND PROBABILITY 
     elif type(val) == bool:
       self.type = 'bool'
     elif isinstance(val, XRP):
