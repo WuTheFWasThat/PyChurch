@@ -586,8 +586,8 @@ if simpletests:
 test_mem()
 test_bayes_nets() 
 test_xor()  # needs like 500 to mix 
-test_tricky() 
-test_geometric()   
+#test_tricky() 
+#test_geometric()   
 test_DPmem()
 
 #L0test([], [])

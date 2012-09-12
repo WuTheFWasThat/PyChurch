@@ -56,9 +56,9 @@ class RandomDB:
     self.p += prob
     xrp.incorporate(value, args)
     if is_obs_noise:
-      self.db_noise[stack] = (xrp, value, prob, args, True)
+      self.db_noise[stack] = (xrp, value, args, True)
     else:
-      self.db[stack] = (xrp, value, prob, args, False)
+      self.db[stack] = (xrp, value, args, False)
     if not is_obs_noise:
       self.count += 1
       self.eval_p += prob # hmmm.. 
@@ -68,13 +68,14 @@ class RandomDB:
   def remove(self, stack, memorize = True):
     stack = tuple(stack)
     assert self.has(stack)
-    (xrp, value, prob, args, is_obs_noise) = self.get(stack)
+    (xrp, value, args, is_obs_noise) = self.get(stack)
+    xrp.remove(value, args)
+    prob = xrp.prob(value, args)
     self.p -= prob
     if not is_obs_noise:
       self.count -= 1
       assert self.count >= 0
       self.uneval_p += prob # previously unindented...
-    xrp.remove(value, args)
     if is_obs_noise:
       del self.db_noise[stack]
     else:

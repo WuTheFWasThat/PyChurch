@@ -97,7 +97,7 @@ class CRP_XRP(XRP):
       warnings.warn('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
     assert val != 0
     if val in self.state:
-      if self.state[val] == 1
+      if self.state[val] == 1:
         del self.state[val]
       else:
         assert self.state[val] > 1

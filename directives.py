@@ -186,7 +186,7 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
           val = value(op.val.apply(args))
           globals.db.insert(stack, op.val, val, args)
         else:
-          (xrp, val, prob, dbargs, is_obs_noise) = globals.db.get(stack) 
+          (xrp, val, dbargs, is_obs_noise) = globals.db.get(stack) 
           #assert xrp == op.val 
           #assert dbargs == args 
           assert not is_obs_noise
@@ -295,7 +295,7 @@ def infer(): # RERUN AT END
   
   # reflip some coin
   stack = globals.db.random_stack() 
-  (xrp, val, prob, args, is_obs_noise) = globals.db.get(stack)
+  (xrp, val, args, is_obs_noise) = globals.db.get(stack)
 
   #debug = True 
   debug = False 
