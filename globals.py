@@ -98,7 +98,8 @@ class RandomDB:
 
   def random_stack(self):
     #return list(random.choice(self.db.keys()))
-    return self.db.randomKey()
+    key = self.db.randomKey()
+    return key
 
   #def prob(self):
   #  ans = 0

@@ -626,15 +626,16 @@ Let's now implement the Dirichlet process.
 
 \begin{small}
 \begin{verbatim}
-
->>> sticks_expr = mem(function('j', beta(1, 'concentration')))
->>> atoms_expr = mem(function('j', apply('basemeasure')))
->>> loop_body_expr = function('j', ifelse(bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), \
-... apply(apply('DPloophelper', ['concentration', 'basemeasure']), var('j') + 1))) 
->>> loop_expr = apply(function(['sticks', 'atoms'], loop_body_expr), [sticks_expr , atoms_expr])
->>> assume('DPloophelper', function(['concentration', 'basemeasure'], loop_expr))
->>> assume( 'DP', function(['concentration', 'basemeasure'], apply(function('x', \
-... function([], apply('x', 1))), apply('DPloophelper', ['concentration', 'basemeasure']))))
+>>> assume('DP', \
+...        function(['concentration', 'basemeasure'], \
+...                 let([('sticks', mem(function('j', beta(1, 'concentration')))),
+...                      ('atoms',  mem(function('j', apply('basemeasure')))),
+...                      ('loop', \
+...                       function('j', \
+...                                ifelse(bernoulli(apply('sticks', 'j')), \
+...                                       apply('atoms', 'j'), \
+...                                       apply('loop', var('j')+1))))], \
+...                     function([], apply('loop', 1)))))  
 \end{verbatim}
 \end{small}
 
@@ -643,8 +644,15 @@ We can now use the Dirichlet process to create something we call DPmem.  DPmem i
 \begin{small}
 \begin{verbatim}
   """DEFINITION OF DPMEM"""
-  DParg_expr = mem( function('args', apply('DP', ['concentration', function([], apply('proc', 'args'))])))
-  assume('DPmem', function(['concentration', 'proc'], apply(function(['DParg'], function('args', apply('DParg', 'args'))), DParg_expr)))
+
+>>>  assume('DPmem', \
+...         function(['concentration', 'proc'], \
+...                  let([('restaurants', \
+...                        mem(function('args', \
+...                                     apply('DP', ['concentration', 
+...                                                  function([], apply('proc', 'args'))]))))], \
+...                      function('args', apply('restaurants', 'args'))))) 
+
 
   """TESTING DPMEM"""
 
@@ -661,9 +669,9 @@ We can now use the Dirichlet process to create something we call DPmem.  DPmem i
   assume('outer-noise', gaussian(1, 0.2)) # use vague-gamma?
 
   observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.3)
-  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.2)
-  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.1)
-  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.15)
+  observe(gaussian(apply('get-datapoint', 1), 'outer-noise'), 1.2)
+  observe(gaussian(apply('get-datapoint', 2), 'outer-noise'), 1.1)
+  observe(gaussian(apply('get-datapoint', 3), 'outer-noise'), 1.15)
 
   t = time()
   print format(get_pdf(follow_prior('expected-mean', 100, 30), -4, 4, .5), '%0.2f')

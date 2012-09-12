@@ -360,9 +360,9 @@ def follow_prior(name, niter = 1000, burnin = 100):
 
     rerun(False) 
     val = evaluate(name, globals.env, reflip = False, stack = [name])
-    if val.val in dict:
-      dict[val.val] += 1
+    if val in dict:
+      dict[val] += 1
     else:
-      dict[val.val] = 1
+      dict[val] = 1
 
   return dict 

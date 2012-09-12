@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.4-1.40.13 (TeX Live 2012) (format=pdflatex 2012.6.30)  8 SEP 2012 01:43
+This is pdfTeX, Version 3.1415926-2.4-1.40.13 (TeX Live 2012) (format=pdflatex 2012.6.30)  11 SEP 2012 03:13
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -532,40 +532,9 @@ Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!]
-Overfull \hbox (34.24062pt too wide) in paragraph at lines 610--610
+Overfull \hbox (34.24062pt too wide) in paragraph at lines 620--620
 []\OT1/cmtt/m/n/10 ...                    apply('mem_fibonacci', var('x')-1) + 
 apply('mem_fibonacci', var('x')-2)))[] 
- []
-
-
-Overfull \hbox (39.49057pt too wide) in paragraph at lines 628--628
-[]\OT1/cmtt/m/n/10 >>> loop_body_expr = function('j', ifelse(bernoulli(apply('s
-ticks', 'j')), apply('atoms', 'j'), \[] 
- []
-
-
-Overfull \hbox (34.24062pt too wide) in paragraph at lines 628--628
-[]\OT1/cmtt/m/n/10 >>> loop_expr = apply(function(['sticks', 'atoms'], loop_bod
-y_expr), [sticks_expr , atoms_expr])[] 
- []
-
-
-Overfull \hbox (13.2408pt too wide) in paragraph at lines 628--628
-[]\OT1/cmtt/m/n/10 ... function([], apply('x', 1))), apply('DPloophelper', ['co
-ncentration', 'basemeasure']))))[] 
- []
-
-
-Overfull \hbox (86.74016pt too wide) in paragraph at lines 667--667
-[]  \OT1/cmtt/m/n/10 DParg_expr = mem( function('args', apply('DP', ['concentra
-tion', function([], apply('proc', 'args'))])))[] 
- []
-
-
-Overfull \hbox (244.23878pt too wide) in paragraph at lines 667--667
-[]  \OT1/cmtt/m/n/10 assume('DPmem', function(['concentration', 'proc'], apply(
-function(['DParg'], function('args', apply('DParg', 'args'))), DParg_expr)))[] 
-
  []
 
 [12
@@ -581,7 +550,13 @@ Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!]
-Overfull \hbox (34.24062pt too wide) in paragraph at lines 667--667
+Overfull \hbox (39.49057pt too wide) in paragraph at lines 685--685
+[]\OT1/cmtt/m/n/10 ...                                                  functio
+n([], apply('proc', 'args'))]))))], \[] 
+ []
+
+
+Overfull \hbox (34.24062pt too wide) in paragraph at lines 685--685
 []  \OT1/cmtt/m/n/10 assume('get-datapoint', mem( function(['id'], gaussian(app
 ly('gen-cluster-mean', 222), 1.0))))[] 
  []
@@ -594,7 +569,7 @@ Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!]
 
-LaTeX Warning: Empty `thebibliography' environment on input line 681.
+LaTeX Warning: Empty `thebibliography' environment on input line 699.
 
 [14
 Non-PDF special ignored!
@@ -630,7 +605,7 @@ ive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive
 /2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb></usr/local/texlive/20
 12/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/201
 2/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
-Output written on "MEng proposal.pdf" (14 pages, 203352 bytes).
+Output written on "MEng proposal.pdf" (14 pages, 203386 bytes).
 PDF statistics:
  109 PDF objects out of 1000 (max. 8388607)
  76 compressed objects within 1 object stream

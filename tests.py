@@ -16,26 +16,27 @@ def normalize(dict):
     dict[val] = dict[val] / (z + 0.0) 
   return dict
 
-def get_pdf(valuedict, start, end, bucketsize):
-  valuedict = normalize(valuedict)
+def get_pdf(valuedict, start, end, bucketsize, normalizebool = True):
+  if normalizebool:
+    valuedict = normalize(valuedict)
   numbuckets = int(math.floor((end - start) / bucketsize))
   density = [0] * numbuckets 
   for value in valuedict:
-    if not start <= value <= end:
-      print 'value %s is not in the interval [%s, %s]' % (str(value), str(start), str(end))
-      #assert False
+    if not start <= value.val <= end:
+      warnings.warn('value %s is not in the interval [%s, %s]' % (str(value), str(start), str(end)))
       continue
-    index = int(math.floor((value - start) / bucketsize))
-    density[index] += valuedict[value]
+    index = int(math.floor((value.val - start) / bucketsize))
+    density[index] += valuedict[value.val]
   return density
 
-def get_cdf(valuedict, start, end, bucketsize):
+def get_cdf(valuedict, start, end, bucketsize, normalizebool = True):
   numbuckets = int(math.floor((end - start) / bucketsize))
-  density = get_pdf(valuedict, start, end, bucketsize)
+  density = get_pdf(valuedict, start, end, bucketsize, normalizebool)
   cumulative = [0] 
   for i in range(numbuckets):
     cumulative.append(cumulative[-1] + density[i])
-  assert 0.999 < cumulative[-1] < 1.001
+  if normalizebool:
+    assert 0.999 < cumulative[-1] < 1.001
   return cumulative
   
 def plot(xs, ys, name = 'graphs/plot.png', minx = None, maxx = None, miny = None, maxy = None):
@@ -46,18 +47,21 @@ def plot(xs, ys, name = 'graphs/plot.png', minx = None, maxx = None, miny = None
   plt.axis([minx, maxx, miny, maxy])
   plt.plot(xs, ys) 
   plt.savefig(name)
-  plt.close()
+#  plt.close()
 
-def plot_dist(ys, start, end, bucketsize, name = 'graphs/plot.png'):
+def plot_dist(ys, start, end, bucketsize, name = 'graphs/plot.png', ymax = None):
   numbuckets = int(math.floor((end - start) / bucketsize))
   xs = [start + i * bucketsize for i in range(numbuckets+1)]
-  plot(xs, ys, name, start, end, 0, 1) 
+  plot(xs, ys, name, start, end, 0, ymax) 
+
+def plot_pdf(valuedict, start, end, bucketsize, name = 'graphs/plot.png', ymax = None):
+  plot_dist(get_pdf(valuedict, start, end, bucketsize), start + (bucketsize / 2.0), end - (bucketsize / 2.0), bucketsize, name, ymax) 
 
 def plot_cdf(valuedict, start, end, bucketsize, name = 'graphs/plot.png'):
-  plot_dist(get_cdf(valuedict, start, end, bucketsize), start, end, bucketsize, name) 
+  plot_dist(get_cdf(valuedict, start, end, bucketsize), start, end, bucketsize, name, 1) 
 
 def plot_beta_cdf(a, b, bucketsize, name = 'graphs/betaplot.png'):
-  plot_dist(get_beta_cdf(a, b, bucketsize), 0, 1, bucketsize, name) 
+  plot_dist(get_beta_cdf(a, b, bucketsize), 0, 1, bucketsize, name, 1) 
   
 def get_beta_cdf(a, b, bucketsize):
   assert type(a) == type(b) == int
@@ -473,16 +477,17 @@ def test_DPmem():
 
   """DEFINITION OF DP"""
 
-  assume('DP', function(['concentration', 'basemeasure'], \
-               let([('sticks', mem(function('j', beta(1, 'concentration')))),
-                    ('atoms',  mem(function('j', apply('basemeasure'))))],
-                    let([('loop', \
-                         function('j', ifelse(bernoulli(apply('sticks', 'j')), apply('atoms', 'j'), apply('loop', var('j')+1))) \
-                         )], \
-                        function([], apply('loop', 1)) \
-                    ) \
-               )) \
-        )
+  assume('DP', \
+         function(['concentration', 'basemeasure'], \
+                  let([('sticks', mem(function('j', beta(1, 'concentration')))),
+                       ('atoms',  mem(function('j', apply('basemeasure')))),
+                       ('loop', \
+                        function('j', \
+                                 ifelse(bernoulli(apply('sticks', 'j')), \
+                                        apply('atoms', 'j'), \
+                                        apply('loop', var('j')+1)))) \
+                      ], \
+                      function([], apply('loop', 1))))) 
 
   print "TEST VERSION"
   assume('DPgaussian', apply('DP', [concentration, measure]))
@@ -493,19 +498,23 @@ def test_DPmem():
 
   """TESTING DP"""
   if simpletests:
-    concentration = .1 # when close to 0, just mem.  when close to infinity, sample 
+    concentration = .1 # when close to 0, lots of repeat.  when close to infinity, many new sample 
     assume('DPgaussian', apply('DP', [concentration, function([], gaussian(0, 1))]))
     print [sample(apply('DPgaussian')) for i in xrange(10)]
 
-    concentration = 10 # when close to 0, just mem.  when close to infinity, sample 
+    concentration = 10 # when close to 0, lots of repeat.  when close to infinity, many new sample 
     assume('DPgaussian', apply('DP', [concentration, function([], gaussian(0, 1))]))
     print [sample(apply('DPgaussian')) for i in xrange(10)]
 
   print " \n TESTING DPMem\n"
 
   """DEFINITION OF DPMEM"""
-  DParg_expr = mem( function('args', apply('DP', ['concentration', function([], apply('proc', 'args'))])))
-  assume('DPmem', function(['concentration', 'proc'], apply(function(['DParg'], function('args', apply('DParg', 'args'))), DParg_expr)))
+  # Only supports function with exactly one argument
+  assume('DPmem', \
+         function(['concentration', 'proc'], \
+                  let([('restaurants', \
+                        mem( function('args', apply('DP', ['concentration', function([], apply('proc', 'args'))]))))], \
+                      function('args', apply('restaurants', 'args'))))) 
 
   """TESTING DPMEM"""
   concentration = 1 # when close to 0, just mem.  when close to infinity, sample 
@@ -515,30 +524,41 @@ def test_DPmem():
   #print [sample(apply(apply('DPmemflip', 222))) for i in xrange(10)]
 
   print "\n TESTING GAUSSIAN MIXTURE MODEL\n"
-  assume('alpha', 0.1) #gaussian(1, 0.2)) # use vague-gamma? 
-  assume('expected-mean', 0) #gaussian(0, 1))
-  assume('expected-variance', 1) # beta(1, 10) ? should never be negative
+  assume('expected-mean', gaussian(0, 5)) 
+  assume('expected-variance', let([('x', gaussian(2,1))], var('x')*var('x'))) # should never be negative
+  assume('alpha', 1) #gaussian(1, 0.2)) # use vague-gamma?
   assume('gen-cluster-mean', apply('DPmem', ['alpha', function(['x'], gaussian('expected-mean', 'expected-variance'))]))
-  assume('get-datapoint', mem( function(['id'], gaussian(apply(apply('gen-cluster-mean', 222)), 0.1))))
+  assume('get-datapoint', mem(function(['id'], gaussian(apply(apply('gen-cluster-mean', 222)), 0.1))))
   assume('outer-noise', 0.1) # gaussian(1, 0.2)) # use vague-gamma?
 
-  #for i in range(20):
-  #  print sample(apply(apply('gen-cluster-mean', 222)))
+#  points = {} 
+#  for i in xrange(100):
+#    print sample(apply('get-datapoint', i))
+#  for i in xrange(1000):
+#    val = sample(apply('get-datapoint', i))
+#    if val in points:
+#      points[val] += 1
+#    else:
+#      points[val] = 1
+#  plot_pdf(points, -50, 50, 0.1, name = 'graphs/mixturesample.png')
 
-  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.3)
-  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.2)
-  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.1)
-  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.15)
-  observe(gaussian(apply('get-datapoint', 0), 'outer-noise'), 1.15)
+  observe(gaussian(apply('get-datapoint', 0), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.3)
+  observe(gaussian(apply('get-datapoint', 1), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.2)
+  observe(gaussian(apply('get-datapoint', 2), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 1.9)
+  observe(gaussian(apply('get-datapoint', 3), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.0)
+  observe(gaussian(apply('get-datapoint', 4), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.1)
 
-  niters, burnin = 100, 100
+  #niters, burnin = 100, 100
 
-
-  a = follow_prior(apply('get-datapoint', 0), 10, 1000)
+  print sample(apply('get-datapoint', 0))
+  a = follow_prior(apply('get-datapoint', 0), 10, 10)
+  print sample(apply('get-datapoint', 0))
+  print sample(apply('get-datapoint', 0))
+  print sample(apply('get-datapoint', 0))
   print a
-  print format(get_pdf(a, -4, 4, .5), '%0.2f') 
+  #print format(get_pdf(a, -4, 4, .5), '%0.2f') 
 
-  print 'running', niters, 'times,', burnin, 'burnin'
+  #print 'running', niters, 'times,', burnin, 'burnin'
 
   #t = time()
   #a = follow_prior('expected-mean', niters, burnin)
@@ -563,11 +583,11 @@ if simpletests:
   test_recursion()
   test_beta_bernoulli()
 
-#test_mem()
-#test_bayes_nets() 
-#test_xor()  # needs like 500 to mix 
-#test_tricky() 
-#test_geometric()   
+test_mem()
+test_bayes_nets() 
+test_xor()  # needs like 500 to mix 
+test_tricky() 
+test_geometric()   
 test_DPmem()
 
 #L0test([], [])

@@ -41,8 +41,8 @@ class Value:
 
   def __hash__(self):
     if self.type == 'procedure':
-      return self.hash 
-    else:
+      return self.hash
+    else: # Default hash is by identity, for XRPs
       return hash(self.val)
 
   def __eq__(self, other):

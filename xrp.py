@@ -50,7 +50,7 @@ class gaussian_no_args_XRP(XRP):
   def __str__(self):
     return 'gaussian(%f, %f)' % (self.mu, self.sigma)
 
-class gaussian_XRP(XRP):
+class gen_gaussian_XRP(XRP):
   def __init__(self):
     self.state = None
     return
@@ -127,7 +127,7 @@ class beta_no_args_XRP(XRP):
   def __str__(self):
     return 'beta(%d, %d)' % (self.a, self.b)
 
-class beta_XRP(XRP):
+class gen_beta_XRP(XRP):
   def __init__(self):
     self.state = None
     return
@@ -193,7 +193,7 @@ class bernoulli_no_args_XRP(XRP):
   def __str__(self):
     return 'bernoulli(%f)' % self.p
 
-class beta_XRP(XRP):
+class gen_bernoulli_XRP(XRP):
   def __init__(self):
     self.state = None
     return
@@ -252,7 +252,7 @@ class uniform_no_args_XRP(XRP):
   def __str__(self):
     return 'uniform(%d)' % self.n
 
-class uniform_XRP(XRP):
+class gen_uniform_XRP(XRP):
   def __init__(self):
     self.state = None
     return
