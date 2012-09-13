@@ -65,7 +65,7 @@ def mem(function):
 class CRP_XRP(XRP):
   def __init__(self, alpha):
     self.state = {}
-    check_num(alpha)
+    check_pos(alpha)
     self.state[0] = alpha
     self.weight = alpha
     return
@@ -80,7 +80,7 @@ class CRP_XRP(XRP):
           return random.randint(0, 2**32-1)
         else:
           return id
-    warnings.warn('Warning: CRP_XRP had total_weight %s and has state %s' % (str(self.weight), str(self.state))) 
+    warnings.warn('Warning: CRP_XRP had total_weight %f and has state %s' % (self.weight, str(self.state))) 
     assert False
   def incorporate(self, val, args = None):
     if args != None and len(args) != 0:
@@ -105,25 +105,26 @@ class CRP_XRP(XRP):
         self.weight -= 1
     else:
       warnings.warn('Warning: CRP_XRP cannot remove the value %d, as it has state %s' % (str(val), str(self.state)))
-    return None
+    return self.state
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
-    check_num(val.val)
-    log_prob = self.prob_help - ((val.val - self.mu) / self.sigma)**2 / 2.0 
-    return log_prob
+    assert val != 0
+    if val in self.state:
+      return math.log(self.state[val]) - math.log(self.weight)
+    else:
+      return math.log(self.state[0]) - math.log(self.weight)
   def __str__(self):
-    return 'gaussian(%f, %f)' % (self.mu, self.sigma)
+    return 'CRP(%f)' % (self.state[0])
 
-class gen_gaussian_XRP(XRP):
+class gen_CRP_XRP(XRP):
   def __init__(self):
     self.state = None
     return
   def apply(self, args = None):
-    (mu,sigma) = (args[0].val, args[1].val)
-    check_num(mu)
-    check_pos(sigma)
-    return Value(CRP_XRP(mu, sigma)) 
+    alpha = args[0].val
+    check_pos(alpha)
+    return Value(CRP_XRP(alpha)) 
   def incorporate(self, val, args = None):
     return None
   def remove(self, val, args = None):
@@ -131,24 +132,26 @@ class gen_gaussian_XRP(XRP):
   def prob(self, val, args = None):
     return 0
   def __str__(self):
-    return 'gaussian_XRP'
+    return 'CRP_XRP'
 
-class gen_CRP_XRP(XRP):
+crp_xrp = CRP_XRP()
+def CRP(alpha):
+  return expression(('apply', crp_xrp, alpha))
 
-  assume('DP', \
-         function(['concentration', 'basemeasure'], \
-                  let([('sticks', mem(function('j', beta(1, 'concentration')))),
-                       ('atoms',  mem(function('j', apply('basemeasure')))),
-                       ('loop', \
-                        function('j', \
-                                 ifelse(bernoulli(apply('sticks', 'j')), \
-                                        apply('atoms', 'j'), \
-                                        apply('loop', var('j')+1)))) \
-                      ], \
-                      function([], apply('loop', 1))))) 
+  #assume('DP', \
+  #       function(['concentration', 'basemeasure'], \
+  #                let([('sticks', mem(function('j', beta(1, 'concentration')))),
+  #                     ('atoms',  mem(function('j', apply('basemeasure')))),
+  #                     ('loop', \
+  #                      function('j', \
+  #                               ifelse(bernoulli(apply('sticks', 'j')), \
+  #                                      apply('atoms', 'j'), \
+  #                                      apply('loop', var('j')+1)))) \
+  #                    ], \
+  #                    function([], apply('loop', 1))))) 
 
-  assume('DPmem', \
-         function(['concentration', 'proc'], \
-                  let([('restaurants', \
-                        mem( function('args', apply('DP', ['concentration', function([], apply('proc', 'args'))]))))], \
-                      function('args', apply('restaurants', 'args')))))
+  #assume('DPmem', \
+  #       function(['concentration', 'proc'], \
+  #                let([('restaurants', \
+  #                      mem( function('args', apply('DP', ['concentration', function([], apply('proc', 'args'))]))))], \
+  #                    function('args', apply('restaurants', 'args')))))

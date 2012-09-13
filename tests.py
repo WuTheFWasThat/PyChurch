@@ -195,7 +195,6 @@ def test_tricky():
     observe(noisy(apply('coin'), noise_level), True)
     print follow_prior('is-fair', niters, burnin)
 
-
 def test_beta_bernoulli():
   print " \n TESTING BETA-BERNOULLI XRPs\n"
   
@@ -207,6 +206,19 @@ def test_beta_bernoulli():
   print "beta_bernoulli_2"
   coin_2 = beta_bernoulli_2()
   print [sample(apply(coin_2)) for i in xrange(10)]
+  print coin_2.state
+
+def test_CRP():
+  print " \n TESTING CHINESE RESTAURANT PROCESS XRP\n"
+  
+  print "CRP(1)"
+  crp_1 = CRP(1)
+  print [sample(apply(crp_1)) for i in xrange(10)]
+  print coin_1.state
+  
+  print "CRP(10)"
+  crp_2 = CRP(10)
+  print [sample(apply(crp_2)) for i in xrange(10)]
   print coin_2.state
 
 def test_bayes_nets():
@@ -582,10 +594,11 @@ if simpletests:
   test_expressions()
   test_recursion()
   test_beta_bernoulli()
+test_CRP()
 
-test_mem()
-test_bayes_nets() 
-test_xor()  # needs like 500 to mix 
+#test_mem()
+#test_bayes_nets() 
+#test_xor()  # needs like 500 to mix 
 #test_tricky() 
 #test_geometric()   
 test_DPmem()
