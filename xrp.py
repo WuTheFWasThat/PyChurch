@@ -1,5 +1,4 @@
 import random
-from scipy import special
 from values import *
 
 class gaussian_args_XRP(XRP):
@@ -74,8 +73,8 @@ class beta_args_XRP(XRP):
     elif val.val == 1:
       warnings.warn('beta(%f, %f) returning %f' % (a, b, val.val))
       val.val = .9999999999999999
-    return math.log(special.gamma(a + b)) + (a - 1) * math.log(val.val)  + (b - 1) * math.log(1 - val.val) \
-           - math.log(special.gamma(a)) - math.log(special.gamma(b))
+    return math.log(math.gamma(a + b)) + (a - 1) * math.log(val.val)  + (b - 1) * math.log(1 - val.val) \
+           - math.log(math.gamma(a)) - math.log(math.gamma(b))
   def __str__(self):
     return 'beta'
 
@@ -85,7 +84,7 @@ class beta_no_args_XRP(XRP):
     check_pos(a)
     check_pos(b)
     self.a, self.b = a, b 
-    self.prob_help = math.log(special.gamma(a + b)) - math.log(special.gamma(a)) - math.log(special.gamma(b))
+    self.prob_help = math.log(math.gamma(a + b)) - math.log(math.gamma(a)) - math.log(math.gamma(b))
     return
   def apply(self, args = None):
     if args != None and len(args) != 0:
@@ -116,6 +115,62 @@ class gen_beta_XRP(XRP):
     return Value(beta_no_args_XRP(a, b)) 
   def __str__(self):
     return 'beta_XRP'
+
+class gamma_args_XRP(XRP):
+  def __init__(self):
+    self.state = None
+    return
+  def apply(self, args = None):
+    (a,b) = (args[0].val, args[1].val)
+    check_pos(a)
+    check_pos(b)
+    return value(random.gammavariate(a, b))
+  def prob(self, val, args = None):
+    (a , b) = (args[0].val, args[1].val)
+    check_pos(a)
+    check_pos(b)
+    check_prob(val.val)
+    if val.val == 0:
+      warnings.warn('gamma(%f, %f) returning %f' % (a, b, val.val))
+      val.val = .0000000000000001
+    return (a-1) * math.log(val.val) - ((val.val + 0.0) / b) - math.log(math.gamma(a)) - a * math.log(b)
+  def __str__(self):
+    return 'gamma'
+
+class gamma_no_args_XRP(XRP):
+  def __init__(self, a, b):
+    self.state = None
+    check_pos(a)
+    check_pos(b)
+    self.a, self.b = a, b 
+    self.prob_help = - math.log(math.gamma(a)) - a * math.log(b)
+    return
+  def apply(self, args = None):
+    if args != None and len(args) != 0:
+      warnings.warn('Warning: gamma_no_args_XRP has no need to take in arguments %s' % str(args))
+    return value(random.gammavariate(self.a, self.b))
+  def prob(self, val, args = None):
+    if args != None and len(args) != 0:
+      warnings.warn('Warning: gamma_no_args_XRP has no need to take in arguments %s' % str(args))
+    check_prob(val.val)
+    if val.val == 0:
+      warnings.warn('gamma(%f, %f) returning %f' % (a, b, val.val))
+      val.val = .0000000000000001
+    return self.prob_help + (self.a - 1) * math.log(val.val) - ((val.val + 0.0) / self.b)
+  def __str__(self):
+    return 'gamma(%d, %d)' % (self.a, self.b)
+
+class gen_gamma_XRP(XRP):
+  def __init__(self):
+    self.state = None
+    return
+  def apply(self, args = None):
+    (a,b) = (args[0].val, args[1].val)
+    check_pos(a)
+    check_pos(b)
+    return Value(gamma_no_args_XRP(a, b)) 
+  def __str__(self):
+    return 'gamma_XRP'
 
 class bernoulli_args_XRP(XRP):
   def __init__(self):

@@ -1,7 +1,6 @@
 from directives import * 
 from mem import *
 from time import *
-from scipy import special 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages 
 
@@ -66,7 +65,7 @@ def plot_beta_cdf(a, b, bucketsize, name = 'graphs/betaplot.png'):
 def get_beta_cdf(a, b, bucketsize):
   assert type(a) == type(b) == int
 
-  coeffs = [special.gamma(a+b) / (special.gamma(i + 1) * special.gamma(a+b-i)) for i in range(a, a+b)]
+  coeffs = [math.gamma(a+b) / (math.gamma(i + 1) * math.gamma(a+b-i)) for i in range(a, a+b)]
 
   numbuckets = int(math.floor(1.0 / bucketsize))
   xs = [i * bucketsize for i in range(numbuckets)]
@@ -219,14 +218,14 @@ def test_CRP():
   assume('crp2', CRP(10))
   print [sample(apply('crp2')) for i in xrange(10)]
 
-#  assume('alpha', (vague-gamma)]
-#  assume('cluster-crp', (crp/make alpha)]
-#  assume('get-cluster-mean', (mem (lambda (cluster) (vague-normal) ))]
-#  assume('get-cluster-variance', (mem (lambda (cluster) (vague-gamma) ))]
-#  assume('get-cluster', (mem (lambda (id) (cluster-crp) ))]
-#  assume('get-cluster-model', (mem (lambda (cluster) (lambda () (gaussian (get-cluster-mean cluster) (get-cluster-variance cluster)) ))]
-#  assume('get-datapoint', (mem (lambda (id) ((get-cluster-model (get-cluster id))) ))]
-#
+  assume('alpha', gamma(0.1, 10))
+  assume('cluster-crp', CRP('alpha'))
+  assume('get-cluster-mean', mem(function('cluster', gaussian(0, 10))))
+  assume('get-cluster-variance', mem(function('cluster', gamma(0.1, 100))))
+  assume('get-cluster', mem(function('id' ,'cluster-crp')))
+  assume('get-cluster-model', mem(function('cluster', function([], gaussian(apply('get-cluster-mean', 'cluster'), apply('get-cluster-variance', 'cluster'))))))
+  assume('get-datapoint', mem(function('id', apply('get-cluster-model', apply('get-cluster', 'id')))))
+
 def test_bayes_nets():
   print "\n TESTING INFERENCE ON CLOUDY/SPRINKLER\n"
   

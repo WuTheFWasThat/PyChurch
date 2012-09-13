@@ -9,7 +9,7 @@ def expression(tup):
   else:
     return Expression(tup)
 
-#Class Class representing expressions 
+#Class representing expressions 
 class Expression:
   # Initializes an expression, taking in a type string, and a list of other parameter arguments 
   def __init__(self, tup):
@@ -218,25 +218,6 @@ class Expression:
   def __invert__(self):
     return Expression(('not', self))
 
-def xrp(xrp):
-  return expression(('xrp', xrp)) 
-
-bernoulli_args_xrp = bernoulli_args_XRP() 
-def bernoulli(p):
-  return expression(('apply',  bernoulli_args_xrp, p)) 
-
-beta_args_xrp = beta_args_XRP() 
-def beta(a, b): 
-  return expression(('apply', beta_args_xrp, [a, b])) 
-
-uniform_args_xrp = uniform_args_XRP() 
-def uniform(n):
-  return expression(('apply', ('xrp', uniform_args_xrp), n)) 
-
-gaussian_args_xrp = gaussian_args_XRP() 
-def gaussian(mu, sigma):
-  return expression(('apply', ('xrp', gaussian_args_xrp), [mu, sigma])) 
-
 def constant(c):
   return expression(('value', c)) 
 
@@ -260,3 +241,31 @@ def function(vars, body):
 
 def negation(expr):
   return expression(('not', expr)) 
+
+### XRP ###
+
+def xrp(xrp):
+  return expression(('xrp', xrp)) 
+
+### DISTRIBUTIONS ### 
+
+bernoulli_args_xrp = bernoulli_args_XRP() 
+def bernoulli(p):
+  return expression(('apply',  bernoulli_args_xrp, p)) 
+
+beta_args_xrp = beta_args_XRP() 
+def beta(a, b): 
+  return expression(('apply', beta_args_xrp, [a, b])) 
+
+gamma_args_xrp = gamma_args_XRP() 
+def gamma(a, b): 
+  return expression(('apply', gamma_args_xrp, [a, b])) 
+
+uniform_args_xrp = uniform_args_XRP() 
+def uniform(n):
+  return expression(('apply', ('xrp', uniform_args_xrp), n)) 
+
+gaussian_args_xrp = gaussian_args_XRP() 
+def gaussian(mu, sigma):
+  return expression(('apply', ('xrp', gaussian_args_xrp), [mu, sigma])) 
+
