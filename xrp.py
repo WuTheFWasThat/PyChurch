@@ -11,10 +11,6 @@ class gaussian_args_XRP(XRP):
     check_num(mu)
     check_pos(sigma)
     return value(random.normalvariate(mu, sigma))
-  def incorporate(self, val, args = None):
-    return None
-  def remove(self, val, args = None):
-    return None
   def prob(self, val, args = None):
     (mu , sigma) = (args[0].val, args[1].val + 0.0)
     check_num(mu)
@@ -37,10 +33,6 @@ class gaussian_no_args_XRP(XRP):
     if args != None and len(args) != 0:
       warnings.warn('Warning: gaussian_no_args_XRP has no need to take in arguments %s' % str(args))
     return value(random.normalvariate(self.mu, self.sigma))
-  def incorporate(self, val, args = None):
-    return None
-  def remove(self, val, args = None):
-    return None
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: gaussian_no_args_XRP has no need to take in arguments %s' % str(args))
@@ -59,12 +51,6 @@ class gen_gaussian_XRP(XRP):
     check_num(mu)
     check_pos(sigma)
     return Value(gaussian_no_args_XRP(mu, sigma)) 
-  def incorporate(self, val, args = None):
-    return None
-  def remove(self, val, args = None):
-    return None
-  def prob(self, val, args = None):
-    return 0
   def __str__(self):
     return 'gaussian_XRP'
 
@@ -77,10 +63,6 @@ class beta_args_XRP(XRP):
     check_pos(a)
     check_pos(b)
     return value(random.betavariate(a, b))
-  def incorporate(self, val, args = None):
-    return None
-  def remove(self, val, args = None):
-    return None
   def prob(self, val, args = None):
     (a , b) = (args[0].val, args[1].val)
     check_pos(a)
@@ -109,10 +91,6 @@ class beta_no_args_XRP(XRP):
     if args != None and len(args) != 0:
       warnings.warn('Warning: beta_no_args_XRP has no need to take in arguments %s' % str(args))
     return value(random.betavariate(self.a, self.b))
-  def incorporate(self, val, args = None):
-    return None
-  def remove(self, val, args = None):
-    return None
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: beta_no_args_XRP has no need to take in arguments %s' % str(args))
@@ -136,12 +114,6 @@ class gen_beta_XRP(XRP):
     check_pos(a)
     check_pos(b)
     return Value(beta_no_args_XRP(a, b)) 
-  def incorporate(self, val, args = None):
-    return None
-  def remove(self, val, args = None):
-    return None
-  def prob(self, val, args = None):
-    return 0
   def __str__(self):
     return 'beta_XRP'
 
@@ -153,10 +125,6 @@ class bernoulli_args_XRP(XRP):
     p = args[0].val
     check_prob(p)
     return value(random.random() < p)
-  def incorporate(self, val, args = None):
-    return None
-  def remove(self, val, args = None):
-    return None
   def prob(self, val, args = None):
     p = args[0].val
     check_prob(p)
@@ -178,10 +146,6 @@ class bernoulli_no_args_XRP(XRP):
     if args != None and len(args) != 0:
       warnings.warn('Warning: bernoulli_no_args_XRP has no need to take in arguments %s' % str(args))
     return value(random.random() < self.p)
-  def incorporate(self, val, args = None):
-    return None
-  def remove(self, val, args = None):
-    return None
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: bernoulli_no_args_XRP has no need to take in arguments %s' % str(args))
@@ -201,12 +165,6 @@ class gen_bernoulli_XRP(XRP):
     p = args[0].val
     check_prob(p)
     return Value(bernoulli_no_args_XRP(p)) 
-  def incorporate(self, val, args = None):
-    return None
-  def remove(self, val, args = None):
-    return None
-  def prob(self, val, args = None):
-    return 0
   def __str__(self):
     return 'bernoulli_XRP'
 
@@ -218,10 +176,6 @@ class uniform_args_XRP(XRP):
     n = args[0].val
     check_nat(n)
     return value(random.randint(0, n-1))
-  def incorporate(self, val, args = None):
-    return None
-  def remove(self, val, args = None):
-    return None
   def prob(self, val, args = None):
     n = args[0].val
     check_nat(n)
@@ -240,10 +194,6 @@ class uniform_no_args_XRP(XRP):
     if args != None and len(args) != 0:
       warnings.warn('Warning: uniform_no_args_XRP has no need to take in arguments %s' % str(args))
     return value(random.randint(0, self.n-1))
-  def incorporate(self, val, args = None):
-    return None
-  def remove(self, val, args = None):
-    return None
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: uniform_no_args_XRP has no need to take in arguments %s' % str(args))
@@ -260,12 +210,6 @@ class gen_uniform_XRP(XRP):
     n = args[0].val
     check_nat(n)
     return Value(uniform_no_args_XRP(n)) 
-  def incorporate(self, val, args = None):
-    return None
-  def remove(self, val, args = None):
-    return None
-  def prob(self, val, args = None):
-    return 0
   def __str__(self):
     return 'uniform_XRP'
 
@@ -276,10 +220,6 @@ class beta_bernoulli_1(XRP):
     check_prob(self.state)
   def apply(self, args = None):
     return value((random.random() < self.state))
-  def incorporate(self, val, args = None):
-    return self.state
-  def remove(self, val, args = None):
-    return self.state
   def prob(self, val, args = None):
     # PREPROCESS?
     if val.val:

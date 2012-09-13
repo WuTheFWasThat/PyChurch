@@ -219,6 +219,14 @@ def test_CRP():
   assume('crp2', CRP(10))
   print [sample(apply('crp2')) for i in xrange(10)]
 
+#  assume('alpha', (vague-gamma)]
+#  assume('cluster-crp', (crp/make alpha)]
+#  assume('get-cluster-mean', (mem (lambda (cluster) (vague-normal) ))]
+#  assume('get-cluster-variance', (mem (lambda (cluster) (vague-gamma) ))]
+#  assume('get-cluster', (mem (lambda (id) (cluster-crp) ))]
+#  assume('get-cluster-model', (mem (lambda (cluster) (lambda () (gaussian (get-cluster-mean cluster) (get-cluster-variance cluster)) ))]
+#  assume('get-datapoint', (mem (lambda (id) ((get-cluster-model (get-cluster id))) ))]
+#
 def test_bayes_nets():
   print "\n TESTING INFERENCE ON CLOUDY/SPRINKLER\n"
   

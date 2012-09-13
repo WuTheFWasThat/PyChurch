@@ -145,20 +145,20 @@ class XRP:
   def apply(self, args = None):
     return sample(self.state, args)
   def incorporate(self, val, args = None):
-    if self.inc != None:
+    if hasattr(self, 'inc'):
       self.state = self.inc(self.state, val, args)
       return self.state
     else:
       return None
   def remove(self, val, args = None):
-    if self.rem != None:
+    if hasattr(self, 'rem'):
       self.state = self.rem(self.state, val, args)
       return self.state
     else:
       return None
   # SHOULD RETURN THE LOG PROBABILITY
   def prob(self, val, args = None):
-    if self.prob != None:
+    if hasattr(self, 'prob'):
       return self.prob(self.state, val, args)
     else:
       return 0
