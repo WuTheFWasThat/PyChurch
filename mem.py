@@ -66,26 +66,21 @@ class CRP_XRP(XRP):
   def __init__(self, alpha):
     self.state = {}
     check_pos(alpha)
-    self.state[0] = alpha
+    self.alpha = alpha
     self.weight = alpha
     return
   def apply(self, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
-    x = random.random(0, 1) * self.weight
+    x = random.random() * self.weight
     for id in self.state:
       x -= self.state[id]
       if x <= 0:
-        if x == 0:
-          return random.randint(0, 2**32-1)
-        else:
-          return id
-    warnings.warn('Warning: CRP_XRP had total_weight %f and has state %s' % (self.weight, str(self.state))) 
-    assert False
+        return id
+    return random.randint(0, 2**32-1)
   def incorporate(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
-    assert val != 0
     self.weight += 1
     if val in self.state:
       self.state[val] += 1
@@ -95,7 +90,6 @@ class CRP_XRP(XRP):
   def remove(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
-    assert val != 0
     if val in self.state:
       if self.state[val] == 1:
         del self.state[val]
@@ -109,13 +103,12 @@ class CRP_XRP(XRP):
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
-    assert val != 0
     if val in self.state:
       return math.log(self.state[val]) - math.log(self.weight)
     else:
-      return math.log(self.state[0]) - math.log(self.weight)
+      return math.log(self.alpha) - math.log(self.weight)
   def __str__(self):
-    return 'CRP(%f)' % (self.state[0])
+    return 'CRP(%f)' % (self.alpha)
 
 class gen_CRP_XRP(XRP):
   def __init__(self):
@@ -134,7 +127,7 @@ class gen_CRP_XRP(XRP):
   def __str__(self):
     return 'CRP_XRP'
 
-crp_xrp = CRP_XRP()
+crp_xrp = gen_CRP_XRP()
 def CRP(alpha):
   return expression(('apply', crp_xrp, alpha))
 

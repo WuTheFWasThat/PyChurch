@@ -199,9 +199,9 @@ def test_beta_bernoulli():
   print " \n TESTING BETA-BERNOULLI XRPs\n"
   
   print "beta_bernoulli_1"
-  coin_1 = beta_bernoulli_1()
-  print [sample(apply(coin_1)) for i in xrange(10)]
-  print coin_1.state
+  coin1 = beta_bernoulli_1()
+  print [sample(apply(coin1)) for i in xrange(10)]
+  print coin1.state
   
   print "beta_bernoulli_2"
   coin_2 = beta_bernoulli_2()
@@ -212,14 +212,12 @@ def test_CRP():
   print " \n TESTING CHINESE RESTAURANT PROCESS XRP\n"
   
   print "CRP(1)"
-  crp_1 = CRP(1)
-  print [sample(apply(crp_1)) for i in xrange(10)]
-  print coin_1.state
+  assume('crp1', CRP(1))
+  print [sample(apply('crp1')) for i in xrange(10)]
   
   print "CRP(10)"
-  crp_2 = CRP(10)
-  print [sample(apply(crp_2)) for i in xrange(10)]
-  print coin_2.state
+  assume('crp2', CRP(10))
+  print [sample(apply('crp2')) for i in xrange(10)]
 
 def test_bayes_nets():
   print "\n TESTING INFERENCE ON CLOUDY/SPRINKLER\n"
