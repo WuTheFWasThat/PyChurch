@@ -10,7 +10,7 @@ class mem_proc_XRP(XRP):
     if tuple(args) in self.state:
       (val, count) = self.state[tuple(args)]
     else:
-      val = evaluate(apply(self.procedure, args), stack = ['xrp', hash(self), tuple(args)])
+      val = evaluate(apply(self.procedure, args), stack = ['procedure', hash(self.procedure), tuple(args)])
     return val
   def incorporate(self, val, args = None):
     if tuple(args) not in self.state:
@@ -21,6 +21,7 @@ class mem_proc_XRP(XRP):
       self.state[tuple(args)] = (oldval, oldcount + 1)
     return self.state
   def remove(self, val, args = None):
+    # TODO(wujeff): unevaluate
     assert tuple(args) in self.state
     (oldval, oldcount) = self.state[tuple(args)]
     assert oldval == val
@@ -59,6 +60,8 @@ class mem_XRP(XRP):
     return 'Memoization XRP'
 
 mem_xrp = mem_XRP()
+print "XRP MEM HASH"
+print hash(mem_xrp)
 def mem(function):
   return expression(('apply', mem_xrp, function))
 

@@ -91,23 +91,23 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
 
   expr = expression(expr)
 
-  def evaluate_recurse(subexpr, env, reflip, stack, addition, secondaddition = None):
-    stack.append(addition)
-    if secondaddition is not None:
-      stack.append(secondaddition)
+  def evaluate_recurse(subexpr, env, reflip, stack, additions, xrp_force_val = None):
+    if type(additions) != list:
+      additions = [additions]
+    n = len(additions)
+    stack.extend(additions)
     val = evaluate(subexpr, env, reflip, stack)
-    if secondaddition is not None:
+    for i in xrange(n):
       stack.pop()
-    stack.pop()
     return val
 
   def binary_op_evaluate(expr, env, reflip, stack, op): 
-    val1 = evaluate_recurse(expr.children[0], env, reflip, stack , 0).val
-    val2 = evaluate_recurse(expr.children[1], env, reflip, stack , 1).val
+    val1 = evaluate_recurse(expr.children[0], env, reflip, stack, 0, xrp_force_val).val
+    val2 = evaluate_recurse(expr.children[1], env, reflip, stack, 1, xrp_force_val).val
     return Value(op(val1 , val2))
 
   def list_op_evaluate(expr, env, reflip, stack, op):
-    vals = [evaluate_recurse(expr.children[i], env, reflip, stack , i).val for i in xrange(len(expr.children))]
+    vals = [evaluate_recurse(expr.children[i], env, reflip, stack, i, xrp_force_val).val for i in xrange(len(expr.children))]
     return Value(reduce(op, vals))
 
   if expr.type == 'value':
@@ -124,20 +124,20 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     else:
       return val
   elif expr.type == 'if':
-    cond = evaluate_recurse(expr.cond, env, reflip, stack , -1)
+    cond = evaluate_recurse(expr.cond, env, reflip, stack , -1, xrp_force_val)
     assert type(cond.val) in [bool] 
     if cond.val: 
       globals.db.unevaluate(stack + [0])
-      return evaluate_recurse(expr.true, env, reflip, stack , 1)
+      return evaluate_recurse(expr.true, env, reflip, stack , 1, xrp_force_val)
     else:
       globals.db.unevaluate(stack + [1])
-      return evaluate_recurse(expr.false, env, reflip, stack , 0)
+      return evaluate_recurse(expr.false, env, reflip, stack , 0, xrp_force_val)
   elif expr.type == 'switch':
-    index = evaluate_recurse(expr.index, env, reflip, stack , -1)
+    index = evaluate_recurse(expr.index, env, reflip, stack , -1, xrp_force_val)
     assert type(index.val) in [int] 
     assert 0 <= index.val < expr.n
     # unevaluate?
-    return evaluate_recurse(expr.children[index.val], env, reflip, stack, index.val)
+    return evaluate_recurse(expr.children[index.val], env, reflip, stack, index.val, xrp_force_val)
   elif expr.type == 'let':
     # TODO:think more about the behavior with environments here...
     n = len(expr.vars)
@@ -146,19 +146,19 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     new_env = env
     for i in range(n): # Bind variables
       new_env = new_env.spawn_child()
-      val = evaluate_recurse(expr.expressions[i], new_env, reflip, stack, i)
+      val = evaluate_recurse(expr.expressions[i], new_env, reflip, stack, i, xrp_force_val)
       values.append(val)
       new_env.set(expr.vars[i], values[i])
       if val.type == 'procedure':
         val.env = new_env
     new_body = replace(expr.body, new_env)
-    return evaluate_recurse(new_body, new_env, reflip, stack, -1)
+    return evaluate_recurse(new_body, new_env, reflip, stack, -1, xrp_force_val)
   elif expr.type == 'apply':
     n = len(expr.children)
-    args = [evaluate_recurse(expr.children[i], env, reflip, stack, i) for i in range(n)]
-    op = evaluate_recurse(expr.op, env, reflip, stack , -2)
+    args = [evaluate_recurse(expr.children[i], env, reflip, stack, i, xrp_force_val) for i in range(n)]
+    op = evaluate_recurse(expr.op, env, reflip, stack , -2, xrp_force_val)
     if op.type == 'procedure':
-      globals.db.unevaluate(stack + [-1], args)
+      globals.db.unevaluate(['procedure', hash(op)], args)
       if n != len(op.vars):
         print 'Should have %d arguments' % n
         print op.vars
@@ -167,8 +167,9 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
       new_env = op.env.spawn_child()
       for i in range(n):
         new_env.set(op.vars[i], args[i]) 
-      return evaluate_recurse(op.body, new_env, reflip, stack , -1, tuple(args))
+      return evaluate(op.body, new_env, reflip, ['procedure', hash(op), tuple(args)], xrp_force_val)
     elif op.type == 'xrp':
+      globals.db.unevaluate(stack + [-1], args)
 
       if xrp_force_val != None: 
         if globals.db.has(stack):
@@ -297,8 +298,8 @@ def infer(): # RERUN AT END
   stack = globals.db.random_stack() 
   (xrp, val, args, is_obs_noise) = globals.db.get(stack)
 
-  #debug = True 
-  debug = False 
+  debug = True 
+  #debug = False 
 
   old_p = globals.db.p
   old_to_new_q = - math.log(globals.db.count) 

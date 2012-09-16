@@ -129,7 +129,7 @@ class gamma_args_XRP(XRP):
     (a , b) = (args[0].val, args[1].val)
     check_pos(a)
     check_pos(b)
-    check_prob(val.val)
+    check_pos(val.val)
     if val.val == 0:
       warnings.warn('gamma(%f, %f) returning %f' % (a, b, val.val))
       val.val = .0000000000000001
@@ -152,7 +152,7 @@ class gamma_no_args_XRP(XRP):
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: gamma_no_args_XRP has no need to take in arguments %s' % str(args))
-    check_prob(val.val)
+    check_pos(val.val)
     if val.val == 0:
       warnings.warn('gamma(%f, %f) returning %f' % (a, b, val.val))
       val.val = .0000000000000001

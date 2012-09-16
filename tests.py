@@ -218,13 +218,48 @@ def test_CRP():
   assume('crp2', CRP(10))
   print [sample(apply('crp2')) for i in xrange(10)]
 
-  assume('alpha', gamma(0.1, 10))
+  assume('alpha', gamma(0.1, 20))
   assume('cluster-crp', CRP('alpha'))
   assume('get-cluster-mean', mem(function('cluster', gaussian(0, 10))))
   assume('get-cluster-variance', mem(function('cluster', gamma(0.1, 100))))
-  assume('get-cluster', mem(function('id' ,'cluster-crp')))
+  assume('get-cluster', mem(function('id' , apply('cluster-crp'))))
   assume('get-cluster-model', mem(function('cluster', function([], gaussian(apply('get-cluster-mean', 'cluster'), apply('get-cluster-variance', 'cluster'))))))
-  assume('get-datapoint', mem(function('id', apply('get-cluster-model', apply('get-cluster', 'id')))))
+  assume('get-datapoint', mem(function('id', apply(apply('get-cluster-model', apply('get-cluster', 'id'))))))
+
+  points = {} 
+  for i in xrange(100):
+    print sample(apply('get-cluster', i)) , " : ", sample(apply('get-datapoint', i))
+
+  for i in xrange(1000):
+    val = sample(apply('get-datapoint', i))
+    if val in points:
+      points[val] += 1
+    else:
+      points[val] = 1
+  plot_pdf(points, -50, 50, 0.1, name = 'graphs/crpmixturesample.png')
+
+  #observe(gaussian(apply('get-datapoint', 0), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.3)
+  #observe(gaussian(apply('get-datapoint', 1), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.2)
+  #observe(gaussian(apply('get-datapoint', 2), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 1.9)
+  #observe(gaussian(apply('get-datapoint', 3), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.0)
+  #observe(gaussian(apply('get-datapoint', 4), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.1)
+
+  #niters, burnin = 100, 100
+
+  #print sample(apply('get-datapoint', 0))
+  #a = follow_prior(apply('get-datapoint', 0), 10, 10)
+  #print sample(apply('get-datapoint', 0))
+  #print sample(apply('get-datapoint', 0))
+  #print sample(apply('get-datapoint', 0))
+  #print a
+  #print format(get_pdf(a, -4, 4, .5), '%0.2f') 
+
+  #print 'running', niters, 'times,', burnin, 'burnin'
+
+  #t = time()
+  #a = follow_prior('expected-mean', niters, burnin)
+  #print format(get_pdf(a, -4, 4, .5), '%0.2f') 
+  #print 'time taken', time() - t
 
 def test_bayes_nets():
   print "\n TESTING INFERENCE ON CLOUDY/SPRINKLER\n"
@@ -536,9 +571,6 @@ def test_DPmem():
   """TESTING DPMEM"""
   concentration = 1 # when close to 0, just mem.  when close to infinity, sample 
   assume('DPmemflip', apply('DPmem', [concentration, function(['x'], gaussian(0, 1))]))
-  #print [sample(apply(apply('DPmemflip', 222))) for i in xrange(10)]
-  #print [sample(apply(apply('DPmemflip', 22))) for i in xrange(10)]
-  #print [sample(apply(apply('DPmemflip', 222))) for i in xrange(10)]
 
   print "\n TESTING GAUSSIAN MIXTURE MODEL\n"
   assume('expected-mean', gaussian(0, 5)) 
@@ -567,8 +599,7 @@ def test_DPmem():
 
   #niters, burnin = 100, 100
 
-  print sample(apply('get-datapoint', 0))
-  a = follow_prior(apply('get-datapoint', 0), 10, 10)
+  a = follow_prior(apply('get-datapoint', 0), 10, 1000)
   print sample(apply('get-datapoint', 0))
   print sample(apply('get-datapoint', 0))
   print sample(apply('get-datapoint', 0))
@@ -582,30 +613,35 @@ def test_DPmem():
   #print format(get_pdf(a, -4, 4, .5), '%0.2f') 
   #print 'time taken', time() - t
 
-  #concentration = 1
-  #uniform_base_measure = uniform_no_args_XRP(2)
-  #print [sample(apply('DP', [concentration, uniform_base_measure])) for i in xrange(10)]
-  #expr = beta_bernoulli_1()
-
 def test():
   reset()
   print " \n TESTING BLAH\n"
   
-  print "description"
-  expr = beta_bernoulli_1()
-  print [sample(apply(coin_1)) for i in xrange(10)]
+  #print "description"
+  #expr = beta_bernoulli_1()
+  #print [sample(apply(coin_1)) for i in xrange(10)]
   
+  print "description"
+  assume('f', mem(function(['id'], uniform(5))))
+  assume('x', apply('f', 0))
+  observe(noisy('x' == 3, 0.1), True)
+  a = follow_prior('x', 10, 1000)
+  print a
+  print [sample('x') for i in xrange(10)]
+
 if simpletests:
   test_expressions()
   test_recursion()
   test_beta_bernoulli()
-test_CRP()
 
 #test_mem()
 #test_bayes_nets() 
 #test_xor()  # needs like 500 to mix 
 #test_tricky() 
 #test_geometric()   
-test_DPmem()
+#test_DPmem()
+#test_CRP()
 
 #L0test([], [])
+
+test()
