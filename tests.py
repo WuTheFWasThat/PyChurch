@@ -224,35 +224,39 @@ def test_CRP():
   assume('get-cluster-variance', mem(function('cluster', gamma(0.1, 100))))
   assume('get-cluster', mem(function('id' , apply('cluster-crp'))))
   assume('get-cluster-model', mem(function('cluster', function([], gaussian(apply('get-cluster-mean', 'cluster'), apply('get-cluster-variance', 'cluster'))))))
-  assume('get-datapoint', mem(function('id', apply(apply('get-cluster-model', apply('get-cluster', 'id'))))))
+  assume('get-datapoint', mem(function('id', gaussian(apply(apply('get-cluster-model', apply('get-cluster', 'id'))), 0.1))))
+  assume('outer-noise', gamma(0.1, 10)) 
 
-  points = {} 
-  for i in xrange(100):
-    print sample(apply('get-cluster', i)) , " : ", sample(apply('get-datapoint', i))
+  #points = {} 
+  #for i in xrange(100):
+  #  print sample(apply('get-cluster', i)) , " : ", sample(apply('get-datapoint', i))
+  #for i in xrange(1000):
+  #  val = sample(apply('get-datapoint', i))
+  #  if val in points:
+  #    points[val] += 1
+  #  else:
+  #    points[val] = 1
+  #plot_pdf(points, -50, 50, 0.1, name = 'graphs/crpmixturesample.png')
 
-  for i in xrange(1000):
-    val = sample(apply('get-datapoint', i))
-    if val in points:
-      points[val] += 1
-    else:
-      points[val] = 1
-  plot_pdf(points, -50, 50, 0.1, name = 'graphs/crpmixturesample.png')
+  assume('x', apply('get-datapoint', 0))
+  observe(gaussian('x', let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.3)
+  observe(gaussian(apply('get-datapoint', 1), let([('y', gaussian(0, 'outer-noise'))], var('y') * var('y'))), 2.2)
+  observe(gaussian(apply('get-datapoint', 2), let([('y', gaussian(0, 'outer-noise'))], var('y') * var('y'))), 1.9)
+  observe(gaussian(apply('get-datapoint', 3), let([('y', gaussian(0, 'outer-noise'))], var('y') * var('y'))), 2.0)
+  observe(gaussian(apply('get-datapoint', 4), let([('y', gaussian(0, 'outer-noise'))], var('y') * var('y'))), 2.1)
 
-  #observe(gaussian(apply('get-datapoint', 0), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.3)
-  #observe(gaussian(apply('get-datapoint', 1), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.2)
-  #observe(gaussian(apply('get-datapoint', 2), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 1.9)
-  #observe(gaussian(apply('get-datapoint', 3), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.0)
-  #observe(gaussian(apply('get-datapoint', 4), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.1)
+  niters, burnin = 100, 1000
 
-  #niters, burnin = 100, 100
-
+  print sample('x')
+  print sample('x')
+  a = follow_prior('x', 10, 1000)
+  print sample('x')
+  print sample('x')
   #print sample(apply('get-datapoint', 0))
-  #a = follow_prior(apply('get-datapoint', 0), 10, 10)
   #print sample(apply('get-datapoint', 0))
   #print sample(apply('get-datapoint', 0))
-  #print sample(apply('get-datapoint', 0))
-  #print a
-  #print format(get_pdf(a, -4, 4, .5), '%0.2f') 
+  print a
+  print format(get_pdf(a, -4, 4, .5), '%0.2f') 
 
   #print 'running', niters, 'times,', burnin, 'burnin'
 
@@ -622,12 +626,12 @@ def test():
   #print [sample(apply(coin_1)) for i in xrange(10)]
   
   print "description"
-  assume('f', mem(function(['id'], uniform(5))))
+  assume('f', mem(let(('x', CRP(1)), function(['id'], apply('x')))))
   assume('x', apply('f', 0))
-  observe(noisy('x' == 3, 0.1), True)
+  observe(noisy(var('x') < 2222222222, 0.001), True)
   a = follow_prior('x', 10, 1000)
   print a
-  print [sample('x') for i in xrange(10)]
+  #print [sample('x') for i in xrange(10)]
 
 if simpletests:
   test_expressions()
@@ -644,4 +648,4 @@ if simpletests:
 
 #L0test([], [])
 
-test()
+#test()

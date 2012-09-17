@@ -1,16 +1,18 @@
 from directives import *
 
+# THIS XRP IMPLEMENTATION IS NOT INDEPENDENT OF DIRECTIVES IMPLEMENTATION 
 class mem_proc_XRP(XRP):
   def __init__(self, procedure):
     self.procedure = procedure
     self.n = len(procedure.vars)
     self.state = {}
+    self.db = RandomDB()
   def apply(self, args = None):
     assert len(args) == self.n and all([args[i].__class__.__name__ == 'Value' for i in xrange(self.n)])
     if tuple(args) in self.state:
       (val, count) = self.state[tuple(args)]
     else:
-      val = evaluate(apply(self.procedure, args), stack = ['procedure', hash(self.procedure), tuple(args)])
+      val = evaluate(apply(self.procedure, args), stack = ['mem', hash(self.procedure), tuple(args)]) 
     return val
   def incorporate(self, val, args = None):
     if tuple(args) not in self.state:
@@ -21,7 +23,6 @@ class mem_proc_XRP(XRP):
       self.state[tuple(args)] = (oldval, oldcount + 1)
     return self.state
   def remove(self, val, args = None):
-    # TODO(wujeff): unevaluate
     assert tuple(args) in self.state
     (oldval, oldcount) = self.state[tuple(args)]
     assert oldval == val
@@ -80,7 +81,7 @@ class CRP_XRP(XRP):
       x -= self.state[id]
       if x <= 0:
         return id
-    return random.randint(0, 2**32-1)
+    return value(random.randint(0, 2**32-1))
   def incorporate(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: CRP_XRP has no need to take in arguments %s' % str(args))

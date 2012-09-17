@@ -90,15 +90,14 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     env = globals.env
 
   expr = expression(expr)
+  globals.traces[stack] = (env, expr.type)
 
   def evaluate_recurse(subexpr, env, reflip, stack, additions, xrp_force_val = None):
     if type(additions) != list:
       additions = [additions]
-    n = len(additions)
-    stack.extend(additions)
-    val = evaluate(subexpr, env, reflip, stack)
-    for i in xrange(n):
-      stack.pop()
+    substack = stack + additions
+    val = evaluate(subexpr, env, reflip, substack)
+    globals.traces.setparent(substack, stack)
     return val
 
   def binary_op_evaluate(expr, env, reflip, stack, op): 
@@ -158,7 +157,7 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     args = [evaluate_recurse(expr.children[i], env, reflip, stack, i, xrp_force_val) for i in range(n)]
     op = evaluate_recurse(expr.op, env, reflip, stack , -2, xrp_force_val)
     if op.type == 'procedure':
-      globals.db.unevaluate(['procedure', hash(op)], args)
+      globals.db.unevaluate(stack + [-1], args)
       if n != len(op.vars):
         print 'Should have %d arguments' % n
         print op.vars
@@ -167,7 +166,7 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
       new_env = op.env.spawn_child()
       for i in range(n):
         new_env.set(op.vars[i], args[i]) 
-      return evaluate(op.body, new_env, reflip, ['procedure', hash(op), tuple(args)], xrp_force_val)
+      return evaluate_recurse(op.body, new_env, reflip, stack, [-1, tuple(args)], xrp_force_val)
     elif op.type == 'xrp':
       globals.db.unevaluate(stack + [-1], args)
 
@@ -298,8 +297,8 @@ def infer(): # RERUN AT END
   stack = globals.db.random_stack() 
   (xrp, val, args, is_obs_noise) = globals.db.get(stack)
 
-  debug = True 
-  #debug = False 
+  #debug = True 
+  debug = False 
 
   old_p = globals.db.p
   old_to_new_q = - math.log(globals.db.count) 

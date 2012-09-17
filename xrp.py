@@ -6,7 +6,7 @@ class gaussian_args_XRP(XRP):
     self.state = None
     return
   def apply(self, args = None):
-    (mu , sigma) = (args[0].val, args[1].val)
+    (mu, sigma) = (args[0].val, args[1].val)
     check_num(mu)
     check_pos(sigma)
     return value(random.normalvariate(mu, sigma))

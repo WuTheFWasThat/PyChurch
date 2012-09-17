@@ -103,12 +103,17 @@ class Expression:
         assert len(self.expressions) == len(self.vars)
         self.body = expression(tup[3])
       else:
-        assert type(tup[1]) == list
-        self.vars = []
-        self.expressions = []
-        for (var, expr) in tup[1]:
-          self.vars.append(var)
-          self.expressions.append(expression(expr))
+        if type(tup[1]) == tuple:
+          assert len(tup[1]) == 2
+          self.vars = [tup[1][0]]
+          self.expressions = [tup[1][1]]
+        else:
+          assert type(tup[1]) == list
+          self.vars = []
+          self.expressions = []
+          for (var, expr) in tup[1]:
+            self.vars.append(var)
+            self.expressions.append(expression(expr))
         self.body = expression(tup[2])
     elif self.type == 'apply':
       self.op = expression(tup[1])

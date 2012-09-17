@@ -7,6 +7,9 @@ class Environment:
   def __init__(self, parent = None):
     self.parent = parent # The parent environment
     self.assignments = {} # Dictionary from names to values
+    self.children = set() 
+    if parent is not None:
+      self.parent.children.add(self)
     return
 
   def set(self, name, expression):
@@ -28,10 +31,85 @@ class Environment:
     self.set(name, expression) 
 
   def __getitem__(self, name):
-    self.lookup(name) 
+    return self.lookup(name) 
 
   def __str__(self):
     return self.assignments.__str__()
+
+class EvalNode:
+  def __init__(self, stack, env, type = "?"):
+    self.parent = None 
+    self.children = set()
+    self.env = env # Environment in which this was evaluated
+    self.lookup = {}
+    self.stack = stack
+    self.type = type
+    return
+
+  def setparent(self, parent):
+    self.parent = parent
+    self.parent.addchild(self)
+
+  def addchild(self, child):
+    self.children.add(child)
+
+  def str_helper(self, prefix = ""):
+    string = "\n"
+    string += prefix + " " + str(self)
+    for child in self.children:
+      string += child.str_helper(prefix + "-")
+    return string
+
+  def __str__(self):
+    return ("EvalNode of type %s at %s" % (self.type, str(self.stack)))
+
+class Traces:
+  def __init__(self):
+    self.evalnodes = {}
+    self.roots = set() # set of evalnodes with no parents
+    return
+
+  def set(self, stack, tup):
+    stack = tuple(stack)
+    self.evalnodes[stack] = EvalNode(stack, tup[0], tup[1])
+    self.roots.add(stack)
+
+  def setparent(self, stack, parentstack):
+    stack = tuple(stack)
+    parentstack = tuple(parentstack)
+    if stack in self.roots:
+      self.roots.remove(stack)
+    self.get(stack).setparent(self.get(parentstack))
+
+  def has(self, stack):
+    return tuple(stack) in self.evalnodes
+
+  def get(self, stack):
+    assert self.has(stack)
+    return self.evalnodes[stack]
+
+  def __setitem__(self, stack, tup):
+    self.set(stack, tup) 
+
+  def __getitem__(self, stack):
+    return self.get(stack)
+
+  def __str__(self):
+    string = "EvalNodeTree:\n"
+    for rootstack in self.roots:
+      string += self.get(rootstack).str_helper()
+    return string
+
+# Class representing random db
+class RandomDB:
+  def __init__(self):
+    #self.db = {} 
+    self.db = RandomChoiceDict() 
+    self.db_noise = {}
+    self.count = 0
+    self.memory = []
+    # ALWAYS WORKING WITH LOG PROBABILITIES
+    self.uneval_p = 0
 
 # Class representing random db
 class RandomDB:
@@ -201,6 +279,13 @@ class Directives_Memory:
 
 # The global environment. Has assignments of names to expressions, and parent pointer 
 env = Environment()
+
+# The traces datastructure. 
+# DAG of two interlinked trees: 
+#   1. eval (with subcases: IF, symbollookup, combination, lambda) + apply
+#   2. environments
+# crosslinked by symbol lookup nodes and by the env argument to eval
+traces = Traces()
 
 # Table storing a list of (xrp, value, probability) tuples
 db = RandomDB()
