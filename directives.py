@@ -41,7 +41,7 @@ def replace(expr, env, bound = set()):
   elif expr.type == 'variable':
     if expr.name in bound:
       return expr
-    val = env.lookup(expr.name)
+    (val, lookup_env) = env.lookup(expr.name)
     if val is None:
       return expr
       #warnings.warn('Unbound free variable %s' % expr.name)  ... not necessarily bad 
@@ -113,7 +113,7 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     return expr.val
   elif expr.type == 'variable':
     var = expr.name
-    val = env.lookup(var)
+    (val, lookup_env) = env.lookup(var)
     if val is None:
       #warnings.warn('Variable %s undefined' % var)
       print 'Variable %s undefined' % var
@@ -121,6 +121,7 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
       print stack
       assert False
     else:
+      globals.traces.setlookup(stack, lookup_env)
       return val
   elif expr.type == 'if':
     cond = evaluate_recurse(expr.cond, env, reflip, stack , -1, xrp_force_val)
@@ -176,22 +177,24 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
         globals.db.insert(stack, op.val, xrp_force_val, args, True) 
         return xrp_force_val
 
-      stack.extend([-1, tuple(args)])
-      if not globals.db.has(stack):
+      substack = stack + [-1, tuple(args)]
+      if not globals.db.has(substack):
         val = value(op.val.apply(args))
-        globals.db.insert(stack, op.val, val, args)
+        globals.db.insert(substack, op.val, val, args)
       else:
         if reflip:
-          globals.db.remove(stack)
+          globals.db.remove(substack)
           val = value(op.val.apply(args))
-          globals.db.insert(stack, op.val, val, args)
+          globals.db.insert(substack, op.val, val, args)
         else:
-          (xrp, val, dbargs, is_obs_noise) = globals.db.get(stack) 
-          #assert xrp == op.val 
-          #assert dbargs == args 
+          (xrp, val, dbargs, is_obs_noise) = globals.db.get(substack) 
+          if not xrp == op.val:
+            #print xrp
+            print op.val
+          assert xrp == op.val 
+          assert dbargs == args 
           assert not is_obs_noise
-      stack.pop()
-      stack.pop()
+      #globals.traces.setparent(substack, stack)
       return val
     else:
       warnings.warn('Must apply either a procedure or xrp')

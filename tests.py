@@ -627,6 +627,8 @@ def test():
   
   print "description"
   assume('f', mem(let(('x', CRP(1)), function(['id'], apply('x')))))
+  for i in range(20):
+    print sample(apply('f', i))
   assume('x', apply('f', 0))
   observe(noisy(var('x') < 2222222222, 0.001), True)
   a = follow_prior('x', 10, 1000)
@@ -648,4 +650,4 @@ if simpletests:
 
 #L0test([], [])
 
-#test()
+test()

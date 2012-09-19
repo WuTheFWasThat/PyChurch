@@ -17,10 +17,10 @@ class Environment:
 
   def lookup(self, name):
     if name in self.assignments:
-      return self.assignments[name]
+      return (self.assignments[name], self)
     else:
       if self.parent is None:
-        return None
+        return (None, None)
       else:
         return self.parent.lookup(name)
 
@@ -41,14 +41,18 @@ class EvalNode:
     self.parent = None 
     self.children = set()
     self.env = env # Environment in which this was evaluated
-    self.lookup = {}
+    self.lookup = None 
     self.stack = stack
     self.type = type
+    self.active = True
     return
 
   def setparent(self, parent):
     self.parent = parent
     self.parent.addchild(self)
+
+  def setlookup(self, env):
+    self.lookup = env 
 
   def addchild(self, child):
     self.children.add(child)
@@ -67,6 +71,7 @@ class Traces:
   def __init__(self):
     self.evalnodes = {}
     self.roots = set() # set of evalnodes with no parents
+    # also have leaves?
     return
 
   def set(self, stack, tup):
@@ -81,6 +86,10 @@ class Traces:
       self.roots.remove(stack)
     self.get(stack).setparent(self.get(parentstack))
 
+  def setlookup(self, stack, lookup_env):
+    stack = tuple(stack)
+    self.get(stack).setlookup(lookup_env)
+  
   def has(self, stack):
     return tuple(stack) in self.evalnodes
 
@@ -95,7 +104,7 @@ class Traces:
     return self.get(stack)
 
   def __str__(self):
-    string = "EvalNodeTree:\n"
+    string = "EvalNodeTree:"
     for rootstack in self.roots:
       string += self.get(rootstack).str_helper()
     return string
