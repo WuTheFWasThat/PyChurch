@@ -39,7 +39,7 @@ class Environment:
 class EvalNode:
   def __init__(self, stack, env, type = "?"):
     self.parent = None 
-    self.children = set()
+    self.children = {} 
     self.env = env # Environment in which this was evaluated
     self.lookup = None 
     self.stack = stack
@@ -47,21 +47,21 @@ class EvalNode:
     self.active = True
     return
 
-  def setparent(self, parent):
+  def setparent(self, parent, key = ""):
     self.parent = parent
-    self.parent.addchild(self)
+    self.parent.addchild(self, key)
 
   def setlookup(self, env):
     self.lookup = env 
 
-  def addchild(self, child):
-    self.children.add(child)
+  def addchild(self, child, key = ""):
+    self.children[key] = child
 
   def str_helper(self, prefix = ""):
     string = "\n"
     string += prefix + " " + str(self)
-    for child in self.children:
-      string += child.str_helper(prefix + "-")
+    for key in self.children:
+      string += self.chidlren[key].str_helper(prefix + "-")
     return string
 
   def __str__(self):
@@ -97,6 +97,9 @@ class Traces:
     assert self.has(stack)
     return self.evalnodes[stack]
 
+  def reset(self):
+    self.__init__()
+    
   def __setitem__(self, stack, tup):
     self.set(stack, tup) 
 
@@ -109,16 +112,6 @@ class Traces:
       string += self.get(rootstack).str_helper()
     return string
 
-# Class representing random db
-class RandomDB:
-  def __init__(self):
-    #self.db = {} 
-    self.db = RandomChoiceDict() 
-    self.db_noise = {}
-    self.count = 0
-    self.memory = []
-    # ALWAYS WORKING WITH LOG PROBABILITIES
-    self.uneval_p = 0
 
 # Class representing random db
 class RandomDB:

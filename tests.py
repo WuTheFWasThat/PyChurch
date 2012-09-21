@@ -4,7 +4,7 @@ from time import *
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages 
 
-simpletests = True
+simpletests = False
 
 def noisy(expression, error):
   return bernoulli(ifelse(expression, 1, error))
@@ -86,11 +86,27 @@ def get_beta_cdf(a, b, bucketsize):
 def format(list, format):
   return [ format % x for x in list]
 
+""" DISTANCE MEASURES """
+
 def L0distance(cdf1, cdf2):  # Kolmogorov-Smirnov test 
   return max(abs(cdf1[i] - cdf2[i]) for i in xrange(len(cdf1)))
 
 def L1distance(cdf2, cdf1):   
   return sum(abs(cdf1[i] - cdf2[i]) for i in xrange(len(cdf1)))
+
+def KLdivergence(d, pdf):
+  d = normalize(d)
+  kl = 0
+  for x in d:
+    kl += d[x] * (log(d[x]) - log(pdf(x))) 
+  return kl
+
+def perplexity(d, pdf):
+  d = normalize(d)
+  ans = 0
+  for x in d:
+    ans += d[x] * log(pdf(x))
+  return ans 
 
 """ TESTS """
 
@@ -617,6 +633,79 @@ def test_DPmem():
   #print format(get_pdf(a, -4, 4, .5), '%0.2f') 
   #print 'time taken', time() - t
 
+def test_easy_mixture():
+  print " \n TESTING 1 COMPONENT MIXTURE\n"
+
+  x = []
+  y = []
+
+  for i in range(0, 500, 100):
+    reset()
+    assume('get-cluster-mean', gaussian(0, 10))
+    assume('get-cluster-variance', gamma(1, 10))
+    assume('get-cluster-model', function([], gaussian('get-cluster-mean', 'get-cluster-variance')))
+    assume('get-datapoint-2', mem(function('id', apply('get-cluster-model'))))
+    assume('get-datapoint', mem(function('id', gaussian(apply('get-cluster-model'), 0.1))))
+
+    points = [2.2, 2.0, 1.5, 2.1, 1.8, 1.9]
+    print "points: " + str(points)
+    for (idx, p) in enumerate(points):
+      observe(gaussian(apply('get-datapoint-2', idx), 0.1), p)
+
+    #assume('x', apply('get-datapoint', 0))
+    #observe(gaussian('x', let([('y', gaussian(0, .1))], var('y') * var('y'))), point)
+
+    avg_logpdf = 0
+    num_repeats = 10
+    for j in range(0, num_repeats):
+      # start at prior, move i steps towards posterior
+      a = follow_prior('get-cluster-mean', 1, i)
+
+      # read out inferred mean and sig of gaussian
+      avg = sample('get-cluster-mean').val
+      sig = sample('get-cluster-variance').val
+
+      print "  mean: " + str(avg) + " +- " + str(sig)
+
+      logpdf = 0
+      for point in points:  
+        logpdf += -((point - avg)/(sig + 0.0))**2
+      logpdf /= float(len(points))
+      print "  logpdf for trial " + str(j) + " iters " + str(i) + " : " + str(logpdf)
+
+      avg_logpdf += logpdf
+
+    print "total logpdf: " + str(avg_logpdf)
+    avg_logpdf /= float(num_repeats)
+    print "avg_logpdf: " + str(avg_logpdf)
+
+    y.append(avg_logpdf) # log pdf at point
+    x.append(i)
+  plot(x, y, name = 'graphs/mixture1component.png')
+  #print [sample('x') for i in xrange(10)]
+
+  reset()
+
+  print " \n TESTING 2 COMPONENT MIXTURE\n"
+
+  assume('cluster-crp', function([], uniform(2)))
+  assume('get-cluster-mean', function('cluster', gaussian(0, 10)))
+  assume('get-cluster-variance', function('cluster', gamma(1, 10)))
+  assume('get-cluster', function('id' , apply('cluster-crp')))
+  assume('get-cluster-model', mem(function('cluster', function([], gaussian(apply('get-cluster-mean', 'cluster'), apply('get-cluster-variance', 'cluster'))))))
+  assume('get-datapoint', mem(function('id', gaussian(apply(apply('get-cluster-model', apply('get-cluster', 'id'))), 0.1))))
+
+  assume('x', apply('get-datapoint', 0))
+  #observe(gaussian('x', let([('y', gaussian(0, .1))], var('y') * var('y'))), -2.3)
+  #observe(gaussian(apply('get-datapoint', 1), let([('y', gaussian(0, .1))], var('y') * var('y'))), -2.2)
+  #observe(gaussian(apply('get-datapoint', 2), let([('y', gaussian(0, .1))], var('y') * var('y'))), -1.9)
+  #observe(gaussian(apply('get-datapoint', 3), let([('y', gaussian(0, .1))], var('y') * var('y'))), -2.0)
+  #observe(gaussian(apply('get-datapoint', 4), let([('y', gaussian(0, .1))], var('y') * var('y'))), -2.1)
+
+  #a = follow_prior('x', 10, 1000)
+  #print a
+  #print [sample('x') for i in xrange(10)]
+
 def test():
   reset()
   print " \n TESTING BLAH\n"
@@ -627,12 +716,16 @@ def test():
   
   print "description"
   assume('f', mem(let(('x', CRP(1)), function(['id'], apply('x')))))
-  for i in range(20):
-    print sample(apply('f', i))
+  #for i in range(20):
+  #  print sample(apply('f', i))
   assume('x', apply('f', 0))
-  observe(noisy(var('x') < 2222222222, 0.001), True)
-  a = follow_prior('x', 10, 1000)
+  observe(noisy(apply('f',0) < 2222222222, 0.001), True)
+  a = follow_prior(apply('f',0), 10, 1000)
   print a
+  print sample(apply('f', 0))
+  print sample(apply('f', 0))
+  print sample(apply('f', 0))
+  print sample(apply('f', 0))
   #print [sample('x') for i in xrange(10)]
 
 if simpletests:
@@ -646,8 +739,8 @@ if simpletests:
 #test_tricky() 
 #test_geometric()   
 #test_DPmem()
-#test_CRP()
+#kest_CRP()
 
-#L0test([], [])
+#test_easy_mixture()
 
 test()

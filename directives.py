@@ -5,6 +5,7 @@ from expressions import *
 def reset():
   globals.env.assignments = {}
   globals.db.reset()
+  globals.traces.reset()
   globals.mem.reset()
 
 def assume_helper(varname, expr, reflip):
@@ -115,10 +116,7 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     var = expr.name
     (val, lookup_env) = env.lookup(var)
     if val is None:
-      #warnings.warn('Variable %s undefined' % var)
-      print 'Variable %s undefined' % var
-      print env
-      print stack
+      warnings.warn('At stack %s:\nVariable %s undefined in env:\n%s' % (str(stack), var, str(env)))
       assert False
     else:
       globals.traces.setlookup(stack, lookup_env)
@@ -158,11 +156,9 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     args = [evaluate_recurse(expr.children[i], env, reflip, stack, i, xrp_force_val) for i in range(n)]
     op = evaluate_recurse(expr.op, env, reflip, stack , -2, xrp_force_val)
     if op.type == 'procedure':
-      globals.db.unevaluate(stack + [-1], args)
+      globals.db.unevaluate(stack + [-1], tuple(hash(x) for x in args))
       if n != len(op.vars):
-        print 'Should have %d arguments' % n
-        print op.vars
-        print expr.children
+        warnings.warn('Procedure should have %d arguments.  \nVars were \n%s\n, but children were \n%s.' % (n, op.vars, expr.chidlren))
         assert False
       new_env = op.env.spawn_child()
       for i in range(n):
@@ -177,7 +173,7 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
         globals.db.insert(stack, op.val, xrp_force_val, args, True) 
         return xrp_force_val
 
-      substack = stack + [-1, tuple(args)]
+      substack = stack + [-1, tuple(hash(x) for x in args)]
       if not globals.db.has(substack):
         val = value(op.val.apply(args))
         globals.db.insert(substack, op.val, val, args)
@@ -188,11 +184,6 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
           globals.db.insert(substack, op.val, val, args)
         else:
           (xrp, val, dbargs, is_obs_noise) = globals.db.get(substack) 
-          if not xrp == op.val:
-            #print xrp
-            print op.val
-          assert xrp == op.val 
-          assert dbargs == args 
           assert not is_obs_noise
       #globals.traces.setparent(substack, stack)
       return val
@@ -204,7 +195,7 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     for i in range(n): # Bind variables
       new_env.set(expr.vars[i], expr.vars[i])
     procedure_body = replace(expr.body, new_env)
-    return Value((expr.vars, procedure_body), env)
+    return Value((expr.vars, procedure_body, stack), env)
   elif expr.type == '=':
     return binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x == y)
   elif expr.type == '<':
@@ -338,6 +329,7 @@ def infer(): # RERUN AT END
       globals.db.restore()
       if debug: 
         print 'restore'
+      rerun(False) 
 
   if debug: 
     print "new db", globals.db
@@ -354,14 +346,13 @@ def follow_prior(name, niter = 1000, burnin = 100):
 
   dict = {}
   for n in xrange(niter):
-    if n % 100 == 0: print n
+    if n > 0 and n % 100 == 0: print n, "iters"
 
     # re-draw from prior
     rerun(True)
     for t in xrange(burnin):
       infer()
 
-    rerun(False) 
     val = evaluate(name, globals.env, reflip = False, stack = [name])
     if val in dict:
       dict[val] += 1

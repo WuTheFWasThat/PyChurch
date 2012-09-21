@@ -6,7 +6,6 @@ class mem_proc_XRP(XRP):
     self.procedure = procedure
     self.n = len(procedure.vars)
     self.state = {}
-    self.db = RandomDB()
   def apply(self, args = None):
     assert len(args) == self.n and all([args[i].__class__.__name__ == 'Value' for i in xrange(self.n)])
     if tuple(args) in self.state:
@@ -34,7 +33,7 @@ class mem_proc_XRP(XRP):
   def prob(self, val, args = None):
     return 0 
   def __str__(self):
-    return 'Memoization of procedure %s XRP' % str(self.procedure)
+    return 'Memoization of %s XRP' % str(self.procedure)
 
 class mem_XRP(XRP):
   def __init__(self):
@@ -61,8 +60,6 @@ class mem_XRP(XRP):
     return 'Memoization XRP'
 
 mem_xrp = mem_XRP()
-print "XRP MEM HASH"
-print hash(mem_xrp)
 def mem(function):
   return expression(('apply', mem_xrp, function))
 

@@ -21,12 +21,13 @@ class Value:
       self.type = 'bool'
     elif isinstance(val, XRP):
       self.type = 'xrp'
+      self.hash = random.randint(0, 2**32-1)
     else:
-      (self.vars, self.body) = val 
+      (self.vars, self.body, self.stack) = val 
       assert env is not None
       self.type = 'procedure'
       self.env = env 
-      self.hash = hash((tuple(self.vars), self.body, frozenset(self.env.assignments.items()))) 
+      self.hash = hash(tuple(self.stack))
 
   def __str__(self):
     if self.type == 'procedure':
@@ -40,7 +41,7 @@ class Value:
     return self.__str__()
 
   def __hash__(self):
-    if self.type == 'procedure':
+    if self.type == 'procedure' or self.type == 'xrp':
       return self.hash
     else: # Default hash is by identity, for XRPs
       return hash(self.val)
@@ -49,9 +50,7 @@ class Value:
     other = value(other)
     if self.type != other.type:
       return False # change this perhaps? 
-    elif self.type == 'xrp':
-      return self.val is other.val
-    elif self.type == 'procedure':
+    elif self.type == 'procedure' or self.type == 'xrp':
       return self.hash == other.hash
     else:
       return self.val == other.val
