@@ -734,7 +734,7 @@ if simpletests:
   test_beta_bernoulli()
 
 #test_mem()
-#test_bayes_nets() 
+test_bayes_nets() 
 #test_xor()  # needs like 500 to mix 
 #test_tricky() 
 #test_geometric()   
@@ -743,4 +743,4 @@ if simpletests:
 
 #test_easy_mixture()
 
-test()
+#test()

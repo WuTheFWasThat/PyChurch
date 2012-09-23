@@ -10,6 +10,7 @@ class Environment:
     self.children = set() 
     if parent is not None:
       self.parent.children.add(self)
+    self.lookups = {}
     return
 
   def set(self, name, expression):
@@ -20,9 +21,16 @@ class Environment:
       return (self.assignments[name], self)
     else:
       if self.parent is None:
-        return (None, None)
+        warnings.warn('At stack %s:\nVariable %s undefined in env:\n%s' % (str(stack), var, str(env)))
+        assert False
       else:
         return self.parent.lookup(name)
+
+  def add_lookup(self, name, evalnode):
+    if name in self.lookups:
+      self.lookups[name].add(evalnode)
+    else:
+      self.lookups[name] = set([evalnode])
 
   def spawn_child(self): 
     return Environment(self)
@@ -37,25 +45,32 @@ class Environment:
     return self.assignments.__str__()
 
 class EvalNode:
-  def __init__(self, stack, env, type = "?"):
+  def __init__(self, stack, env, type, prop = False):
     self.parent = None 
     self.children = {} 
+
     self.env = env # Environment in which this was evaluated
     self.lookup = None 
+
     self.stack = stack
     self.type = type
-    self.active = True
+
+    self.active = not prop 
+    self.val = None
+    self.active_prop = prop 
+    self.val_prop = None
     return
 
-  def setparent(self, parent, key = ""):
+  def setparent(self, parent, addition):
     self.parent = parent
-    self.parent.addchild(self, key)
+    self.parent.addchild(self, addition)
 
-  def setlookup(self, env):
+  def setlookup(self, name, env):
     self.lookup = env 
+    env.add_lookup(name, self)
 
-  def addchild(self, child, key = ""):
-    self.children[key] = child
+  def addchild(self, child, addition):
+    self.children[addition] = child
 
   def str_helper(self, prefix = ""):
     string = "\n"
@@ -71,24 +86,27 @@ class Traces:
   def __init__(self):
     self.evalnodes = {}
     self.roots = set() # set of evalnodes with no parents
+    self.db = RandomChoiceDict() 
     # also have leaves?
     return
 
   def set(self, stack, tup):
     stack = tuple(stack)
-    self.evalnodes[stack] = EvalNode(stack, tup[0], tup[1])
+    evalnode = EvalNode(stack, tup[0], tup[1])
+    self.evalnodes[stack] = evalnode
+    self.db[stack] = evalnode
     self.roots.add(stack)
 
-  def setparent(self, stack, parentstack):
+  def setparent(self, stack, addition):
+    parentstack = tuple(stack + [addition])
     stack = tuple(stack)
-    parentstack = tuple(parentstack)
     if stack in self.roots:
       self.roots.remove(stack)
-    self.get(stack).setparent(self.get(parentstack))
+    self.get(stack).setparent(self.get(parentstack), addition)
 
-  def setlookup(self, stack, lookup_env):
+  def setlookup(self, stack, name, lookup_env):
     stack = tuple(stack)
-    self.get(stack).setlookup(lookup_env)
+    self.get(stack).setlookup(name, lookup_env)
   
   def has(self, stack):
     return tuple(stack) in self.evalnodes
@@ -97,6 +115,33 @@ class Traces:
     assert self.has(stack)
     return self.evalnodes[stack]
 
+  def unevaluate(self, uneval_stack, exception = None):
+    if args is not None:
+      args = tuple(args)
+    uneval_stack = tuple(uneval_stack)
+    self.get(uneval_stack)
+    
+    # remove from db
+    # track probability
+    # allow undoing
+
+    def unevaluate_helper(tuple_stack):
+      stack = list(tuple_stack) 
+      if len(stack) >= len(uneval_stack) and stack[:len(uneval_stack)] == uneval_stack:
+        if args is None:
+          to_delete.append(tuple_stack)
+        else:
+          assert len(stack) > len(uneval_stack)
+          if stack[len(uneval_stack)] != args:
+            to_delete.append(tuple_stack)
+
+    for tuple_stack in self.db:
+      unevaluate_helper(tuple_stack)
+    for tuple_stack in self.db_noise:
+      unevaluate_helper(tuple_stack)
+
+    for tuple_stack in to_delete:
+      self.remove(tuple_stack)
   def reset(self):
     self.__init__()
     

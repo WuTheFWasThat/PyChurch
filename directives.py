@@ -2,6 +2,9 @@ import globals
 from globals import Environment, RandomDB
 from expressions import *
 
+use_db = True
+use_traces = True
+
 def reset():
   globals.env.assignments = {}
   globals.db.reset()
@@ -91,14 +94,13 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     env = globals.env
 
   expr = expression(expr)
-  globals.traces[stack] = (env, expr.type)
+  if use_traces:
+    globals.traces[stack] = (env, expr.type)
 
-  def evaluate_recurse(subexpr, env, reflip, stack, additions, xrp_force_val = None):
-    if type(additions) != list:
-      additions = [additions]
-    substack = stack + additions
-    val = evaluate(subexpr, env, reflip, substack)
-    globals.traces.setparent(substack, stack)
+  def evaluate_recurse(subexpr, env, reflip, stack, addition, xrp_force_val = None):
+    val = evaluate(subexpr, env, reflip, stack + [addition])
+    if use_traces:
+      globals.traces.setparent(stack, addition)
     return val
 
   def binary_op_evaluate(expr, env, reflip, stack, op): 
@@ -115,20 +117,19 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
   elif expr.type == 'variable':
     var = expr.name
     (val, lookup_env) = env.lookup(var)
-    if val is None:
-      warnings.warn('At stack %s:\nVariable %s undefined in env:\n%s' % (str(stack), var, str(env)))
-      assert False
-    else:
-      globals.traces.setlookup(stack, lookup_env)
-      return val
+    if use_traces:
+      globals.traces.setlookup(stack, expr.name, lookup_env)
+    return val
   elif expr.type == 'if':
     cond = evaluate_recurse(expr.cond, env, reflip, stack , -1, xrp_force_val)
     assert type(cond.val) in [bool] 
     if cond.val: 
-      globals.db.unevaluate(stack + [0])
+      if use_db:
+        globals.db.unevaluate(stack + [0])
       return evaluate_recurse(expr.true, env, reflip, stack , 1, xrp_force_val)
     else:
-      globals.db.unevaluate(stack + [1])
+      if use_db:
+        globals.db.unevaluate(stack + [1])
       return evaluate_recurse(expr.false, env, reflip, stack , 0, xrp_force_val)
   elif expr.type == 'switch':
     index = evaluate_recurse(expr.index, env, reflip, stack , -1, xrp_force_val)
@@ -156,36 +157,39 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     args = [evaluate_recurse(expr.children[i], env, reflip, stack, i, xrp_force_val) for i in range(n)]
     op = evaluate_recurse(expr.op, env, reflip, stack , -2, xrp_force_val)
     if op.type == 'procedure':
-      globals.db.unevaluate(stack + [-1], tuple(hash(x) for x in args))
+      if use_db:
+        globals.db.unevaluate(stack + [-1], tuple(hash(x) for x in args))
       if n != len(op.vars):
         warnings.warn('Procedure should have %d arguments.  \nVars were \n%s\n, but children were \n%s.' % (n, op.vars, expr.chidlren))
         assert False
       new_env = op.env.spawn_child()
       for i in range(n):
         new_env.set(op.vars[i], args[i]) 
-      return evaluate_recurse(op.body, new_env, reflip, stack, [-1, tuple(args)], xrp_force_val)
+      return evaluate_recurse(op.body, new_env, reflip, stack, (-1, tuple(args)), xrp_force_val)
     elif op.type == 'xrp':
-      globals.db.unevaluate(stack + [-1], args)
+      if use_db:
+        globals.db.unevaluate(stack + [-1], args)
 
       if xrp_force_val != None: 
-        if globals.db.has(stack):
-          globals.db.remove(stack)
-        globals.db.insert(stack, op.val, xrp_force_val, args, True) 
+        if use_db:
+          if globals.db.has(stack):
+            globals.db.remove(stack)
+          globals.db.insert(stack, op.val, xrp_force_val, args, True) 
         return xrp_force_val
 
       substack = stack + [-1, tuple(hash(x) for x in args)]
-      if not globals.db.has(substack):
-        val = value(op.val.apply(args))
-        globals.db.insert(substack, op.val, val, args)
-      else:
-        if reflip:
-          globals.db.remove(substack)
+      if use_db:
+        if not globals.db.has(substack):
           val = value(op.val.apply(args))
           globals.db.insert(substack, op.val, val, args)
         else:
-          (xrp, val, dbargs, is_obs_noise) = globals.db.get(substack) 
-          assert not is_obs_noise
-      #globals.traces.setparent(substack, stack)
+          if reflip:
+            globals.db.remove(substack)
+            val = value(op.val.apply(args))
+            globals.db.insert(substack, op.val, val, args)
+          else:
+            (xrp, val, dbargs, is_obs_noise) = globals.db.get(substack) 
+            assert not is_obs_noise
       return val
     else:
       warnings.warn('Must apply either a procedure or xrp')
