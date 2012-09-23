@@ -165,10 +165,10 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
       new_env = op.env.spawn_child()
       for i in range(n):
         new_env.set(op.vars[i], args[i]) 
-      return evaluate_recurse(op.body, new_env, reflip, stack, (-1, tuple(args)), xrp_force_val)
+      return evaluate_recurse(op.body, new_env, reflip, stack, (-1, tuple(hash(x) for x in args)), xrp_force_val)
     elif op.type == 'xrp':
       if use_db:
-        globals.db.unevaluate(stack + [-1], args)
+        globals.db.unevaluate(stack + [-1], tuple(hash(x) for x in args))
 
       if xrp_force_val != None: 
         if use_db:
