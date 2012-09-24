@@ -3,7 +3,7 @@ from globals import Environment, RandomDB
 from expressions import *
 
 use_db = True
-use_traces = True
+use_traces = False
 
 def reset():
   globals.env.assignments = {}
@@ -295,7 +295,7 @@ def rerun(reflip):
 
 def infer():
   # TODO remove
-  return infer_traces()
+  #return infer_traces()
   # reflip some coin
   stack = globals.db.random_stack() 
   (xrp, val, args, is_obs_noise) = globals.db.get(stack)
@@ -396,28 +396,3 @@ def infer_traces():
   #  print "new db", globals.db
   #  print "\n-----------------------------------------\n"
 
-def follow_prior(name, niter = 1000, burnin = 100):
-
-  #return reject_infer_many(name, niter)
-
-  if name in globals.mem.vars:
-    expr = globals.mem.vars[name]
-  else:
-    warnings.warn('%s is not defined' % str(name))
-
-  dict = {}
-  for n in xrange(niter):
-    if n > 0 and n % 100 == 0: print n, "iters"
-
-    # re-draw from prior
-    rerun(True)
-    for t in xrange(burnin):
-      infer()
-
-    val = evaluate(name, globals.env, reflip = False, stack = [name])
-    if val in dict:
-      dict[val] += 1
-    else:
-      dict[val] = 1
-
-  return dict 

@@ -164,7 +164,7 @@ class Traces:
     # IF
     # nondeterministic XRP - stop
     # env lookup
-
+    pass
 
   # Add an XRP application node to the db
   def add_xrp(self, stack):
