@@ -44,8 +44,8 @@ class Environment:
   def __str__(self):
     return self.assignments.__str__()
 
-class EvalNode:
-  def __init__(self, stack, env, type, prop = False):
+class EvalNodeInstance:
+  def __init__(self, stack, env, type, evalnodeset):
     self.parent = None 
     self.children = {} 
 
@@ -55,10 +55,8 @@ class EvalNode:
     self.stack = stack
     self.type = type
 
-    self.active = not prop 
     self.val = None
-    self.active_prop = prop 
-    self.val_prop = None
+    self.evalnodeset = evalnodeset
     return
 
   def setparent(self, parent, addition):
@@ -69,18 +67,49 @@ class EvalNode:
     self.lookup = env 
     env.add_lookup(name, self)
 
+  def setvalue(self, value):
+    self.val = value
+
   def addchild(self, child, addition):
     self.children[addition] = child
 
   def str_helper(self, prefix = ""):
     string = "\n"
-    string += prefix + " " + str(self)
+    string += " " + prefix + str(self)
     for key in self.children:
-      string += self.chidlren[key].str_helper(prefix + "-")
+      string += self.children[key].str_helper(prefix + "-")
     return string
 
   def __str__(self):
-    return ("EvalNode of type %s at %s" % (self.type, str(self.stack)))
+    return ("EvalNodeInstance of type %s at %s" % (self.type, str(self.stack)))
+
+class EvalNode:
+  def __init__(self, stack):
+    self.evalnodes = set() 
+    self.active_node = None
+    self.proposed_node = None
+    self.stack = stack
+    
+  def addnode(self, env, type):
+    evalnode = EvalNodeInstance(self.stack, env, type, self)
+    self.evalnodes.add(evalnode)
+    # unactivate old node?
+    self.active_node = evalnode
+
+  def setparent(self, parent, addition):
+    return self.active_node.setparent(parent, addition)
+
+  def setlookup(self, name, env):
+    return self.active_node.setlookup(name, env)
+
+  def setvalue(self, value):
+    return self.active_node.setvalue(value)
+
+  def addchild(self, child, addition):
+    return self.active_node.addchild(child, addition)
+
+  def str_helper(self, prefix = ""):
+    return self.active_node.str_helper(prefix)
 
 class Traces:
   def __init__(self):
@@ -92,14 +121,14 @@ class Traces:
 
   def set(self, stack, tup):
     stack = tuple(stack)
-    evalnode = EvalNode(stack, tup[0], tup[1])
-    self.evalnodes[stack] = evalnode
-    self.db[stack] = evalnode
+    evalnodeset = EvalNode(stack)
+    evalnodeset.addnode(tup[0], tup[1])
+    self.evalnodes[stack] = evalnodeset 
     self.roots.add(stack)
 
-  def setparent(self, stack, addition):
-    parentstack = tuple(stack + [addition])
-    stack = tuple(stack)
+  def setparent(self, parentstack, addition):
+    stack = tuple(parentstack + [addition])
+    parentstack = tuple(parentstack)
     if stack in self.roots:
       self.roots.remove(stack)
     self.get(stack).setparent(self.get(parentstack), addition)
@@ -108,6 +137,10 @@ class Traces:
     stack = tuple(stack)
     self.get(stack).setlookup(name, lookup_env)
   
+  def setvalue(self, stack, value):
+    stack = tuple(stack)
+    self.get(stack).setvalue(value)
+
   def has(self, stack):
     return tuple(stack) in self.evalnodes
 
@@ -115,33 +148,44 @@ class Traces:
     assert self.has(stack)
     return self.evalnodes[stack]
 
+  def reflip(self, stack):
+    reflip_node = self.get(stack).active_node
+    assert reflip_node.type == 'apply'
+    print self.db
+    #print self
+    assert -2 in reflip_node.children
+    assert reflip_node.children[-2].val.type == 'xrp'
+    xrp = reflip_node.children[-2].val.val
+    # TODO
+    # ENVELOPE CALCULATION?
+    # UNFINIHSED
+
+  def propogate_up(self, stack):
+    # IF
+    # nondeterministic XRP - stop
+    # env lookup
+
+
+  # Add an XRP application node to the db
+  def add_xrp(self, stack):
+    stack = tuple(stack)
+    self.db[stack] = stack 
+
   def unevaluate(self, uneval_stack, exception = None):
     if args is not None:
       args = tuple(args)
     uneval_stack = tuple(uneval_stack)
     self.get(uneval_stack)
     
+    # TODO
     # remove from db
     # track probability
     # allow undoing
 
-    def unevaluate_helper(tuple_stack):
-      stack = list(tuple_stack) 
-      if len(stack) >= len(uneval_stack) and stack[:len(uneval_stack)] == uneval_stack:
-        if args is None:
-          to_delete.append(tuple_stack)
-        else:
-          assert len(stack) > len(uneval_stack)
-          if stack[len(uneval_stack)] != args:
-            to_delete.append(tuple_stack)
+  def random_stack(self):
+    stack = self.db.randomKey()
+    return stack
 
-    for tuple_stack in self.db:
-      unevaluate_helper(tuple_stack)
-    for tuple_stack in self.db_noise:
-      unevaluate_helper(tuple_stack)
-
-    for tuple_stack in to_delete:
-      self.remove(tuple_stack)
   def reset(self):
     self.__init__()
     
@@ -223,7 +267,6 @@ class RandomDB:
       return None
 
   def random_stack(self):
-    #return list(random.choice(self.db.keys()))
     key = self.db.randomKey()
     return key
 

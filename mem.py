@@ -3,6 +3,7 @@ from directives import *
 # THIS XRP IMPLEMENTATION IS NOT INDEPENDENT OF DIRECTIVES IMPLEMENTATION 
 class mem_proc_XRP(XRP):
   def __init__(self, procedure):
+    self.deterministic = False
     self.procedure = procedure
     self.n = len(procedure.vars)
     self.state = {}
@@ -37,6 +38,7 @@ class mem_proc_XRP(XRP):
 
 class mem_XRP(XRP):
   def __init__(self):
+    self.deterministic = True
     self.state = {}
   def apply(self, args = None):
     procedure = args[0]
@@ -65,6 +67,7 @@ def mem(function):
 
 class CRP_XRP(XRP):
   def __init__(self, alpha):
+    self.deterministic = False
     self.state = {}
     check_pos(alpha)
     self.alpha = alpha

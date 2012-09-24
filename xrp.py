@@ -3,6 +3,7 @@ from values import *
 
 class gaussian_args_XRP(XRP):
   def __init__(self):
+    self.deterministic = False
     self.state = None
     return
   def apply(self, args = None):
@@ -22,6 +23,7 @@ class gaussian_args_XRP(XRP):
 
 class gaussian_no_args_XRP(XRP):
   def __init__(self, mu, sigma):
+    self.deterministic = False
     self.state = None
     check_num(mu)
     check_pos(sigma)
@@ -43,6 +45,7 @@ class gaussian_no_args_XRP(XRP):
 
 class gen_gaussian_XRP(XRP):
   def __init__(self):
+    self.deterministic = True
     self.state = None
     return
   def apply(self, args = None):
@@ -55,6 +58,7 @@ class gen_gaussian_XRP(XRP):
 
 class beta_args_XRP(XRP):
   def __init__(self):
+    self.deterministic = False
     self.state = None
     return
   def apply(self, args = None):
@@ -80,6 +84,7 @@ class beta_args_XRP(XRP):
 
 class beta_no_args_XRP(XRP):
   def __init__(self, a, b):
+    self.deterministic = False
     self.state = None
     check_pos(a)
     check_pos(b)
@@ -106,6 +111,7 @@ class beta_no_args_XRP(XRP):
 
 class gen_beta_XRP(XRP):
   def __init__(self):
+    self.deterministic = True
     self.state = None
     return
   def apply(self, args = None):
@@ -118,6 +124,7 @@ class gen_beta_XRP(XRP):
 
 class gamma_args_XRP(XRP):
   def __init__(self):
+    self.deterministic = False
     self.state = None
     return
   def apply(self, args = None):
@@ -139,6 +146,7 @@ class gamma_args_XRP(XRP):
 
 class gamma_no_args_XRP(XRP):
   def __init__(self, a, b):
+    self.deterministic = False
     self.state = None
     check_pos(a)
     check_pos(b)
@@ -162,6 +170,7 @@ class gamma_no_args_XRP(XRP):
 
 class gen_gamma_XRP(XRP):
   def __init__(self):
+    self.deterministic = True
     self.state = None
     return
   def apply(self, args = None):
@@ -174,6 +183,7 @@ class gen_gamma_XRP(XRP):
 
 class bernoulli_args_XRP(XRP):
   def __init__(self):
+    self.deterministic = False
     self.state = None
     return
   def apply(self, args = None):
@@ -193,6 +203,7 @@ class bernoulli_args_XRP(XRP):
 
 class bernoulli_no_args_XRP(XRP):
   def __init__(self, p):
+    self.deterministic = False
     self.state = None
     self.p = p
     check_prob(p)
@@ -214,6 +225,7 @@ class bernoulli_no_args_XRP(XRP):
 
 class gen_bernoulli_XRP(XRP):
   def __init__(self):
+    self.deterministic = True
     self.state = None
     return
   def apply(self, args = None):
@@ -225,6 +237,7 @@ class gen_bernoulli_XRP(XRP):
 
 class uniform_args_XRP(XRP):
   def __init__(self):
+    self.deterministic = False
     self.state = None
     return
   def apply(self, args = None):
@@ -241,6 +254,7 @@ class uniform_args_XRP(XRP):
 
 class uniform_no_args_XRP(XRP):
   def __init__(self, n):
+    self.deterministic = False
     self.state = None
     check_nat(n)
     self.n = n
@@ -259,6 +273,7 @@ class uniform_no_args_XRP(XRP):
 
 class gen_uniform_XRP(XRP):
   def __init__(self):
+    self.deterministic = True
     self.state = None
     return
   def apply(self, args = None):
@@ -270,6 +285,7 @@ class gen_uniform_XRP(XRP):
 
 class beta_bernoulli_1(XRP):
   def __init__(self, start_state = (1, 1)):
+    self.deterministic = False
     (a, b) = start_state
     self.state = random.betavariate(a, b)
     check_prob(self.state)
@@ -286,6 +302,7 @@ class beta_bernoulli_1(XRP):
 
 class beta_bernoulli_2(XRP):
   def __init__(self, start_state = (1, 1)):
+    self.deterministic = False
     self.state = start_state
   def apply(self, args = None):
     (h, t) = self.state

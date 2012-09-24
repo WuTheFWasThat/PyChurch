@@ -133,7 +133,8 @@ def check_nonneg(val):
   return
 
 class XRP:
-  def __init__(self, start_state, sample, prob = None, inc = None, rem = None, name = 'XRP'):
+  def __init__(self, start_state, sample, prob = None, inc = None, rem = None, name = 'XRP', deterministic = False):
+    self.deterministic = deterministic
     self.sample = sample # function which takes state, args, and returns value 
     self.inc = inc # function which takes state, value, args, and returns state
     self.rem = rem # function which takes state, value, args, and returns state

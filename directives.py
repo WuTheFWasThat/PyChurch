@@ -113,30 +113,29 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     return Value(reduce(op, vals))
 
   if expr.type == 'value':
-    return expr.val
+    val = expr.val
   elif expr.type == 'variable':
     var = expr.name
     (val, lookup_env) = env.lookup(var)
     if use_traces:
       globals.traces.setlookup(stack, expr.name, lookup_env)
-    return val
   elif expr.type == 'if':
     cond = evaluate_recurse(expr.cond, env, reflip, stack , -1, xrp_force_val)
     assert type(cond.val) in [bool] 
     if cond.val: 
       if use_db:
         globals.db.unevaluate(stack + [0])
-      return evaluate_recurse(expr.true, env, reflip, stack , 1, xrp_force_val)
+      val = evaluate_recurse(expr.true, env, reflip, stack , 1, xrp_force_val)
     else:
       if use_db:
         globals.db.unevaluate(stack + [1])
-      return evaluate_recurse(expr.false, env, reflip, stack , 0, xrp_force_val)
+      val = evaluate_recurse(expr.false, env, reflip, stack , 0, xrp_force_val)
   elif expr.type == 'switch':
     index = evaluate_recurse(expr.index, env, reflip, stack , -1, xrp_force_val)
     assert type(index.val) in [int] 
     assert 0 <= index.val < expr.n
     # unevaluate?
-    return evaluate_recurse(expr.children[index.val], env, reflip, stack, index.val, xrp_force_val)
+    val = evaluate_recurse(expr.children[index.val], env, reflip, stack, index.val, xrp_force_val)
   elif expr.type == 'let':
     # TODO:think more about the behavior with environments here...
     n = len(expr.vars)
@@ -151,7 +150,7 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
       if val.type == 'procedure':
         val.env = new_env
     new_body = replace(expr.body, new_env)
-    return evaluate_recurse(new_body, new_env, reflip, stack, -1, xrp_force_val)
+    val = evaluate_recurse(new_body, new_env, reflip, stack, -1, xrp_force_val)
   elif expr.type == 'apply':
     n = len(expr.children)
     args = [evaluate_recurse(expr.children[i], env, reflip, stack, i, xrp_force_val) for i in range(n)]
@@ -165,32 +164,34 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
       new_env = op.env.spawn_child()
       for i in range(n):
         new_env.set(op.vars[i], args[i]) 
-      return evaluate_recurse(op.body, new_env, reflip, stack, (-1, tuple(hash(x) for x in args)), xrp_force_val)
+      val = evaluate_recurse(op.body, new_env, reflip, stack, (-1, tuple(hash(x) for x in args)), xrp_force_val)
     elif op.type == 'xrp':
       if use_db:
         globals.db.unevaluate(stack + [-1], tuple(hash(x) for x in args))
+      if use_traces:
+        if not op.val.deterministic and xrp_force_val is None:
+          globals.traces.add_xrp(stack)
 
       if xrp_force_val != None: 
         if use_db:
           if globals.db.has(stack):
             globals.db.remove(stack)
           globals.db.insert(stack, op.val, xrp_force_val, args, True) 
-        return xrp_force_val
-
-      substack = stack + [-1, tuple(hash(x) for x in args)]
-      if use_db:
-        if not globals.db.has(substack):
-          val = value(op.val.apply(args))
-          globals.db.insert(substack, op.val, val, args)
-        else:
-          if reflip:
-            globals.db.remove(substack)
+        val = xrp_force_val
+      else:
+        substack = stack + [-1, tuple(hash(x) for x in args)]
+        if use_db:
+          if not globals.db.has(substack):
             val = value(op.val.apply(args))
             globals.db.insert(substack, op.val, val, args)
           else:
-            (xrp, val, dbargs, is_obs_noise) = globals.db.get(substack) 
-            assert not is_obs_noise
-      return val
+            if reflip:
+              globals.db.remove(substack)
+              val = value(op.val.apply(args))
+              globals.db.insert(substack, op.val, val, args)
+            else:
+              (xrp, val, dbargs, is_obs_noise) = globals.db.get(substack) 
+              assert not is_obs_noise
     else:
       warnings.warn('Must apply either a procedure or xrp')
   elif expr.type == 'function':
@@ -199,37 +200,40 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     for i in range(n): # Bind variables
       new_env.set(expr.vars[i], expr.vars[i])
     procedure_body = replace(expr.body, new_env)
-    return Value((expr.vars, procedure_body, stack), env)
+    val = Value((expr.vars, procedure_body, stack), env)
   elif expr.type == '=':
-    return binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x == y)
+    val = binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x == y)
   elif expr.type == '<':
-    return binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x < y)
+    val = binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x < y)
   elif expr.type == '>':
-    return binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x > y)
+    val = binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x > y)
   elif expr.type == '<=':
-    return binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x <= y)
+    val = binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x <= y)
   elif expr.type == '>=':
-    return binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x >= y)
+    val = binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x >= y)
   elif expr.type == '&':
-    return list_op_evaluate(expr, env, reflip, stack, lambda x, y : x & y)
+    val = list_op_evaluate(expr, env, reflip, stack, lambda x, y : x & y)
   elif expr.type == '^':
-    return list_op_evaluate(expr, env, reflip, stack, lambda x, y : x ^ y)
+    val = list_op_evaluate(expr, env, reflip, stack, lambda x, y : x ^ y)
   elif expr.type == '|':
-    return list_op_evaluate(expr, env, reflip, stack, lambda x, y : x | y)
+    val = list_op_evaluate(expr, env, reflip, stack, lambda x, y : x | y)
   elif expr.type == '~':
     negval = evaluate_recurse(expr.negation, env, reflip, stack, 0).val
-    return Value(not negval)
+    val = Value(not negval)
   elif expr.type == 'add':
-    return list_op_evaluate(expr, env, reflip, stack, lambda x, y : x + y)
+    val = list_op_evaluate(expr, env, reflip, stack, lambda x, y : x + y)
   elif expr.type == 'subtract':
     val1 = evaluate_recurse(expr.children[0], env, reflip, stack , 0).val
     val2 = evaluate_recurse(expr.children[1], env, reflip, stack , 1).val
-    return Value(val1 - val2)
+    val = Value(val1 - val2)
   elif expr.type == 'multiply':
-    return list_op_evaluate(expr, env, reflip, stack, lambda x, y : x * y)
+    val = list_op_evaluate(expr, env, reflip, stack, lambda x, y : x * y)
   else:
     warnings.warn('Invalid expression type %s' % expr.type)
-    return None
+    assert False 
+  if use_traces:
+    globals.traces.setvalue(stack, val)
+  return val
 
 def sample(expr, env = None, varname = None, reflip = False):
   expr = expression(expr)
@@ -289,8 +293,9 @@ def rerun(reflip):
     (expr, obs_val) = globals.mem.observes[hashval] 
     observe_helper(expr, obs_val)
 
-def infer(): # RERUN AT END
-  
+def infer():
+  # TODO remove
+  return infer_traces()
   # reflip some coin
   stack = globals.db.random_stack() 
   (xrp, val, args, is_obs_noise) = globals.db.get(stack)
@@ -338,6 +343,58 @@ def infer(): # RERUN AT END
   if debug: 
     print "new db", globals.db
     print "\n-----------------------------------------\n"
+
+def infer_traces():
+  # reflip some coin
+  stack = globals.traces.random_stack() 
+  globals.traces.reflip(stack)
+
+# TODO REST UNMODIFIED
+  #(xrp, val, args, is_obs_noise) = globals.db.get(stack)
+
+  ##debug = True 
+  #debug = False 
+
+  #old_p = globals.db.p
+  #old_to_new_q = - math.log(globals.db.count) 
+  #if debug:
+  #  print  "old_db", globals.db
+
+  #globals.db.save()
+
+  #globals.db.remove(stack)
+  #new_val = xrp.apply(args)
+  #globals.db.insert(stack, xrp, new_val, args)
+
+  #if debug:
+  #  print "\nCHANGING ", stack, "\n  TO   :  ", new_val, "\n"
+
+  #if val == new_val:
+  #  return
+
+  #rerun(False)
+  #new_p = globals.db.p
+  #new_to_old_q = globals.db.uneval_p - math.log(globals.db.count) 
+  #old_to_new_q += globals.db.eval_p 
+  #if debug:
+  #  print "new db", globals.db
+  #  print "\nq(old -> new) : ", old_to_new_q
+  #  print "q(new -> old) : ", new_to_old_q 
+  #  print "p(old) : ", old_p
+  #  print "p(new) : ", new_p
+  #  print 'log transition prob : ',  new_p + new_to_old_q - old_p - old_to_new_q , "\n"
+
+  #if old_p * old_to_new_q > 0:
+  #  p = random.random()
+  #  if new_p + new_to_old_q - old_p - old_to_new_q < math.log(p):
+  #    globals.db.restore()
+  #    if debug: 
+  #      print 'restore'
+  #    rerun(False) 
+
+  #if debug: 
+  #  print "new db", globals.db
+  #  print "\n-----------------------------------------\n"
 
 def follow_prior(name, niter = 1000, burnin = 100):
 
