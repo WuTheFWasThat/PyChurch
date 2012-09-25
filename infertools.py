@@ -25,7 +25,7 @@ def follow_prior(name, niter = 1000, burnin = 100):
 
   return dict 
 
-def follow_vars(names, niter = 1000, burnin = 100, plotname = None):
+def follow_vars(names, niter = 1000, burnin = 100):
   rerun(True)
   dict = {}
 
@@ -44,8 +44,29 @@ def follow_vars(names, niter = 1000, burnin = 100, plotname = None):
     infer()
 
     for name in names:
-      val = evaluate(name, globals.env, reflip = False, stack = [name])
-      dict[name].append(val.val)
+      val = evaluate(name, globals.env, reflip = False, stack = [name]).val
+      dict[name].append(val)
+
+  return dict 
+
+def sample_prior(names, niter = 1000):
+  dict = {}
+
+  for name in names:
+    if name in globals.mem.vars:
+      expr = globals.mem.vars[name]
+    else:
+      warnings.warn('%s is not defined' % str(name))
+    dict[name] = {}
+
+  for n in xrange(niter):
+    rerun(True)
+    for name in names:
+      val = evaluate(name, globals.env, reflip = False, stack = [name]).val
+      if val in dict[name]:
+        dict[name][val] += 1
+      else:
+        dict[name][val] = 1
 
   return dict 
 
