@@ -99,12 +99,12 @@ def test_tricky():
   print 'running', niters, 'times,', burnin, 'burnin'
 
   print '\nsaw', 0, 'heads'
-  print follow_prior('is-fair', niters, burnin)
+  print infer_many('is-fair', niters, burnin)
   
   for i in xrange(nheads):
     print '\nsaw', i+1, 'heads'
     observe(noisy(apply('coin'), noise_level), True)
-    print follow_prior('is-fair', niters, burnin)
+    print infer_many('is-fair', niters, burnin)
 
 def test_beta_bernoulli():
   print " \n TESTING BETA-BERNOULLI XRPs\n"
@@ -161,7 +161,7 @@ def test_CRP():
 
   print sample('x')
   print sample('x')
-  a = follow_prior('x', 10, 1000)
+  a = infer_many('x', 10, 1000)
   print sample('x')
   print sample('x')
   #print sample(apply('get-datapoint', 0))
@@ -173,7 +173,7 @@ def test_CRP():
   #print 'running', niters, 'times,', burnin, 'burnin'
 
   #t = time()
-  #a = follow_prior('expected-mean', niters, burnin)
+  #a = infer_many('expected-mean', niters, burnin)
   #print format(get_pdf(a, -4, 4, .5), '%0.2f') 
   #print 'time taken', time() - t
 
@@ -189,17 +189,17 @@ def test_bayes_nets():
   
   noise_level = .001
   sprinkler_ob = observe(noisy('sprinkler', noise_level), True)
-  print follow_prior('cloudy', niters, burnin)
+  print infer_many('cloudy', niters, burnin)
   print 'Should be .833 False, .166 True'
   
-  a = follow_vars(['cloudy', 'sprinkler'], 1000, 100, 'follow_sprinkler')
+  a = follow_prior(['cloudy', 'sprinkler'], 1000, 100, 'follow_sprinkler')
   print [(x, count_up(a[x])) for x in a]
 
   forget(sprinkler_ob)
-  print follow_prior('cloudy', niters, burnin)
+  print infer_many('cloudy', niters, burnin)
   print 'Should be .500 False, .500 True'
 
-  a = follow_vars(['cloudy', 'sprinkler'], 1000, 100, 'follow_sprinkler')
+  a = follow_prior(['cloudy', 'sprinkler'], 1000, 100, 'follow_sprinkler')
   print [(x, count_up(a[x])) for x in a]
   print "\n TESTING BEACH NET\n"
   
@@ -212,11 +212,11 @@ def test_bayes_nets():
                                     ifelse('sunny', bernoulli(0.3), bernoulli(0.1))))
   
   observe(noisy('weekend', noise_level), True)
-  print follow_prior('sunny', niters, burnin)
+  print infer_many('sunny', niters, burnin)
   print 'Should be .5 False, .5 True'
   
   observe(noisy('beach', noise_level), True)
-  print follow_prior('sunny', niters, burnin)
+  print infer_many('sunny', niters, burnin)
   print 'Should be .357142857 False, .642857143 True'
 
   print "\n TESTING MODIFIED BURGLARY NET\n" # An example from AIMA
@@ -250,16 +250,16 @@ def test_bayes_nets():
   assume('johnCalls', ifelse('alarm',  bernoulli(pJgA), bernoulli(pJgnA)))
   assume('maryCalls', ifelse('alarm',  bernoulli(pMgA), bernoulli(pMgnA)))
 
-  print follow_prior('alarm', niters, burnin)
+  print infer_many('alarm', niters, burnin)
   print 'Should be %f True' % pA
 
   mary_ob = observe(noisy('maryCalls', noise_level), True)
-  print follow_prior('johnCalls', niters, burnin)
+  print infer_many('johnCalls', niters, burnin)
   print 'Should be %f True' % pJgM
   forget(mary_ob)
 
   burglary_ob = observe(noisy(~var('burglary'), noise_level), True)
-  print follow_prior('johnCalls', niters, burnin)
+  print infer_many('johnCalls', niters, burnin)
   print 'Should be %f True' % pJgnB
   forget(burglary_ob)
 
@@ -297,16 +297,16 @@ def test_bayes_nets():
   assume('johnCalls', ifelse('alarm',  bernoulli(pJgA), bernoulli(pJgnA)))
   assume('maryCalls', ifelse('alarm',  bernoulli(pMgA), bernoulli(pMgnA)))
 
-  print follow_prior('alarm', niters, burnin)
+  print infer_many('alarm', niters, burnin)
   print 'Should be %f True' % pA
 
   mary_ob = observe(noisy('maryCalls', noise_level), True)
-  print follow_prior('johnCalls', niters, burnin)
+  print infer_many('johnCalls', niters, burnin)
   print 'Should be %f True (BUT WONT BE)' % pJgM
   forget(mary_ob)
 
   burglary_ob = observe(noisy(~var('burglary'), noise_level), True)
-  print follow_prior('johnCalls', niters, burnin)
+  print infer_many('johnCalls', niters, burnin)
   print 'Should be %f True' % pJgnB
   forget(burglary_ob)
 
@@ -322,12 +322,12 @@ def test_xor():
   assume('b', bernoulli(q)) 
   assume('c', var('a') ^ var('b'))
 
-  #print follow_prior('a', 10000, 100) 
+  #print infer_many('a', 10000, 100) 
   #print 'should be 0.60 true'
   # should be True : p, False : 1 - p
 
   xor_ob = observe(noisy('c', noise_level), True) 
-  print follow_prior('a', 1000, 50) 
+  print infer_many('a', 1000, 50) 
   print 'should be 0.69 true'
   # should be True : p(1-q)/(p(1-q)+(1-p)q), False : q(1-p)/(p(1-q) + q(1-p)) 
   # I believe this gets skewed because it has to pass through illegal states, and the noise values get rounded badly 
@@ -405,7 +405,7 @@ def test_geometric():
   print "decay", globals.env.lookup('decay')
   print [sample(apply('geometric', 0)) for i in xrange(10)]
   observe(noisy(apply('geometric', 0) == timetodecay, .001), True)
-  dist = follow_prior('decay', niters, burnin)
+  dist = infer_many('decay', niters, burnin)
   print dist 
   print 'pdf:', get_pdf(dist, 0, 1, .1)
   print 'cdf:', get_cdf(dist, 0, 1, .1)
@@ -520,7 +520,7 @@ def test_DPmem():
 
   #niters, burnin = 100, 100
 
-  a = follow_prior(apply('get-datapoint', 0), 10, 1000)
+  a = infer_many(apply('get-datapoint', 0), 10, 1000)
   print sample(apply('get-datapoint', 0))
   print sample(apply('get-datapoint', 0))
   print sample(apply('get-datapoint', 0))
@@ -530,7 +530,7 @@ def test_DPmem():
   #print 'running', niters, 'times,', burnin, 'burnin'
 
   #t = time()
-  #a = follow_prior('expected-mean', niters, burnin)
+  #a = infer_many('expected-mean', niters, burnin)
   #print format(get_pdf(a, -4, 4, .5), '%0.2f') 
   #print 'time taken', time() - t
 
@@ -560,7 +560,7 @@ def test_easy_mixture():
     num_repeats = 10
     for j in range(0, num_repeats):
       # start at prior, move i steps towards posterior
-      a = follow_prior('get-cluster-mean', 1, i)
+      a = infer_many('get-cluster-mean', 1, i)
 
       # read out inferred mean and sig of gaussian
       avg = sample('get-cluster-mean').val
@@ -603,7 +603,7 @@ def test_easy_mixture():
   #observe(gaussian(apply('get-datapoint', 3), let([('y', gaussian(0, .1))], var('y') * var('y'))), -2.0)
   #observe(gaussian(apply('get-datapoint', 4), let([('y', gaussian(0, .1))], var('y') * var('y'))), -2.1)
 
-  #a = follow_prior('x', 10, 1000)
+  #a = infer_many('x', 10, 1000)
   #print a
   #print [sample('x') for i in xrange(10)]
 
@@ -621,7 +621,7 @@ def test():
   #  print sample(apply('f', i))
   assume('x', apply('f', 0))
   observe(noisy(apply('f',0) < 2222222222, 0.001), True)
-  a = follow_prior(apply('f',0), 10, 1000)
+  a = infer_many(apply('f',0), 10, 1000)
   print a
   print sample(apply('f', 0))
   print sample(apply('f', 0))

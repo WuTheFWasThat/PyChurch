@@ -1,7 +1,10 @@
 from directives import *
 import matplotlib.pyplot as plt 
 
-def follow_prior(name, niter = 1000, burnin = 100):
+""" Inference routines """
+# some re-naming needed perhaps
+
+def infer_many(name, niter = 1000, burnin = 100):
 
   if name in globals.mem.vars:
     expr = globals.mem.vars[name]
@@ -25,7 +28,7 @@ def follow_prior(name, niter = 1000, burnin = 100):
 
   return dict 
 
-def follow_vars(names, niter = 1000, burnin = 100):
+def follow_prior(names, niter = 1000, burnin = 100):
   rerun(True)
   dict = {}
 
@@ -49,6 +52,7 @@ def follow_vars(names, niter = 1000, burnin = 100):
 
   return dict 
 
+# TODO : just automatically get all the assume/observe variables
 def sample_prior(names, niter = 1000):
   dict = {}
 
