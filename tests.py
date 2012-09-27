@@ -92,6 +92,7 @@ def test_tricky():
   assume('is-fair', bernoulli(0.5))
   assume('coin', ifelse('is-fair', 'fair-coin', 'tricky-coin')) 
   #assume('coin', ifelse('is-fair', 'fair-coin', apply('make-coin'))) 
+  print test_prior(1000, 100)
 
   nheads = 5
   niters, burnin = 1000, 100
@@ -139,6 +140,8 @@ def test_CRP():
   assume('get-datapoint', mem(function('id', gaussian(apply(apply('get-cluster-model', apply('get-cluster', 'id'))), 0.1))))
   assume('outer-noise', gamma(0.1, 10)) 
 
+  print test_prior(1000, 100)
+
   #points = {} 
   #for i in xrange(100):
   #  print sample(apply('get-cluster', i)) , " : ", sample(apply('get-datapoint', i))
@@ -184,23 +187,21 @@ def test_bayes_nets():
 
   reset()
   assume('cloudy', bernoulli(0.5))
-  
   assume('sprinkler', ifelse('cloudy', bernoulli(0.1), bernoulli(0.5)))
+  print test_prior(1000, 100)
   
   noise_level = .001
   sprinkler_ob = observe(noisy('sprinkler', noise_level), True)
   print infer_many('cloudy', niters, burnin)
   print 'Should be .833 False, .166 True'
   
-  a = follow_prior(['cloudy', 'sprinkler'], 1000, 100, 'follow_sprinkler')
+  a = follow_prior(['cloudy', 'sprinkler'], 1000, 100)
   print [(x, count_up(a[x])) for x in a]
 
   forget(sprinkler_ob)
   print infer_many('cloudy', niters, burnin)
   print 'Should be .500 False, .500 True'
 
-  a = follow_prior(['cloudy', 'sprinkler'], 1000, 100, 'follow_sprinkler')
-  print [(x, count_up(a[x])) for x in a]
   print "\n TESTING BEACH NET\n"
   
   niters, burnin = 100, 100
@@ -210,6 +211,7 @@ def test_bayes_nets():
   assume('weekend', bernoulli(0.285714))
   assume('beach', ifelse('weekend', ifelse('sunny', bernoulli(0.9), bernoulli(0.5)), \
                                     ifelse('sunny', bernoulli(0.3), bernoulli(0.1))))
+  print test_prior(1000, 100)
   
   observe(noisy('weekend', noise_level), True)
   print infer_many('sunny', niters, burnin)
@@ -249,6 +251,7 @@ def test_bayes_nets():
 
   assume('johnCalls', ifelse('alarm',  bernoulli(pJgA), bernoulli(pJgnA)))
   assume('maryCalls', ifelse('alarm',  bernoulli(pMgA), bernoulli(pMgnA)))
+  print test_prior(1000, 100)
 
   print infer_many('alarm', niters, burnin)
   print 'Should be %f True' % pA
@@ -296,6 +299,7 @@ def test_bayes_nets():
 
   assume('johnCalls', ifelse('alarm',  bernoulli(pJgA), bernoulli(pJgnA)))
   assume('maryCalls', ifelse('alarm',  bernoulli(pMgA), bernoulli(pMgnA)))
+  print test_prior(1000, 100)
 
   print infer_many('alarm', niters, burnin)
   print 'Should be %f True' % pA
@@ -321,6 +325,7 @@ def test_xor():
   assume('a', bernoulli(p)) 
   assume('b', bernoulli(q)) 
   assume('c', var('a') ^ var('b'))
+  print test_prior(1000, 100)
 
   #print infer_many('a', 10000, 100) 
   #print 'should be 0.60 true'
@@ -620,6 +625,8 @@ def test():
   #for i in range(20):
   #  print sample(apply('f', i))
   assume('x', apply('f', 0))
+  print test_prior(1000, 100)
+
   observe(noisy(apply('f',0) < 2222222222, 0.001), True)
   a = infer_many(apply('f',0), 10, 1000)
   print a

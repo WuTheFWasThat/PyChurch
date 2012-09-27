@@ -1,83 +1,7 @@
 from directives import *
 import matplotlib.pyplot as plt 
 
-""" Inference routines """
-# some re-naming needed perhaps
-
-def infer_many(name, niter = 1000, burnin = 100):
-
-  if name in globals.mem.vars:
-    expr = globals.mem.vars[name]
-  else:
-    warnings.warn('%s is not defined' % str(name))
-
-  dict = {}
-  for n in xrange(niter):
-    if n > 0 and n % 100 == 0: print n, "iters"
-
-    # re-draw from prior
-    rerun(True)
-    for t in xrange(burnin):
-      infer()
-
-    val = evaluate(name, globals.env, reflip = False, stack = [name])
-    if val in dict:
-      dict[val] += 1
-    else:
-      dict[val] = 1 
-
-  return dict 
-
-def follow_prior(names, niter = 1000, burnin = 100):
-  rerun(True)
-  dict = {}
-
-  for t in xrange(burnin):
-    infer()
-
-  for name in names:
-    if name in globals.mem.vars:
-      expr = globals.mem.vars[name]
-    else:
-      warnings.warn('%s is not defined' % str(name))
-    dict[name] = []
-
-  for n in xrange(niter):
-    if n > 0 and n % 100 == 0: print n, "iters"
-    infer()
-
-    for name in names:
-      val = evaluate(name, globals.env, reflip = False, stack = [name]).val
-      dict[name].append(val)
-
-  return dict 
-
-# TODO : just automatically get all the assume/observe variables
-def sample_prior(names, niter = 1000):
-  dict = {}
-
-  for name in names:
-    if name in globals.mem.vars:
-      expr = globals.mem.vars[name]
-    else:
-      warnings.warn('%s is not defined' % str(name))
-    dict[name] = {}
-
-  for n in xrange(niter):
-    rerun(True)
-    for name in names:
-      val = evaluate(name, globals.env, reflip = False, stack = [name]).val
-      if val in dict[name]:
-        dict[name][val] += 1
-      else:
-        dict[name][val] = 1
-
-  return dict 
-
-def noisy(expression, error):
-  return bernoulli(ifelse(expression, 1, error))
-
-""" OUTPUT MANIPULATION """
+""" Dictionary -> distribution """
 
 def count_up(list):
   d = {}
@@ -93,6 +17,110 @@ def normalize(dict):
   for val in dict:
     dict[val] = dict[val] / (z + 0.0)
   return dict
+
+""" Inference routines """
+
+def infer_many(name, niter = 1000, burnin = 100, printiters = 0):
+
+  if name in globals.mem.vars:
+    expr = globals.mem.vars[name]
+  else:
+    warnings.warn('%s is not defined' % str(name))
+
+  dict = {}
+  for n in xrange(niter):
+    if printiters > 0 and n % printiters == 0: 
+      print n, "iters"
+
+    # re-draw from prior
+    rerun(True)
+    for t in xrange(burnin):
+      infer()
+
+    val = evaluate(name, globals.env, reflip = False, stack = [name])
+    if val in dict:
+      dict[val] += 1
+    else:
+      dict[val] = 1 
+
+  return dict 
+
+def follow_prior(names, niter = 1000, burnin = 100, printiters = 0):
+  rerun(True)
+  dict = {}
+
+  for t in xrange(burnin):
+    infer()
+
+  for name in names:
+    #if name in globals.mem.vars:
+    #  expr = globals.mem.vars[name]
+    #else:
+    #  warnings.warn('%s is not defined' % str(name))
+    dict[name] = []
+
+  for n in xrange(niter):
+    if printiters > 0 and n % printiters == 0: 
+      print n, "iters"
+    infer()
+
+    for name in names:
+      val = evaluate(name, globals.env, reflip = False, stack = [name]).val
+      dict[name].append(val)
+
+  return dict 
+
+def sample_prior(names, niter = 1000, printiters = 0):
+  dict = {}
+
+  for name in names:
+    #if name in globals.mem.vars:
+    #  expr = globals.mem.vars[name]
+    #else:
+    #  warnings.warn('%s is not defined' % str(name))
+    dict[name] = {}
+
+  for n in xrange(niter):
+    if printiters > 0 and n % printiters == 0: 
+      print n, "iters"
+    rerun(True)
+    for name in names:
+      val = evaluate(name, globals.env, reflip = True, stack = [name]).val
+      if val in dict[name]:
+        dict[name][val] += 1
+      else:
+        dict[name][val] = 1
+
+  return dict 
+
+# TODO : just automatically get all the assume/observe variables
+def test_prior(niter = 1000, burnin = 100):
+  expressions = []
+  varnames = []
+
+  for (varname, expr) in globals.mem.assumes:
+    expressions.append(expr)
+    varnames.append(varname)
+  #for hashval in globals.mem.observes:
+  #  (expr, obs_val) = globals.mem.observes[hashval] 
+  #  expressions.append(expr)
+
+  d1 = follow_prior(expressions, niter, burnin)
+  d2 = sample_prior(expressions, niter)
+  d = {}
+  for i in xrange(len(varnames)):
+    expr = expressions[i]
+    assert expr in d1
+    assert expr in d2
+    d[varnames[i]] = (count_up(d1[expr]), d2[expr])
+  return d
+
+""" NOISE """
+
+def noisy(expression, error):
+  return bernoulli(ifelse(expression, 1, error))
+
+""" OUTPUT MANIPULATION """
 
 def get_pdf(valuedict, start, end, bucketsize, normalizebool = True):
   if normalizebool:
