@@ -188,13 +188,16 @@ def test_bayes_nets():
   reset()
   assume('cloudy', bernoulli(0.5))
   assume('sprinkler', ifelse('cloudy', bernoulli(0.1), bernoulli(0.5)))
-  print test_prior(1000, 100)
+  #print test_prior(1000, 100)
   
   noise_level = .001
   sprinkler_ob = observe(noisy('sprinkler', noise_level), True)
   print infer_many('cloudy', niters, burnin)
   print 'Should be .833 False, .166 True'
   
+  # TODO: remove
+  return
+
   a = follow_prior(['cloudy', 'sprinkler'], 1000, 100)
   print [(x, count_up(a[x])) for x in a]
 
