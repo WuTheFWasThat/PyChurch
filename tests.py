@@ -188,7 +188,7 @@ def test_bayes_nets():
   reset()
   assume('cloudy', bernoulli(0.5))
   assume('sprinkler', ifelse('cloudy', bernoulli(0.1), bernoulli(0.5)))
-  #print test_prior(1000, 100)
+  print test_prior(1000, 100)
   
   noise_level = .001
   sprinkler_ob = observe(noisy('sprinkler', noise_level), True)
@@ -196,7 +196,7 @@ def test_bayes_nets():
   print 'Should be .833 False, .166 True'
   
   # TODO: remove
-  return
+  #return
 
   a = follow_prior(['cloudy', 'sprinkler'], 1000, 100)
   print [(x, count_up(a[x])) for x in a]
@@ -646,9 +646,9 @@ if simpletests:
 
 #test_mem()
 test_bayes_nets() 
-#test_xor()  # needs like 500 to mix 
+test_xor()  # needs like 500 to mix 
 #test_tricky() 
-#test_geometric()   
+test_geometric()   
 #test_DPmem()
 #kest_CRP()
 

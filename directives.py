@@ -302,7 +302,7 @@ def rerun(reflip):
 
 def infer():
   # TODO remove
-  return infer_traces()
+  # return infer_traces()
   # reflip some coin
   stack = globals.db.random_stack() 
   (xrp, val, args, is_obs_noise) = globals.db.get(stack)
