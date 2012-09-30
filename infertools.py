@@ -65,8 +65,9 @@ def follow_prior(names, niter = 1000, burnin = 100, printiters = 0):
     infer()
 
     for name in names:
-      val = evaluate(name, globals.env, reflip = False, stack = [name]).val
-      dict[name].append(val)
+      val = evaluate(name, globals.env, reflip = False, stack = [name])
+      if val.type != 'procedure' and val.type != 'xrp': 
+        dict[name].append(val)
 
   return dict 
 
@@ -85,11 +86,12 @@ def sample_prior(names, niter = 1000, printiters = 0):
       print n, "iters"
     rerun(True)
     for name in names:
-      val = evaluate(name, globals.env, reflip = True, stack = [name]).val
-      if val in dict[name]:
-        dict[name][val] += 1
-      else:
-        dict[name][val] = 1
+      val = evaluate(name, globals.env, reflip = True, stack = [name])
+      if val.type != 'procedure' and val.type != 'xrp': 
+        if val in dict[name]:
+          dict[name][val] += 1
+        else:
+          dict[name][val] = 1
 
   return dict 
 

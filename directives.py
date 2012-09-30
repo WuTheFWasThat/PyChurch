@@ -2,7 +2,7 @@ import globals
 from globals import Environment, RandomDB
 from expressions import *
 
-use_db = True
+use_db = False
 use_traces = True
 
 def reset():
@@ -14,6 +14,8 @@ def reset():
 def assume_helper(varname, expr, reflip):
   value = evaluate(expr, globals.env, reflip = reflip, stack = [varname])
   globals.env.set(varname, value)
+  if use_traces:
+    globals.env.add_assume(varname, globals.traces.get([varname]))
   return value
 
 def assume(varname, expr):
@@ -24,6 +26,8 @@ def assume(varname, expr):
 def observe_helper(expr, obs_val):
   # bit of a hack, here, to make it recognize same things as with noisy_expr
   val = evaluate(expr, globals.env, reflip = False, stack = ['obs', expr.hashval], xrp_force_val = obs_val)
+  if use_traces:
+    globals.traces.add_observe(['obs', expr.hashval], obs_val)
 
 def observe(expr, obs_val):
   expr = expression(expr)
@@ -302,7 +306,7 @@ def rerun(reflip):
 
 def infer():
   # TODO remove
-  # return infer_traces()
+  return infer_traces()
   # reflip some coin
   stack = globals.db.random_stack() 
   (xrp, val, args, is_obs_noise) = globals.db.get(stack)
@@ -355,51 +359,3 @@ def infer_traces():
   # reflip some coin
   stack = globals.traces.random_stack() 
   globals.traces.reflip(stack)
-
-  # TODO REST UNMODIFIED
-  #(xrp, val, args, is_obs_noise) = globals.db.get(stack)
-
-  ##debug = True 
-  #debug = False 
-
-  #old_p = globals.db.p
-  #old_to_new_q = - math.log(globals.db.count) 
-  #if debug:
-  #  print  "old_db", globals.db
-
-  #globals.db.save()
-
-  #globals.db.remove(stack)
-  #new_val = xrp.apply(args)
-  #globals.db.insert(stack, xrp, new_val, args)
-
-  #if debug:
-  #  print "\nCHANGING ", stack, "\n  TO   :  ", new_val, "\n"
-
-  #if val == new_val:
-  #  return
-
-  #rerun(False)
-  #new_p = globals.db.p
-  #new_to_old_q = globals.db.uneval_p - math.log(globals.db.count) 
-  #old_to_new_q += globals.db.eval_p 
-  #if debug:
-  #  print "new db", globals.db
-  #  print "\nq(old -> new) : ", old_to_new_q
-  #  print "q(new -> old) : ", new_to_old_q 
-  #  print "p(old) : ", old_p
-  #  print "p(new) : ", new_p
-  #  print 'log transition prob : ',  new_p + new_to_old_q - old_p - old_to_new_q , "\n"
-
-  #if old_p * old_to_new_q > 0:
-  #  p = random.random()
-  #  if new_p + new_to_old_q - old_p - old_to_new_q < math.log(p):
-  #    globals.db.restore()
-  #    if debug: 
-  #      print 'restore'
-  #    rerun(False) 
-
-  #if debug: 
-  #  print "new db", globals.db
-  #  print "\n-----------------------------------------\n"
-
