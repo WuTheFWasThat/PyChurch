@@ -443,10 +443,10 @@ class Traces:
     assert self.has(stack)
     return self.evalnodes[stack]
 
-  def reflip(self, stack):
+  def reflip(self, reflip_node):
     debug = True
 
-    reflip_node = self.get(stack).current_node
+    reflip_node = reflip_node.current_node
 
     if reflip_node.type != 'apply':
       print stack
@@ -516,20 +516,18 @@ class Traces:
     stack = tuple(stack)
     assert stack in self.evalnodes
     self.evalnodes[stack].setargs(args)
-    self.db[stack] = stack 
+    self.db[self.evalnodes[stack]] = True
 
-  def remove_xrp(self, stack):
-    stack = tuple(stack)
-    assert stack in self.evalnodes
-    assert stack in self.db
-    del self.db[stack] 
+  def remove_xrp(self, evalnode):
+    assert evalnode in self.db
+    del self.db[evalnode] 
 
   def add_observe(self, stack, obs_val):
     self.get(stack).observe(obs_val)
 
   def random_stack(self):
-    stack = self.db.randomKey()
-    return stack
+    evalnode = self.db.randomKey()
+    return evalnode
 
   def reset(self):
     self.__init__()
