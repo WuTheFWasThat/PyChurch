@@ -20,8 +20,45 @@ def normalize(dict):
 
 """ Inference routines """
 
-def infer_many(name, niter = 1000, burnin = 100, printiters = 0):
+# OUTDATED
+def reject_infer():
+  flag = False
+  while not flag:
+    rerun(True)
 
+    # Reject if observations untrue
+    flag = True
+    for obs_hash in globals.mem.observes:
+      (obs_expr, obs_val) = globals.mem.observes[obs_hash] 
+      val = resample(obs_expr)
+      if val.val != obs_val:
+        flag = False
+        break
+
+# Rejection based inference
+def reject_infer_many(name, niter = 1000):
+  if name in globals.mem.vars:
+    expr = globals.mem.vars[name]
+  else:
+    warnings.warn('%s is not defined' % str(name))
+
+  dict = {}
+  for n in xrange(niter):
+    # Re-draw from prior
+    reject_infer()
+    ans = evaluate(expr, globals.env, False, [name]) 
+
+    if ans.val in dict:
+      dict[ans.val] += 1
+    else:
+      dict[ans.val] = 1 
+
+  z = sum([dict[val] for val in dict])
+  for val in dict:
+    dict[val] = dict[val] / (z + 0.0) 
+  return dict 
+
+def infer_many(name, niter = 1000, burnin = 100, printiters = 0):
   if name in globals.mem.vars:
     expr = globals.mem.vars[name]
   else:
@@ -37,7 +74,10 @@ def infer_many(name, niter = 1000, burnin = 100, printiters = 0):
     for t in xrange(burnin):
       infer()
 
-    val = evaluate(name, globals.env, reflip = False, stack = [name])
+    if use_db:
+      val = evaluate(name, globals.env, reflip = False, stack = [name])
+    else:
+      val = globals.traces.evaluate(name)
     if val in dict:
       dict[val] += 1
     else:

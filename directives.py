@@ -2,7 +2,7 @@ import globals
 from globals import Environment, RandomDB
 from expressions import *
 
-use_db = False
+use_db = True
 use_traces = True
 
 def reset():
@@ -14,14 +14,15 @@ def reset():
 def assume_helper(varname, expr, reflip):
   value = evaluate(expr, globals.env, reflip = reflip, stack = [varname])
   globals.env.set(varname, value)
-  if use_traces:
-    globals.env.add_assume(varname, globals.traces.get([varname]))
   return value
 
 def assume(varname, expr):
   expr = expression(expr)
   globals.mem.add('assume', (varname, expr))
-  return assume_helper(varname, expr, True)
+  if use_traces:
+    return globals.traces.assume(varname, expr)
+  if use_db:
+    return assume_helper(varname, expr, True)
 
 def observe_helper(expr, obs_val):
   # bit of a hack, here, to make it recognize same things as with noisy_expr
@@ -30,6 +31,10 @@ def observe_helper(expr, obs_val):
     globals.traces.add_observe(['obs', expr.hashval], obs_val)
 
 def observe(expr, obs_val):
+
+  # TODO fix
+  #globals.traces.assume(['obs', expr.hashval], env, expr)
+
   expr = expression(expr)
   obs_val = value(obs_val)
   assert expr.type == 'apply' and expr.op.type == 'value' 
@@ -95,18 +100,13 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     env = globals.env
 
   expr = expression(expr)
-  if use_traces:
-    globals.traces[stack] = (env, expr.type)
 
+  # TODO: remove reflip
   def evaluate_recurse(subexpr, env, reflip, stack, addition):
     if type(addition) != list:
       val = evaluate(subexpr, env, reflip, stack + [addition])
-      if use_traces:
-        globals.traces.setparent(stack, addition)
     else:
       val = evaluate(subexpr, env, reflip, stack + addition)
-      if use_traces:
-        globals.traces.setparent(stack, addition[1])
     return val
 
   def binary_op_evaluate(expr, env, reflip, stack, op): 
@@ -126,8 +126,6 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
   elif expr.type == 'variable':
     var = expr.name
     (val, lookup_env) = env.lookup(var)
-    if use_traces:
-      globals.traces.setlookup(stack, expr.name, lookup_env)
   elif expr.type == 'if':
     cond = evaluate_recurse(expr.cond, env, reflip, stack , -1)
     assert type(cond.val) in [bool] 
@@ -177,9 +175,6 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     elif op.type == 'xrp':
       if use_db:
         globals.db.unevaluate(stack + [-1], tuple(hash(x) for x in args))
-      if use_traces:
-        if not op.val.deterministic and xrp_force_val is None:
-          globals.traces.add_xrp(stack, args)
 
       if xrp_force_val != None: 
         assert not reflip
@@ -242,8 +237,6 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
   else:
     warnings.warn('Invalid expression type %s' % expr.type)
     assert False 
-  if use_traces:
-    globals.traces.setvalue(stack, val)
   return val
 
 def sample(expr, env = None, varname = None, reflip = False):
@@ -257,44 +250,6 @@ def sample(expr, env = None, varname = None, reflip = False):
 
 def resample(expr, env = None, varname = None):
   return sample(expr, env, varname, True)
-
-# OUTDATED
-def reject_infer():
-  flag = False
-  while not flag:
-    rerun(True)
-
-    # Reject if observations untrue
-    flag = True
-    for obs_hash in globals.mem.observes:
-      (obs_expr, obs_val) = globals.mem.observes[obs_hash] 
-      val = resample(obs_expr)
-      if val.val != obs_val:
-        flag = False
-        break
-
-# Rejection based inference
-def reject_infer_many(name, niter = 1000):
-  if name in globals.mem.vars:
-    expr = globals.mem.vars[name]
-  else:
-    warnings.warn('%s is not defined' % str(name))
-
-  dict = {}
-  for n in xrange(niter):
-    # Re-draw from prior
-    reject_infer()
-    ans = evaluate(expr, globals.env, False, [name]) 
-
-    if ans.val in dict:
-      dict[ans.val] += 1
-    else:
-      dict[ans.val] = 1
-
-  z = sum([dict[val] for val in dict])
-  for val in dict:
-    dict[val] = dict[val] / (z + 0.0) 
-  return dict 
 
 def rerun(reflip):
 # Class representing environments
