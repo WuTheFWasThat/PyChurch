@@ -2,9 +2,6 @@ import globals
 from globals import Environment, RandomDB
 from expressions import *
 
-use_db = True
-use_traces = True
-
 def reset():
   globals.env.assignments = {}
   globals.db.reset()
@@ -19,86 +16,46 @@ def assume_helper(varname, expr, reflip):
 def assume(varname, expr):
   expr = expression(expr)
   globals.mem.add('assume', (varname, expr))
-  if use_traces:
+  if globals.use_traces:
     return globals.traces.assume(varname, expr)
-  if use_db:
+  else:
     return assume_helper(varname, expr, True)
 
 def observe_helper(expr, obs_val):
   # bit of a hack, here, to make it recognize same things as with noisy_expr
-  val = evaluate(expr, globals.env, reflip = False, stack = ['obs', expr.hashval], xrp_force_val = obs_val)
-  if use_traces:
-    globals.traces.add_observe(['obs', expr.hashval], obs_val)
+  if globals.use_traces:
+    return globals.traces.observe(expr, obs_val)
+  else:
+    evaluate(expr, globals.env, reflip = False, stack = ['obs', expr.hashval], xrp_force_val = obs_val)
+    return expr.hashval
 
 def observe(expr, obs_val):
-
-  # TODO fix
-  #globals.traces.assume(['obs', expr.hashval], env, expr)
-
   expr = expression(expr)
   obs_val = value(obs_val)
   assert expr.type == 'apply' and expr.op.type == 'value' 
   assert expr.op.val.type == 'xrp'
+  assert not expr.op.val.val.deterministic
+
   globals.mem.add('observe', (expr, obs_val))
-  observe_helper(expr, obs_val)
-  return expr.hashval 
+  return observe_helper(expr, obs_val)
 
-def forget(hashval):
-  globals.db.remove(['obs', hashval])
-  globals.mem.forget(hashval)
+def forget(observation):
+  # if using db, is a hashval
+  # if using traces, is an evalnode
 
-# Replaces variables with the values from the environment 
-def replace(expr, env, bound = set()):
-  if expr.type == 'value':
-    return expr
-  elif expr.type == 'variable':
-    if expr.name in bound:
-      return expr
-    (val, lookup_env) = env.lookup(expr.name)
-    if val is None:
-      return expr
-    else:
-      return Expression(val)
-  elif expr.type == 'if':
-    cond = replace(expr.cond, env, bound)
-    true = replace(expr.true, env, bound)
-    false = replace(expr.false, env, bound)
-    return Expression(('if', cond, true, false)) 
-  elif expr.type == 'switch':
-    index = replace(expr.index, env, bound)
-    children = [replace(x, env, bound) for x in expr.children]
-    return Expression(('switch', index, children)) 
-  elif expr.type == 'let':
-    expressions = [replace(x, env, bound) for x in expr.expressions]
-    for var in expr.vars:
-      bound.add(var)
-    body = replace(expr.body, env, bound)
-    return Expression(('let', expr.vars, expressions, body)) 
-  elif expr.type == 'apply':
-    # hmm .. replace non-bound things in op?  causes recursion to break...
-    children = [replace(x, env, bound) for x in expr.children] 
-    return Expression(('apply', expr.op, children)) 
-  elif expr.type == 'function':
-    # hmm .. replace variables?  maybe wipe those assignments out ...
-    children = [replace(x, env, bound) for x in expr.children] 
-    for var in expr.vars: # do we really want this?  probably.  (this is the only reason we use 'bound' at all
-      bound.add(var)
-    body = replace(expr.body, env, bound)
-    return Expression(('function', expr.vars, body)) 
-  elif expr.type in ['=', '<', '>', '>=', '<=', '&', '^', '|', 'add', 'subtract', 'multiply']:
-    children = [replace(x, env, bound) for x in expr.children] 
-    return Expression((expr.type, children)) 
-  elif expr.type == '~':
-    return Expression(('not', replace(expr.negation, env, bound))) 
+  if globals.use_traces:
+    pass
   else:
-    warnings.warn('Invalid expression type %s' % expr.type)
-    assert False
+    globals.db.remove(['obs', observation])
+    globals.mem.forget(observation)
 
 # Draws a sample value (without re-sampling other values) given its parents, and sets it
 def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None):
   if env is None:
     env = globals.env
 
+  if globals.use_traces:
+    return globals.traces.evaluate(expression(expr), reflip)
   expr = expression(expr)
 
   # TODO: remove reflip
@@ -130,12 +87,10 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     cond = evaluate_recurse(expr.cond, env, reflip, stack , -1)
     assert type(cond.val) in [bool] 
     if cond.val: 
-      if use_db:
-        globals.db.unevaluate(stack + [0])
+      globals.db.unevaluate(stack + [0])
       val = evaluate_recurse(expr.true, env, reflip, stack , 1)
     else:
-      if use_db:
-        globals.db.unevaluate(stack + [1])
+      globals.db.unevaluate(stack + [1])
       val = evaluate_recurse(expr.false, env, reflip, stack , 0)
   elif expr.type == 'switch':
     index = evaluate_recurse(expr.index, env, reflip, stack , -1)
@@ -156,15 +111,14 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
       new_env.set(expr.vars[i], values[i])
       if val.type == 'procedure':
         val.env = new_env
-    new_body = replace(expr.body, new_env)
+    new_body = expr.body.replace(new_env)
     val = evaluate_recurse(new_body, new_env, reflip, stack, -1)
   elif expr.type == 'apply':
     n = len(expr.children)
     args = [evaluate_recurse(expr.children[i], env, reflip, stack, i) for i in range(n)]
     op = evaluate_recurse(expr.op, env, reflip, stack , -2)
     if op.type == 'procedure':
-      if use_db:
-        globals.db.unevaluate(stack + [-1], tuple(hash(x) for x in args))
+      globals.db.unevaluate(stack + [-1], tuple(hash(x) for x in args))
       if n != len(op.vars):
         warnings.warn('Procedure should have %d arguments.  \nVars were \n%s\n, but children were \n%s.' % (n, op.vars, expr.chidlren))
         assert False
@@ -173,30 +127,27 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
         new_env.set(op.vars[i], args[i]) 
       val = evaluate_recurse(op.body, new_env, reflip, stack, (-1, tuple(hash(x) for x in args)))
     elif op.type == 'xrp':
-      if use_db:
-        globals.db.unevaluate(stack + [-1], tuple(hash(x) for x in args))
+      globals.db.unevaluate(stack + [-1], tuple(hash(x) for x in args))
 
       if xrp_force_val != None: 
         assert not reflip
-        if use_db:
-          if globals.db.has(stack):
-            globals.db.remove(stack)
-          globals.db.insert(stack, op.val, xrp_force_val, args, True) 
+        if globals.db.has(stack):
+          globals.db.remove(stack)
+        globals.db.insert(stack, op.val, xrp_force_val, args, True) 
         val = xrp_force_val
       else:
         substack = stack + [-1, tuple(hash(x) for x in args)]
-        if use_db:
-          if not globals.db.has(substack):
+        if not globals.db.has(substack):
+          val = value(op.val.apply(args))
+          globals.db.insert(substack, op.val, val, args)
+        else:
+          if reflip:
+            globals.db.remove(substack)
             val = value(op.val.apply(args))
             globals.db.insert(substack, op.val, val, args)
           else:
-            if reflip:
-              globals.db.remove(substack)
-              val = value(op.val.apply(args))
-              globals.db.insert(substack, op.val, val, args)
-            else:
-              (xrp, val, dbargs, is_obs_noise) = globals.db.get(substack) 
-              assert not is_obs_noise
+            (xrp, val, dbargs, is_obs_noise) = globals.db.get(substack) 
+            assert not is_obs_noise
     else:
       warnings.warn('Must apply either a procedure or xrp')
   elif expr.type == 'function':
@@ -204,7 +155,7 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     new_env = env.spawn_child()
     for i in range(n): # Bind variables
       new_env.set(expr.vars[i], expr.vars[i])
-    procedure_body = replace(expr.body, new_env)
+    procedure_body = expr.body.replace(new_env)
     val = Value((expr.vars, procedure_body, stack), env)
     #TODO: SET SOME RELATIONSHIP HERE?  If body contains reference to changed var...
   elif expr.type == '=':
@@ -260,8 +211,8 @@ def rerun(reflip):
     observe_helper(expr, obs_val)
 
 def infer():
-  # TODO remove
-  return infer_traces()
+  if globals.use_traces:
+    return infer_traces()
   # reflip some coin
   stack = globals.db.random_stack() 
   (xrp, val, args, is_obs_noise) = globals.db.get(stack)
@@ -312,5 +263,5 @@ def infer():
 
 def infer_traces():
   # reflip some coin
-  stack = globals.traces.random_stack() 
-  globals.traces.reflip(stack)
+  node = globals.traces.random_node() 
+  globals.traces.reflip(node)

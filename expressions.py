@@ -150,6 +150,53 @@ class Expression:
       warnings.warn('Invalid type %s' % str(self.type))
     return
 
+  # Replaces variables with the values from the environment 
+  def replace(self, env, bound = set()):
+    if self.type == 'value':
+      return self
+    elif self.type == 'variable':
+      if self.name in bound:
+        return self
+      (val, lookup_env) = env.lookup(self.name)
+      if val is None:
+        return self
+      else:
+        return Expression(val)
+    elif self.type == 'if':
+      cond = self.cond.replace(env, bound)
+      true = self.true.replace(env, bound)
+      false = self.false.replace(env, bound)
+      return Expression(('if', cond, true, false)) 
+    elif self.type == 'switch':
+      index = self.index.replace(env, bound)
+      children = [x.replace(env, bound) for x in self.children]
+      return Expression(('switch', index, children)) 
+    elif self.type == 'let':
+      expressions = [x.replace(env, bound) for x in self.expressions]
+      for var in self.vars:
+        bound.add(var)
+      body = self.body.replace(env, bound)
+      return Expression(('let', self.vars, expressions, body)) 
+    elif self.type == 'apply':
+      # hmm .. replace non-bound things in op?  causes recursion to break...
+      children = [x.replace(env, bound) for x in self.children] 
+      return Expression(('apply', self.op, children)) 
+    elif self.type == 'function':
+      # hmm .. replace variables?  maybe wipe those assignments out ...
+      children = [x.replace(env, bound) for x in self.children] 
+      for var in self.vars: # do we really want this?  probably.  (this is the only reason we use 'bound' at all
+        bound.add(var)
+      body = self.body.replace(env, bound)
+      return Expression(('function', self.vars, body)) 
+    elif self.type in ['=', '<', '>', '>=', '<=', '&', '^', '|', 'add', 'subtract', 'multiply']:
+      children = [x.replace(env, bound) for x in self.children]
+      return Expression((self.type, children))
+    elif self.type == '~':
+      return Expression(('not', self.negation.replace(env, bound)))
+    else:
+      warnings.warn('Invalid expression type %s' % self.type)
+      assert False
+  
   def str_op(self, children, opstring, funstring = None):
     if (len(children) < 5) or (funstring is None):
         return opstring.join(['(' + str(x) + ')' for x in self.children])
@@ -190,10 +237,10 @@ class Expression:
     #return '<Expression of type %s>' % (self.type)
 
   def __hash__(self):
-    return self.hashval
+    return self.hash
 
   def rehash(self):
-    self.hashval = random.randint(0, 2**64-1)
+    self.hash = random.randint(0, 2**64-1)
 
   def operate(self, other, opname):
     return Expression((opname, [self, expression(other)]))

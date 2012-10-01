@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.4-1.40.13 (TeX Live 2012) (format=pdflatex 2012.6.30)  11 SEP 2012 03:13
+This is pdfTeX, Version 3.1415926-2.4-1.40.13 (TeX Live 2012) (format=pdflatex 2012.6.30)  1 OCT 2012 03:24
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -291,13 +291,15 @@ File: ursfs.fd 1998/03/24 rsfs font definition file (jk)
 
 LaTeX Warning: Citation `?' on page 1 undefined on input line 46.
 
-LaTeX Font Info:    Try loading font information for OMS+cmr on input line 83.
-(/usr/local/texlive/2012/texmf-dist/tex/latex/base/omscmr.fd
-File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
-)
-LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10.95> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 83.
- [1
+
+Underfull \hbox (badness 10000) in paragraph at lines 46--47
+
+ []
+
+
+LaTeX Warning: Citation `?' on page 1 undefined on input line 48.
+
+[1
 Non-PDF special ignored!
 Non-PDF special ignored!
 
@@ -314,12 +316,16 @@ Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!
-Non-PDF special ignored!
-Non-PDF special ignored!
-Non-PDF special ignored!
-Non-PDF special ignored!
 Non-PDF special ignored!]
-Underfull \hbox (badness 10000) in paragraph at lines 150--151
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 92.
+
+(/usr/local/texlive/2012/texmf-dist/tex/latex/base/omscmr.fd
+File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
+)
+LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10.95> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 92.
+
+Underfull \hbox (badness 10000) in paragraph at lines 159--160
 
  []
 
@@ -345,15 +351,21 @@ Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!
+Non-PDF special ignored!
+Non-PDF special ignored!
+Non-PDF special ignored!
+Non-PDF special ignored!
+Non-PDF special ignored!
+Non-PDF special ignored!
 Non-PDF special ignored!]
-LaTeX Font Info:    Try loading font information for OMS+cmtt on input line 176
+LaTeX Font Info:    Try loading font information for OMS+cmtt on input line 185
 .
-LaTeX Font Info:    No file OMScmtt.fd. on input line 176.
+LaTeX Font Info:    No file OMScmtt.fd. on input line 185.
 
 
 LaTeX Font Warning: Font shape `OMS/cmtt/m/n' undefined
 (Font)              using `OMS/cmsy/m/n' instead
-(Font)              for symbol `textbraceleft' on input line 176.
+(Font)              for symbol `textbraceleft' on input line 185.
 
 [3
 Non-PDF special ignored!
@@ -370,22 +382,17 @@ Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!]
-Underfull \hbox (badness 10000) in paragraph at lines 208--209
+Underfull \hbox (badness 10000) in paragraph at lines 217--218
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 222--223
+Underfull \hbox (badness 10000) in paragraph at lines 231--232
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 224--225
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 226--227
+Underfull \hbox (badness 10000) in paragraph at lines 233--234
 
  []
 
@@ -405,17 +412,12 @@ Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!
-Non-PDF special ignored!] [5
-Non-PDF special ignored!
-Non-PDF special ignored!
-Non-PDF special ignored!
-Non-PDF special ignored!
-Non-PDF special ignored!
-Non-PDF special ignored!
-Non-PDF special ignored!
-Non-PDF special ignored!
-Non-PDF special ignored!
-Non-PDF special ignored!
+Non-PDF special ignored!]
+Underfull \hbox (badness 10000) in paragraph at lines 235--236
+
+ []
+
+[5
 Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!
@@ -441,6 +443,16 @@ Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!
+Non-PDF special ignored!
+Non-PDF special ignored!
+Non-PDF special ignored!
+Non-PDF special ignored!
+Non-PDF special ignored!
+Non-PDF special ignored!
+Non-PDF special ignored!
+Non-PDF special ignored!
+Non-PDF special ignored!
+Non-PDF special ignored!
 Non-PDF special ignored!] [7
 Non-PDF special ignored!
 Non-PDF special ignored!
@@ -453,7 +465,7 @@ Non-PDF special ignored!] <burglary.png, id=39, 410.53375pt x 221.82875pt>
 File: burglary.png Graphic file (type png)
 
 <use burglary.png>
-Package pdftex.def Info: burglary.png used on input line 429.
+Package pdftex.def Info: burglary.png used on input line 441.
 (pdftex.def)             Requested size: 410.53275pt x 221.82819pt.
  [8
 Non-PDF special ignored!
@@ -472,13 +484,13 @@ Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!]
-Overfull \hbox (34.24062pt too wide) in paragraph at lines 441--441
+Overfull \hbox (34.24062pt too wide) in paragraph at lines 453--453
 []\OT1/cmtt/m/n/10 >>> assume('alarm', ifelse('burglary', ifelse('earthquake', 
 bernoulli(0.95), bernoulli(0.94)), \[] 
  []
 
 
-Overfull \hbox (34.24062pt too wide) in paragraph at lines 441--441
+Overfull \hbox (34.24062pt too wide) in paragraph at lines 453--453
 []\OT1/cmtt/m/n/10 ...                                    ifelse('earthquake', 
 bernoulli(0.29), bernoulli(0.001))))[] 
  []
@@ -496,13 +508,13 @@ Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored! <./burglary.png>]
-Overfull \hbox (34.24062pt too wide) in paragraph at lines 490--490
+Overfull \hbox (34.24062pt too wide) in paragraph at lines 502--502
 []\OT1/cmtt/m/n/10 >>> assume('alarm', ifelse('burglary', ifelse('earthquake', 
 bernoulli(0.95), bernoulli(0.94)), \[] 
  []
 
 
-Overfull \hbox (28.99066pt too wide) in paragraph at lines 490--490
+Overfull \hbox (28.99066pt too wide) in paragraph at lines 502--502
 []\OT1/cmtt/m/n/10 ...                                    ifelse('earthquake', 
 bernoulli(0.29), bernoulli(0.10))))[] 
  []
@@ -516,7 +528,7 @@ Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!]
-Overfull \hbox (81.4902pt too wide) in paragraph at lines 554--554
+Overfull \hbox (81.4902pt too wide) in paragraph at lines 566--566
 []\OT1/cmtt/m/n/10 >>> assume('geometric', function('x', ifelse(bernoulli('deca
 y'), 'x', apply('geometric', var('x') + 1))))[] 
  []
@@ -532,7 +544,7 @@ Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!]
-Overfull \hbox (34.24062pt too wide) in paragraph at lines 620--620
+Overfull \hbox (34.24062pt too wide) in paragraph at lines 632--632
 []\OT1/cmtt/m/n/10 ...                    apply('mem_fibonacci', var('x')-1) + 
 apply('mem_fibonacci', var('x')-2)))[] 
  []
@@ -550,13 +562,13 @@ Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!]
-Overfull \hbox (39.49057pt too wide) in paragraph at lines 685--685
+Overfull \hbox (39.49057pt too wide) in paragraph at lines 697--697
 []\OT1/cmtt/m/n/10 ...                                                  functio
 n([], apply('proc', 'args'))]))))], \[] 
  []
 
 
-Overfull \hbox (34.24062pt too wide) in paragraph at lines 685--685
+Overfull \hbox (34.24062pt too wide) in paragraph at lines 697--697
 []  \OT1/cmtt/m/n/10 assume('get-datapoint', mem( function(['id'], gaussian(app
 ly('gen-cluster-mean', 222), 1.0))))[] 
  []
@@ -569,7 +581,7 @@ Non-PDF special ignored!
 Non-PDF special ignored!
 Non-PDF special ignored!]
 
-LaTeX Warning: Empty `thebibliography' environment on input line 699.
+LaTeX Warning: Empty `thebibliography' environment on input line 711.
 
 [14
 Non-PDF special ignored!
@@ -584,11 +596,11 @@ LaTeX Warning: There were undefined references.
 
  ) 
 Here is how much of TeX's memory you used:
- 3008 strings out of 493488
- 39982 string characters out of 3141326
+ 3007 strings out of 493488
+ 39967 string characters out of 3141326
  98010 words of memory out of 3000000
- 6231 multiletter control sequences out of 15000+200000
- 15481 words of font info for 62 fonts, out of 3000000 for 9000
+ 6230 multiletter control sequences out of 15000+200000
+ 15173 words of font info for 61 fonts, out of 3000000 for 9000
  957 hyphenation exceptions out of 8191
  38i,8n,24p,720b,301s stack positions out of 5000i,500n,10000p,200000b,50000s
 </usr/local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb
@@ -605,7 +617,7 @@ ive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive
 /2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb></usr/local/texlive/20
 12/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/201
 2/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
-Output written on "MEng proposal.pdf" (14 pages, 203386 bytes).
+Output written on "MEng proposal.pdf" (14 pages, 203887 bytes).
 PDF statistics:
  109 PDF objects out of 1000 (max. 8388607)
  76 compressed objects within 1 object stream

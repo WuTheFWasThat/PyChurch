@@ -15,15 +15,15 @@ class Environment:
     self.lookups = {}
     return
 
-  def set(self, name, expression):
-    self.assignments[name] = expression
+  def set(self, name, value):
+    self.assignments[name] = value
 
   def lookup(self, name):
     if name in self.assignments:
       return (self.assignments[name], self)
     else:
       if self.parent is None:
-        warnings.warn('Variable %s undefined in env:\n%s' % (var, str(env)))
+        warnings.warn('Variable %s undefined in env:\n%s' % (name, str(env)))
         assert False
       else:
         return self.parent.lookup(name)
@@ -45,13 +45,16 @@ class Environment:
   def get_lookups(self, name, evalnode):
     assert name in self.assumes
     assert self.assumes[name] is evalnode
-    return self.lookups[name]
+    if name in self.lookups:
+      return self.lookups[name]
+    else:
+      return set()
 
   def spawn_child(self): 
     return Environment(self)
 
-  def __setitem__(self, name, expression):
-    self.set(name, expression) 
+  def __setitem__(self, name, value):
+    self.set(name, value) 
 
   def __getitem__(self, name):
     return self.lookup(name) 
@@ -61,33 +64,30 @@ class Environment:
 
 class EvalNode:
   def __init__(self, traces, stack, env, expression):
+    self.traces = traces
+
+    self.active = False # Whether this node is currently activated
+
     self.parent = None 
     self.children = {} 
     self.applychildren = {} 
-
-    self.active = False # Whether this node is currently activated
 
     self.env = env # Environment in which this was evaluated
     self.lookup = None 
     self.assume = False
     self.assume_name = None
 
-    self.expr = expression 
-
     self.observed = False
     self.observe_val = None 
 
     self.random_xrp_apply = False
+    self.args = None
 
     self.stack = stack
     self.expression = expression
     self.type = expression.type
 
     self.val = None
-
-    self.args = None
-
-    self.traces = traces
     return
 
   def get_child(self, addition, env, subexpr):
@@ -120,9 +120,9 @@ class EvalNode:
     self.observe_val = obs_val
 
   def setlookup(self, env):
-    assert self.expr.type == 'variable'
+    assert self.expression.type == 'variable'
     self.lookup = env 
-    env.add_lookup(self.expr.name, self)
+    env.add_lookup(self.expression.name, self)
 
   def remlookup(self, name, env):
     self.lookup = None
@@ -145,18 +145,21 @@ class EvalNode:
   def propogate_up(self):
     assert self.active
     if self.observed:
-      val = self.evaluate(reflip = False, xrp_force_val = self.observe_val)
-      assert val == self.val
-    elif self.random_xrp_apply:
-      val = self.evaluate(reflip = False, xrp_force_val = self.val)
+      val = self.evaluate(reflip = 0.5, xrp_force_val = self.observe_val)
       assert val == self.val
     else:
-      val = self.evaluate(reflip = False, xrp_force_val = None)
+      if self.random_xrp_apply:
+        val = self.evaluate(reflip = 0.5, xrp_force_val = self.val)
+        assert val == self.val
+      else:
+        val = self.evaluate(reflip = 0.5, xrp_force_val = None)
       if self.assume:
         assert self.parent is None
-        self.parent.propogate_up()
-        for evalnode in self.env.get_lookups(self.assume_name, self.evalnode):
+        self.env.set(self.assume_name, val) # Environment in which this was evaluated
+        for evalnode in self.env.get_lookups(self.assume_name, self):
           evalnode.propogate_up()
+      elif self.parent is not None:
+        self.parent.propogate_up()
 
     self.val = val
     return self.val
@@ -164,11 +167,14 @@ class EvalNode:
   def unevaluate(self):
     if not self.active:
       return
+    expr = self.expression
     if self.type == 'variable':
-      self.remlookup(self.name, lookup_env)
+      assert self.lookup
+      self.remlookup(expr.name, self.lookup)
     elif self.type == 'apply':
-      args = [self.get_child(i, self.env, self.expr.children[i]).unevaluate() for i in range(len(self.expr.children))]
-      op = self.get_child(-2, self.env, self.expr.op).unevaluate()
+      n = len(expr.children)
+      args = [self.get_child(i, self.env, expr.children[i]).unevaluate() for i in range(n)]
+      op = self.get_child(-2, self.env, expr.op).unevaluate()
       if op.type == 'procedure':
         new_env = op.env.spawn_child()
         for i in range(n):
@@ -194,72 +200,76 @@ class EvalNode:
   def remove_xrp(self, stack):
     self.traces.remove_xrp(stack)
 
+  # reflip = 1 # reflip all
+  #          0.5 # reflip current, but don't recurse
+  #          0 # reflip nothing
   def evaluate(self, reflip = False, xrp_force_val = None):
     if reflip == False and self.active:
       assert self.val is not None
       return self.val
+
+    expr = self.expression
 
     def evaluate_recurse(subexpr, env, stack, addition):
       val = self.get_child(addition, env, subexpr).evaluate(reflip == True)
       return val
   
     def binary_op_evaluate(op):
-      val1 = evaluate_recurse(self.expr.children[0], self.env, self.stack, 0).val
-      val2 = evaluate_recurse(self.expr.children[1], self.env, self.stack, 1).val
+      val1 = evaluate_recurse(expr.children[0], self.env, self.stack, 0).val
+      val2 = evaluate_recurse(expr.children[1], self.env, self.stack, 1).val
       return Value(op(val1 , val2))
 
     def list_op_evaluate(op):
-      vals = [evaluate_recurse(self.expr.children[i], self.env, self.stack, i).val for i in xrange(len(self.expr.children))]
+      vals = [evaluate_recurse(expr.children[i], self.env, self.stack, i).val for i in xrange(len(expr.children))]
       return Value(reduce(op, vals))
   
     if xrp_force_val is not None:
       assert self.type == 'apply'
 
     if self.type == 'value':
-      val = self.expr.val
+      val = expr.val
     elif self.type == 'variable':
       # TODO : is this right?
-      (val, lookup_env) = self.env.lookup(self.expr.name)
+      (val, lookup_env) = self.env.lookup(expr.name)
       self.setlookup(lookup_env)
     elif self.type == 'if':
-      cond = evaluate_recurse(self.expr.cond, self.env, self.stack, -1)
+      cond = evaluate_recurse(expr.cond, self.env, self.stack, -1)
       assert type(cond.val) in [bool]
       if cond.val:
-        self.get_child(0, self.env, self.expr.false).unevaluate()
-        val = evaluate_recurse(self.expr.true, self.env, self.stack, 1)
+        self.get_child(0, self.env, expr.false).unevaluate()
+        val = evaluate_recurse(expr.true, self.env, self.stack, 1)
       else:
-        self.get_child(1, self.env, self.expr.true).unevaluate()
-        val = evaluate_recurse(self.expr.false, self.env, self.stack, 0)
+        self.get_child(1, self.env, expr.true).unevaluate()
+        val = evaluate_recurse(expr.false, self.env, self.stack, 0)
     elif self.type == 'switch':
-      index = evaluate_recurse(self.expr.index , self.env, self.stack, -1)
+      index = evaluate_recurse(expr.index, self.env, self.stack, -1)
       assert type(index.val) in [int]
-      assert 0 <= index.val < self.expr.n
-      for i in range(self.expr.n):
+      assert 0 <= index.val < expr.n
+      for i in range(expr.n):
         if i != index.val:
-          self.get_child(i, self.env, self.expr.children[i]).unevaluate()
+          self.get_child(i, self.env, expr.children[i]).unevaluate()
       val = evaluate_recurse(self.children[index.val] , self.env, self.stack, index.val)
     elif self.type == 'let':
       # TODO: think more about the behavior with environments here...
-      # TODO: fix.  similar situation to lambda
       
-      #n = len(expr.vars)
-      #assert len(expr.expressions) == n
-      #values = []
-      #new_env = env
-      #for i in range(n): # Bind variables
-      #  new_env = new_env.spawn_child()
-      #  val = evaluate_recurse(self.expr.expressions[i] , self.env, self.stack, i)
-      #  values.append(val)
-      #  new_env.set(expr.vars[i], values[i])
-      #  if val.type == 'procedure':
-      #    val.env = new_env
-      #new_body = replace(expr.body, new_env)
-      #val = evaluate_recurse(self.expr.body , self.env, self.stack, -1)
+      n = len(expr.vars)
+      assert len(expr.expressions) == n
+      values = []
+      new_env = env
+      for i in range(n): # Bind variables
+        new_env = new_env.spawn_child()
+        val = evaluate_recurse(expr.expressions[i], new_env, self.stack, i)
+        values.append(val)
+        new_env.set(expr.vars[i], values[i])
+        if val.type == 'procedure':
+          val.env = new_env
+      new_body = expr.body.replace(new_env)
+      val = evaluate_recurse(new_body, new_env, self.stack, -1)
 
-      val = self.val
     elif self.type == 'apply':
-      args = [evaluate_recurse(self.expr.children[i], self.env, self.stack, i) for i in range(len(self.expr.children))]
-      op = evaluate_recurse(self.expr.op, self.env, self.stack, -2)
+      n = len(expr.children)
+      args = [evaluate_recurse(expr.children[i], self.env, self.stack, i) for i in range(n)]
+      op = evaluate_recurse(expr.op, self.env, self.stack, -2)
       if op.type == 'procedure':
         for x in self.applychildren:
           if x != tuple(hash(x) for x in args):
@@ -271,27 +281,28 @@ class EvalNode:
         new_env = op.env.spawn_child()
         for i in range(n):
           new_env.set(op.vars[i], args[i])
-        val = evaluate_recurse(op.body, self.env, self.stack, (-1, tuple(hash(x) for x in args)))
+        val = evaluate_recurse(op.body, new_env, self.stack, (-1, tuple(hash(x) for x in args)))
       elif op.type == 'xrp':
         xrp = op.val
         if not xrp.deterministic:
           self.random_xrp_apply = True
-          self.traces.add_xrp(self.stack, args)
+          self.traces.add_xrp(self.stack, args, self)
 
         if xrp_force_val != None:
           assert reflip != True
-          assert not self.active
           val = xrp_force_val
         elif self.active:
-          if not reflip:
+          xrp.remove(self.val, self.args)
+          prob = xrp.prob(self.val, self.args)
+          self.traces.uneval_p += prob
+          self.traces.p -= prob
+
+          self.args = args
+          if self.observed:
+            val = self.observe_val
+          elif not reflip:
             val = self.val
           else:
-            xrp.remove(self.val, self.args)
-            prob = xrp.prob(self.val, self.args)
-            self.traces.uneval_p += prob
-            self.traces.p -= prob
-
-            self.args = args
             val = value(xrp.apply(args))
         else:
             self.args = args
@@ -306,13 +317,12 @@ class EvalNode:
         warnings.warn('Must apply either a procedure or xrp')
     elif self.type == 'function':
       val = self.val
-      # TODO: fix
-      #n = len(expr.vars)
-      #new_env = env.spawn_child()
-      #for i in range(n): # Bind variables
-      #  new_env.set(expr.vars[i], expr.vars[i])
-      #procedure_body = replace(expr.body, new_env)
-      #val = Value((expr.vars, procedure_body, stack), env)
+      n = len(expr.vars)
+      new_env = env.spawn_child()
+      for i in range(n): # Bind variables
+        new_env.set(expr.vars[i], expr.vars[i])
+      procedure_body = expr.body.replace(new_env)
+      val = Value((expr.vars, procedure_body, self.stack), env)
       #TODO: SET SOME RELATIONSHIP HERE?  If body contains reference to changed var...
     elif self.type == '=':
       val = binary_op_evaluate(lambda x, y : x == y)
@@ -331,13 +341,13 @@ class EvalNode:
     elif self.type == '|':
       val = list_op_evaluate(lambda x, y : x | y)
     elif self.type == '~':
-      negval = evaluate_recurse(self.expr.negation , self.env, self.stack, 0).val
+      negval = evaluate_recurse(expr.negation , self.env, self.stack, 0).val
       val = Value(not negval)
     elif self.type == 'add':
       val = list_op_evaluate(lambda x, y : x + y)
     elif self.type == 'subtract':
-      val1 = evaluate_recurse(self.expr.children[0] , self.env, self.stack, 0).val
-      val2 = evaluate_recurse(self.expr.children[1] , self.env, self.stack, 1).val
+      val1 = evaluate_recurse(expr.children[0] , self.env, self.stack, 0).val
+      val2 = evaluate_recurse(expr.children[1] , self.env, self.stack, 1).val
       val = Value(val1 - val2)
     elif self.type == 'multiply':
       val = list_op_evaluate(lambda x, y : x * y)
@@ -372,8 +382,8 @@ class Traces:
   def __init__(self, env):
     self.evalnodes = {}
 
-    self.roots = set() # set of evalnodes with no parents
-    # TODO:  remove?  or also have leaves?
+    # set of evalnodes with no parents
+    self.roots = set() 
 
     self.db = RandomChoiceDict() 
 
@@ -384,15 +394,30 @@ class Traces:
     self.p = 0
     return
 
-  def assume(self, name, expr):
-    evalnode = EvalNode(self, [name], env, expr)
-    stack = tuple([name])
+  def set(self, stack, evalnode):
+    stack = tuple(stack)
     self.evalnodes[stack] = evalnode 
+
+  def assume(self, name, expr):
+    evalnode = EvalNode(self, [name], self.global_env, expr)
+    self.set([name], evalnode)
+
     self.roots.add(evalnode)
     val = evalnode.evaluate()
     self.global_env.add_assume(name, evalnode)
     self.global_env.set(name, val)
     return val
+
+  def observe(self, expr, obs_val):
+    stack = ['obs', expr.hashval]
+    evalnode = EvalNode(self, stack, self.global_env, expr)
+    self.set(stack, evalnode)
+
+    evalnode.observe(obs_val)
+    self.roots.add(evalnode)
+    evalnode.evaluate()
+
+    return evalnode
 
   def setvalue(self, stack, value):
     stack = tuple(stack)
@@ -407,7 +432,7 @@ class Traces:
     return self.evalnodes[stack]
 
   def reflip(self, reflip_node):
-    debug = True
+    debug = False
 
     if debug:
       print "\n-----------------------------------------\n"
@@ -465,30 +490,29 @@ class Traces:
 
     # ENVELOPE CALCULATION?
 
-  def evaluate(self, expression):
-    evalnode = EvalNode(self, [], self.global_env, expression)
-    return evalnode.evaluate()
-
-  #def evaluate(self, stack, reflip = False, xrp_force_val = None):
-  #  return self.get(stack).evaluate(reflip, xrp_force_val)
+  def evaluate(self, expression, reflip = False):
+    # Does not remember this computation
+    stack = ['expr', expression.hashval]
+    evalnode = EvalNode(self, stack, self.global_env, expression)
+    self.set(stack, evalnode)
+    val = evalnode.evaluate(reflip)
+    evalnode.unevaluate()
+    return val
 
   # Add an XRP application node to the db
-  def add_xrp(self, stack, args):
+  def add_xrp(self, stack, args, evalnodecheck = None):
     #print stack
     stack = tuple(stack)
-    assert stack in self.evalnodes
-    evalnode = self.evalnodes[stack]
-    evalnode.setargs(args)
-    self.db[evalnode] = True
+    print stack
+    assert evalnodecheck is self.evalnodes[stack]
+    evalnodecheck.setargs(args)
+    self.db[evalnodecheck] = True
 
   def remove_xrp(self, evalnode):
     assert evalnode in self.db
     del self.db[evalnode] 
 
-  def add_observe(self, stack, obs_val):
-    self.get(stack).observe(obs_val)
-
-  def random_stack(self):
+  def random_node(self):
     evalnode = self.db.randomKey()
     return evalnode
 
@@ -694,3 +718,5 @@ db = RandomDB()
 mem = Directives_Memory() 
 
 sys.setrecursionlimit(10000)
+
+use_traces = True

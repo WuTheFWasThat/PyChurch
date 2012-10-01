@@ -64,20 +64,19 @@ def infer_many(name, niter = 1000, burnin = 100, printiters = 0):
   else:
     warnings.warn('%s is not defined' % str(name))
 
+  if globals.use_traces:
+    rerun(True)
   dict = {}
   for n in xrange(niter):
     if printiters > 0 and n % printiters == 0: 
       print n, "iters"
 
     # re-draw from prior
-    rerun(True)
     for t in xrange(burnin):
       infer()
+      #print globals.traces
 
-    if use_db:
-      val = evaluate(name, globals.env, reflip = False, stack = [name])
-    else:
-      val = globals.traces.evaluate(name)
+    val = evaluate(name, globals.env, reflip = False, stack = [name])
     if val in dict:
       dict[val] += 1
     else:
