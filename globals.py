@@ -143,23 +143,25 @@ class EvalNode:
     self.args = args
 
   def propogate_up(self):
+    # TODO: NEED TO ALSO PROPOGATE ON PROC APPLICATION
     assert self.active
+
+    oldval = self.val
     if self.observed:
       val = self.evaluate(reflip = 0.5, xrp_force_val = self.observe_val)
-      assert val == self.val
+      assert val == oldval
     else:
       if self.random_xrp_apply:
         val = self.evaluate(reflip = 0.5, xrp_force_val = self.val)
-        assert val == self.val
+        assert val == oldval
       else:
         val = self.evaluate(reflip = 0.5, xrp_force_val = None)
-      if self.assume:
-        assert self.parent is None
-        self.env.set(self.assume_name, val) # Environment in which this was evaluated
-        for evalnode in self.env.get_lookups(self.assume_name, self):
-          evalnode.propogate_up()
-      elif self.parent is not None:
-        self.parent.propogate_up()
+    if self.assume:
+      assert self.parent is None
+      for evalnode in self.env.get_lookups(self.assume_name, self):
+        evalnode.propogate_up()
+    elif self.parent is not None:
+      self.parent.propogate_up()
 
     self.val = val
     return self.val
@@ -358,6 +360,10 @@ class EvalNode:
     self.val = val
     self.active = True
 
+    if self.assume:
+      assert self.parent is None
+      self.env.set(self.assume_name, val) # Environment in which this was evaluated
+
     return val
 
   def reflip(self, force_val = None):
@@ -368,11 +374,14 @@ class EvalNode:
   def str_helper(self, n = 0):
     string = "\n" + (' ' * n) + "|- "
     string += self.type + " at " + str(self.stack)
-    string += ", VALUE = " + str(self.val)
-    for key in self.children:
-      string += self.children[key].str_helper(n + 2)
-    for key in self.applychildren:
-      string += self.applychildren[key].str_helper(n + 2)
+    if not self.active:
+      string += ", INACTIVE"
+    else:
+      string += ", VALUE = " + str(self.val)
+      for key in self.children:
+        string += self.children[key].str_helper(n + 2)
+      for key in self.applychildren:
+        string += self.applychildren[key].str_helper(n + 2)
     return string
 
   def __str__(self):
@@ -396,6 +405,9 @@ class Traces:
 
   def set(self, stack, evalnode):
     stack = tuple(stack)
+    if self.has(stack): 
+      warnings.warn("Already have evalnode corresponding to stack %s" % str(stack)) 
+      assert False
     self.evalnodes[stack] = evalnode 
 
   def assume(self, name, expr):
@@ -491,19 +503,18 @@ class Traces:
     # ENVELOPE CALCULATION?
 
   def evaluate(self, expression, reflip = False):
-    # Does not remember this computation
     stack = ['expr', expression.hashval]
-    evalnode = EvalNode(self, stack, self.global_env, expression)
-    self.set(stack, evalnode)
+    if self.has(stack):
+      evalnode = self.get(stack)
+    else:
+      evalnode = EvalNode(self, stack, self.global_env, expression)
+      self.set(stack, evalnode)
     val = evalnode.evaluate(reflip)
-    evalnode.unevaluate()
     return val
 
   # Add an XRP application node to the db
   def add_xrp(self, stack, args, evalnodecheck = None):
-    #print stack
     stack = tuple(stack)
-    print stack
     assert evalnodecheck is self.evalnodes[stack]
     evalnodecheck.setargs(args)
     self.db[evalnodecheck] = True
@@ -530,7 +541,6 @@ class Traces:
     for evalnode in self.roots:
       string += evalnode.str_helper()
     return string
-
 
 # Class representing random db
 class RandomDB:
@@ -719,4 +729,4 @@ mem = Directives_Memory()
 
 sys.setrecursionlimit(10000)
 
-use_traces = True
+use_traces = False

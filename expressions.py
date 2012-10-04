@@ -237,10 +237,10 @@ class Expression:
     #return '<Expression of type %s>' % (self.type)
 
   def __hash__(self):
-    return self.hash
+    return self.hashval
 
   def rehash(self):
-    self.hash = random.randint(0, 2**64-1)
+    self.hashval = random.randint(0, 2**64-1)
 
   def operate(self, other, opname):
     return Expression((opname, [self, expression(other)]))

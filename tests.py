@@ -5,14 +5,18 @@ from time import *
 import unittest
 
 test_expressions = True
-test_recursion = False
-test_beta_bernoulli = False
+test_recursion = True
+test_mem = True
 
-test_mem = False
-test_bayes_nets = True
-test_xor = False # needs like 500 to mix
-test_tricky  = False
-test_geometric = False
+test_bayes_nets = False
+
+test_xor = True 
+
+test_tricky  = True
+
+# something wrong with this test
+test_geometric = True
+
 test_DPmem = False
 test_CRP = False
 
@@ -60,60 +64,32 @@ class TestDirectives(unittest.TestCase):
 
   @unittest.skipIf(not test_tricky, "skipping test_tricky")
   def test_tricky(self):
-    print " \n COIN TEST\n "
-    reset()
-  
     noise_level = .001
   
-    #assume('make-coin', function([], apply(function('weight', function([], bernoulli('weight'))), beta(1, 1))))
-    #print globals.env.lookup('make-coin')
+    assume('make-coin', function([], apply(function('weight', function([], bernoulli('weight'))), beta(1, 1))))
   
-    #assume('tricky-coin', apply('make-coin'))
-    #print globals.env.lookup('tricky-coin')
-    #print "flips: ", [sample(apply('tricky-coin')) for i in xrange(10)]
-    #
-    #assume('my-coin-2', apply('make-coin'))
-    #print globals.env.lookup('my-coin-2')
-    #print "flips: ", [sample(apply('my-coin-2')) for i in xrange(10)]
-  
-    assume('weight', beta(1, 1))
-    assume('tricky-coin', function([], bernoulli('weight')))
+    assume('tricky-coin', apply('make-coin'))
+    assume('tricky-coin2', apply('make-coin'))
   
     assume('fair-coin', function([], bernoulli(0.5)))
-    print globals.env.lookup('fair-coin')
-    print "fair coin flips: ", [sample(apply('fair-coin')) for i in xrange(10)]
   
     assume('is-fair', bernoulli(0.5))
     assume('coin', ifelse('is-fair', 'fair-coin', 'tricky-coin')) 
-    #assume('coin', ifelse('is-fair', 'fair-coin', apply('make-coin'))) 
-    print test_prior(1000, 100)
+
+    d = test_prior(1000, 100)
+    self.assertTrue(test_prior_bool(d, 'is-fair') < 0.05)
   
-    nheads = 5
-    niters, burnin = 1000, 100
+    ## EXTENSIVE TEST
+
+    #nheads = 5
+    #niters, burnin = 1000, 100
   
-    print 'running', niters, 'times,', burnin, 'burnin'
-  
-    print '\nsaw', 0, 'heads'
-    print infer_many('is-fair', niters, burnin)
-    
-    for i in xrange(nheads):
-      print '\nsaw', i+1, 'heads'
-      observe(noisy(apply('coin'), noise_level), True)
-      print infer_many('is-fair', niters, burnin)
-  
-  @unittest.skipIf(not test_beta_bernoulli, "skipping test_beta_bernoulli")
-  def test_beta_bernoulli(self):
-    print " \n TESTING BETA-BERNOULLI XRPs\n"
-    
-    print "beta_bernoulli_1"
-    coin1 = beta_bernoulli_1()
-    print [sample(apply(coin1)) for i in xrange(10)]
-    print coin1.state
-    
-    print "beta_bernoulli_2"
-    coin_2 = beta_bernoulli_2()
-    print [sample(apply(coin_2)) for i in xrange(10)]
-    print coin_2.state
+    #print infer_many('is-fair', niters, burnin)
+    #
+    #for i in xrange(nheads):
+    #  print '\nsaw', i+1, 'heads'
+    #  observe(noisy(apply('coin'), noise_level), True)
+    #  print infer_many('is-fair', niters, burnin)
   
   @unittest.skipIf(not test_CRP, "skipping test_CRP")
   def test_CRP(self):
@@ -182,16 +158,17 @@ class TestDirectives(unittest.TestCase):
     
     niters, burnin = 100, 100
   
-    reset()
     assume('cloudy', bernoulli(0.5))
     assume('sprinkler', ifelse('cloudy', bernoulli(0.1), bernoulli(0.5)))
     #print test_prior(1000, 100)
-    #print infer_many('cloudy', 1000, 100)
-    #print infer_many('sprinkler', 1000, 100)
+    a = infer_many('cloudy', niters, burnin)
+     
+    a = infer_many('sprinkler', niters, burnin)
     
     noise_level = .001
-    sprinkler_ob = observe(noisy('sprinkler', noise_level), True)
+    #sprinkler_ob = observe(noisy('sprinkler', noise_level), True)
     print infer_many('cloudy', niters, burnin)
+    print infer_many('sprinkler', niters, burnin)
     print 'Should be .833 False, .166 True'
     
     # TODO: remove
@@ -318,110 +295,91 @@ class TestDirectives(unittest.TestCase):
   
   @unittest.skipIf(not test_xor, "skipping test_xor")
   def test_xor(self):
-    print "\n XOR TEST\n"
-  
-    reset()
-   
+    # needs like 500 to mix
     p = 0.6
     q = 0.4
     noise_level = .01
     assume('a', bernoulli(p)) 
     assume('b', bernoulli(q)) 
     assume('c', var('a') ^ var('b'))
-    print test_prior(1000, 100)
+
+    d = test_prior(1000, 100)
+    self.assertTrue(test_prior_bool(d, 'a') < 0.05)
+    self.assertTrue(test_prior_bool(d, 'b') < 0.05)
+    self.assertTrue(test_prior_bool(d, 'c') < 0.05)
   
-    #print infer_many('a', 10000, 100) 
-    #print 'should be 0.60 true'
-    # should be True : p, False : 1 - p
-  
-    xor_ob = observe(noisy('c', noise_level), True) 
-    print infer_many('a', 1000, 50) 
-    print 'should be 0.69 true'
+    #xor_ob = observe(noisy('c', noise_level), True) 
+    #print infer_many('a', 100, 500) 
+    #print 'should be 0.69 true'
     # should be True : p(1-q)/(p(1-q)+(1-p)q), False : q(1-p)/(p(1-q) + q(1-p)) 
     # I believe this gets skewed because it has to pass through illegal states, and the noise values get rounded badly 
   
   @unittest.skipIf(not test_recursion, "skipping test_recursion")
   def test_recursion(self):
-    print "\n TESTING RECURSION, FACTORIAL\n" 
-    reset() 
     
     factorial_expr = function('x', ifelse(var('x') == 0, 1, \
                 var('x') * apply('factorial', var('x') - 1))) 
     assume('factorial', factorial_expr) 
     
-    print "factorial" 
-    print factorial_expr 
-    print "factorial(5) =", sample(apply('factorial', 5)) 
-    print "should be 120"
-    print "factorial(10) =", sample(apply('factorial', 10)) 
-    print "should be 3628800"
+    self.assertTrue(sample(apply('factorial', 5)).val == 120)
+    self.assertTrue(sample(apply('factorial', 10)).val == 3628800)
   
   @unittest.skipIf(not test_mem, "skipping test_mem")
   def test_mem(self):
-    print "\n MEM TEST, FIBONACCI\n" 
-    reset() 
-    
     fibonacci_expr = function('x', ifelse(var('x') <= 1, 1, \
                   apply('fibonacci', var('x') - 1) + apply('fibonacci', var('x') - 2) )) 
     assume('fibonacci', fibonacci_expr) 
-    print "fib(20) should be 10946\n"
     
-    print "fibonacci" 
-    print fibonacci_expr 
-    t = time()
-    print "fibonacci(20) =", sample(apply('fibonacci', 20)) 
-    print "      took", time() - t, "seconds"
-    t = time()
-    print "fibonacci(20) =", sample(apply('fibonacci', 20)) 
-    print "      took", time() - t, "seconds"
-  
+    t1 = time()
+    self.assertTrue(sample(apply('fibonacci', 20)).val == 10946)
+    t1 = time() - t1
+
     assume('bad_mem_fibonacci', mem('fibonacci')) 
-    # Notice that this mem'ed fibonacci doesn't recurse using itself.  It still calls fibonacci
   
-    t = time()
-    print "bad_mem_fibonacci(20) =", sample(apply('bad_mem_fibonacci', 20))
-    print "      took", time() - t, "seconds"
-    t = time()
-    print "bad_mem_fibonacci(20) =", sample(apply('bad_mem_fibonacci', 20))
-    print "      took", time() - t, "seconds"
-  
+    t2 = time()
+    self.assertTrue(sample(apply('bad_mem_fibonacci', 20)).val == 10946)
+    t2 = time() - t2
+
+    t3 = time()
+    self.assertTrue(sample(apply('bad_mem_fibonacci', 20)).val == 10946)
+    t3 = time() - t3
+
     mem_fibonacci_expr = function('x', ifelse(var('x') <= 1, 1, \
                   apply('mem_fibonacci', var('x') - 1) + apply('mem_fibonacci', var('x') - 2) )) 
     assume('mem_fibonacci', mem(mem_fibonacci_expr)) 
   
-    print "mem_fibonacci(20) =", sample(apply('mem_fibonacci', 20))
-    print "      took", time() - t, "seconds"
-    t = time()
-    print "mem_fibonacci(20) =", sample(apply('mem_fibonacci', 20))
-    print "      took", time() - t, "seconds"
+    t4 = time()
+    self.assertTrue(sample(apply('mem_fibonacci', 20)).val == 10946)
+    t4 = time() - t4
+
+    self.assertTrue(0.5 < (t1 / t2) < 2)
+    self.assertTrue((t3 / t2) < .001)
+    self.assertTrue((t3 / t4) < .1)
+    self.assertTrue((t4 / t2) < .01)
   
   @unittest.skipIf(not test_geometric, "skipping test_geometric")
   def test_geometric(self):
-    reset()
-    print " \n TESTING GEOMETRIC\n"
-  
-    print "Sampling from a geometric distribution"
-  
     a, b = 3, 2
     timetodecay = 1
     bucketsize = .01
   
-    niters, burnin = 100, 100 
+    niters, burnin = 1000, 100 
   
     assume('decay', beta(a, b))
-    #assume('decay', 0.5)
-    #assume('decay', uniform(5))
-  
     assume('geometric', function('x', ifelse(bernoulli('decay'), 'x', apply('geometric', var('x') + 1))))
-    print test_prior(1000, 100)
+    assume('timetodecay', apply('geometric', 0))
+
+    d = test_prior(1000, 100)
+    self.assertTrue(test_prior_L0(d, 'decay', 0, 1, .01) < .1)
+    self.assertTrue(test_prior_L0(d, 'timetodecay', 0, 100, 1) < .1)
+
+    # hmm... random walk systematically decays faster
   
-    print "decay", globals.env.lookup('decay')
-    print [sample(apply('geometric', 0)) for i in xrange(10)]
-    observe(noisy(apply('geometric', 0) == timetodecay, .001), True)
+    observe(noisy(var('timetodecay') == timetodecay, .001), True)
     dist = infer_many('decay', niters, burnin)
-    print dist 
-    print 'pdf:', get_pdf(dist, 0, 1, .1)
-    print 'cdf:', get_cdf(dist, 0, 1, .1)
+    #print dist 
+    #print 'pdf:', get_pdf(dist, 0, 1, .1)
+    #print 'cdf:', get_cdf(dist, 0, 1, .1)
   
     plot_beta_cdf(a, b, bucketsize, name = 'graphs/prior.png')
     plot_cdf(dist, 0, 1, bucketsize, name = 'graphs/geometric%d.png' % burnin)
@@ -441,8 +399,6 @@ class TestDirectives(unittest.TestCase):
   
   @unittest.skipIf(not test_DPmem, "skipping test_DPmem")
   def test_DPmem(self):
-    reset()
-    print " \n TESTING DP\n"
   
     def count_distinct(ls):
       d = set()
@@ -550,7 +506,6 @@ class TestDirectives(unittest.TestCase):
   
   @unittest.skipIf(not test_easy_mixture, "skipping test_easy_mixture")
   def test_easy_mixture(self):
-    print " \n TESTING 1 COMPONENT MIXTURE\n"
   
     x = []
     y = []
@@ -624,7 +579,6 @@ class TestDirectives(unittest.TestCase):
 
   @unittest.skipIf(True, "Always skip")
   def test():
-    reset()
     print " \n TESTING BLAH\n"
     
     #print "description"

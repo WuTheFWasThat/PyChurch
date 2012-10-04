@@ -74,7 +74,6 @@ def infer_many(name, niter = 1000, burnin = 100, printiters = 0):
     # re-draw from prior
     for t in xrange(burnin):
       infer()
-      #print globals.traces
 
     val = evaluate(name, globals.env, reflip = False, stack = [name])
     if val in dict:
@@ -134,7 +133,6 @@ def sample_prior(names, niter = 1000, printiters = 0):
 
   return dict 
 
-# TODO : just automatically get all the assume/observe variables
 def test_prior(niter = 1000, burnin = 100):
   expressions = []
   varnames = []
@@ -142,19 +140,33 @@ def test_prior(niter = 1000, burnin = 100):
   for (varname, expr) in globals.mem.assumes:
     expressions.append(expr)
     varnames.append(varname)
+  # TODO : get all the observed variables
+  # 
   #for hashval in globals.mem.observes:
   #  (expr, obs_val) = globals.mem.observes[hashval] 
   #  expressions.append(expr)
 
-  d1 = follow_prior(expressions, niter, burnin)
-  d2 = sample_prior(expressions, niter)
-  d = {}
+  e1 = sample_prior(expressions, niter)
+  e2 = follow_prior(expressions, niter, burnin)
+  d1 = {}
+  d2 = {}
   for i in xrange(len(varnames)):
     expr = expressions[i]
-    assert expr in d1
-    assert expr in d2
-    d[varnames[i]] = (count_up(d1[expr]), d2[expr])
-  return d
+    assert expr in e1
+    assert expr in e2
+    d1[varnames[i]] = e1[expr]
+    d2[varnames[i]] = count_up(e2[expr])
+  return (d1, d2) 
+
+def test_prior_bool(d, varname):
+  return abs(d[0][varname][False] - d[1][varname][False]) / (d[0][varname][False] + d[0][varname][True])
+
+def test_prior_L0(d, varname, start, end, bucketsize):
+  (d1, d2) = (d[0][varname], d[1][varname])
+  c1 = get_cdf(d1, start, end, bucketsize, True)
+  c2 = get_cdf(d2, start, end, bucketsize, True)
+  a = L0distance(c1, c2)
+  return a
 
 """ NOISE """
 
@@ -261,3 +273,4 @@ def perplexity(d, pdf):
   for x in d:
     ans += d[x] * log(pdf(x))
   return ans
+

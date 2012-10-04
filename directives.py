@@ -22,10 +22,7 @@ def assume(varname, expr):
     return assume_helper(varname, expr, True)
 
 def observe_helper(expr, obs_val):
-  # bit of a hack, here, to make it recognize same things as with noisy_expr
-  if globals.use_traces:
-    return globals.traces.observe(expr, obs_val)
-  else:
+    # bit of a hack, here, to make it recognize same things as with noisy_expr
     evaluate(expr, globals.env, reflip = False, stack = ['obs', expr.hashval], xrp_force_val = obs_val)
     return expr.hashval
 
@@ -37,7 +34,10 @@ def observe(expr, obs_val):
   assert not expr.op.val.val.deterministic
 
   globals.mem.add('observe', (expr, obs_val))
-  return observe_helper(expr, obs_val)
+  if globals.use_traces:
+    return globals.traces.observe(expr, obs_val)
+  else:
+    return observe_helper(expr, obs_val)
 
 def forget(observation):
   # if using db, is a hashval
@@ -212,7 +212,9 @@ def rerun(reflip):
 
 def infer():
   if globals.use_traces:
-    return infer_traces()
+    node = globals.traces.random_node() 
+    globals.traces.reflip(node)
+    return
   # reflip some coin
   stack = globals.db.random_stack() 
   (xrp, val, args, is_obs_noise) = globals.db.get(stack)
@@ -261,7 +263,3 @@ def infer():
     print "new db", globals.db
     print "\n-----------------------------------------\n"
 
-def infer_traces():
-  # reflip some coin
-  node = globals.traces.random_node() 
-  globals.traces.reflip(node)
