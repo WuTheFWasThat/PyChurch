@@ -148,6 +148,7 @@ class EvalNode:
 
     oldval = self.val
     if self.observed:
+      assert self.random_xrp_apply
       val = self.evaluate(reflip = 0.5, xrp_force_val = self.observe_val)
       assert val == oldval
     else:
@@ -156,12 +157,12 @@ class EvalNode:
         assert val == oldval
       else:
         val = self.evaluate(reflip = 0.5, xrp_force_val = None)
-    if self.assume:
-      assert self.parent is None
-      for evalnode in self.env.get_lookups(self.assume_name, self):
-        evalnode.propogate_up()
-    elif self.parent is not None:
-      self.parent.propogate_up()
+      if self.assume:
+        assert self.parent is None
+        for evalnode in self.env.get_lookups(self.assume_name, self):
+          evalnode.propogate_up()
+      elif self.parent is not None:
+        self.parent.propogate_up()
 
     self.val = val
     return self.val
@@ -290,6 +291,7 @@ class EvalNode:
           self.random_xrp_apply = True
           self.traces.add_xrp(self.stack, args, self)
 
+        self.args = args
         if xrp_force_val != None:
           assert reflip != True
           val = xrp_force_val
@@ -299,16 +301,16 @@ class EvalNode:
           self.traces.uneval_p += prob
           self.traces.p -= prob
 
-          self.args = args
           if self.observed:
             val = self.observe_val
           elif not reflip:
             val = self.val
           else:
             val = value(xrp.apply(args))
+        elif self.observed:
+          val = self.observe_val
         else:
-            self.args = args
-            val = value(xrp.apply(args))
+          val = value(xrp.apply(args))
         prob = xrp.prob(val, args)
         self.traces.eval_p += prob
         self.traces.p += prob
@@ -729,4 +731,4 @@ mem = Directives_Memory()
 
 sys.setrecursionlimit(10000)
 
-use_traces = False
+use_traces = True

@@ -70,14 +70,8 @@ class beta_args_XRP(XRP):
     (a , b) = (args[0].val, args[1].val)
     check_pos(a)
     check_pos(b)
-    check_prob(val.val)
-    if val.val == 0:
-      warnings.warn('beta(%f, %f) returning %f' % (a, b, val.val))
-      val.val = .0000000000000001
-    elif val.val == 1:
-      warnings.warn('beta(%f, %f) returning %f' % (a, b, val.val))
-      val.val = .9999999999999999
-    return math.log(math.gamma(a + b)) + (a - 1) * math.log(val.val)  + (b - 1) * math.log(1 - val.val) \
+    v = check_prob(val.val)
+    return math.log(math.gamma(a + b)) + (a - 1) * math.log(v)  + (b - 1) * math.log(1 - v) \
            - math.log(math.gamma(a)) - math.log(math.gamma(b))
   def __str__(self):
     return 'beta'
@@ -98,14 +92,8 @@ class beta_no_args_XRP(XRP):
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: beta_no_args_XRP has no need to take in arguments %s' % str(args))
-    check_prob(val.val)
-    if val.val == 0:
-      warnings.warn('beta(%f, %f) returning %f' % (a, b, val.val))
-      val.val = .0000000000000001
-    elif val.val == 1:
-      warnings.warn('beta(%f, %f) returning %f' % (a, b, val.val))
-      val.val = .9999999999999999
-    return self.prob_help + (self.a - 1) * math.log(val.val) + (self.b - 1) * math.log(1 - val.val) 
+    v = check_prob(val.val)
+    return self.prob_help + (self.a - 1) * math.log(v) + (self.b - 1) * math.log(1 - v) 
   def __str__(self):
     return 'beta(%d, %d)' % (self.a, self.b)
 
@@ -188,11 +176,11 @@ class bernoulli_args_XRP(XRP):
     return
   def apply(self, args = None):
     p = args[0].val
-    check_prob(p)
+    p = check_prob(p)
     return value(random.random() < p)
   def prob(self, val, args = None):
     p = args[0].val
-    check_prob(p)
+    p = check_prob(p)
     check_bool(val.val)
     if val.val:
       return math.log(p)
@@ -206,7 +194,7 @@ class bernoulli_no_args_XRP(XRP):
     self.deterministic = False
     self.state = None
     self.p = p
-    check_prob(p)
+    p = check_prob(p)
     return
   def apply(self, args = None):
     if args != None and len(args) != 0:
@@ -230,7 +218,7 @@ class gen_bernoulli_XRP(XRP):
     return
   def apply(self, args = None):
     p = args[0].val
-    check_prob(p)
+    p = check_prob(p)
     return Value(bernoulli_no_args_XRP(p)) 
   def __str__(self):
     return 'bernoulli_XRP'
@@ -288,7 +276,7 @@ class beta_bernoulli_1(XRP):
     self.deterministic = False
     (a, b) = start_state
     self.state = random.betavariate(a, b)
-    check_prob(self.state)
+    p = check_prob(self.state)
   def apply(self, args = None):
     return value((random.random() < self.state))
   def prob(self, val, args = None):

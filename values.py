@@ -112,7 +112,11 @@ def check_prob(val):
   if not 0 <= val <= 1:
     print "Value %s is not a valid probability" % str(val)
     assert False
-  return
+  if val == 0:
+    return 2**(-32) 
+  elif val == 1:
+    return 1 - 2**(-32)
+  return val
 
 def check_pos(val):
   if not type(val) in [int, float]:

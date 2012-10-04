@@ -22,7 +22,7 @@
 \begin{document}
 
 \title{{\bf Efficient Inference in Probabilistic Computing} \\ M.Eng Propsal}
-\author{Jeff Wu}
+\author{Jeff Wu \\ \\ {\small Advised by Vikash Mansinghka and Josh Tenenbaum}}
 %\address{}
 %\email{}
 \date{}
@@ -43,18 +43,20 @@
 
 Probabilistic programming languages are generalizations of programming languages, in which procedures are replaced with random procedures that induce distributions.  By allowing for easy description and manipulation of distributions, probabilistic programming languages let one describe classical AI models in compact ways, and provide a language for very richer expression.  
 
-A core operation of probabilistic programming languages is inference, which is, in general, a difficult computational problem \cite{?}.  However, Markov chain Monte Carlo (MCMC) methods converge quite quickly to the posterior distribution for a large class of inference problems.  Much effort has been devoted to studying in which cases this inference is efficient, and how to make it so.  \\
+A core operation of probabilistic programming languages is inference, which is a difficult computational problem in general\cite{?}.  However, Markov chain Monte Carlo (MCMC) methods converge quite quickly to the posterior distribution for a large class of inference problems.  Much effort has been devoted to studying in which cases this inference is efficient, and how to make it so.  \\
 
-We introduce a Python implementation of a programming language much like Church \cite{?}.  We implement inference in a relatively naive way, first, using a database to store all random choice.  We then improve on this by introducing traces, letting us represent the program structure in a way that allows us to do minimal re-computation.  
+We introduce a Python implementation of a programming language much like Church \cite{?}.  We implement inference in a relatively naive way, first, using a database to store all random choices, so and re-performing all computations on each transition.  
 
-We plan to further explore making inference more efficient, by
+We then improve on this by introducing traces, letting us represent the program structure in a way that allows us to do minimal re-computation.  
+
+We now plan to further explore making inference more efficient, by looking into one or more of these techniques
 \begin{enumerate}
 \item Using just-in-time techniques on the compiler
 \item Using a ``reduced" traces implementation, in which edges of the traces graph are compressed
 \item Potentially exploring some ``adaptive" generalizations of Gibbs sampling
 \end{enumerate}
 
-We'd like to be able to recover the efficiency of special-cased algorithms 
+We'd like to be able to recover the efficiency of special-cased inference algorithms for things like topic-modeling, mixture modeling, and Hidden Markov Models.
 
 % introduction: restate goals from above, of course including which research direction (parallelism; noise variables; connections to deterministic algorithms like sorting) we actually did
 
@@ -103,6 +105,7 @@ These procedures should be non-deterministic.  To allow for this, we can imagine
 \item An if statement, consisting of a branching expression, and two child expressions.
 \item An operator statement, consisting of an operator (e.g. == , $<$ , + , $\times$ , {\tt AND}, {\tt OR}, {\tt NOT}) and a list of argument expressions.
 % \item A switch statement, consisting of a branching expression, and a list of child expressions
+% \item A let statement
 \end{itemize}
 \end{itemize}
 

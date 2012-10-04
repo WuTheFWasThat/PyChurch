@@ -6,16 +6,16 @@ import unittest
 
 test_expressions = True
 test_recursion = True
-test_mem = True
+test_mem = False
 
-test_bayes_nets = False
+test_bayes_nets = True
 
-test_xor = True 
+test_xor = False 
 
-test_tricky  = True
+test_tricky  = False 
 
 # something wrong with this test
-test_geometric = True
+test_geometric = False 
 
 test_DPmem = False
 test_CRP = False
@@ -161,12 +161,11 @@ class TestDirectives(unittest.TestCase):
     assume('cloudy', bernoulli(0.5))
     assume('sprinkler', ifelse('cloudy', bernoulli(0.1), bernoulli(0.5)))
     #print test_prior(1000, 100)
-    a = infer_many('cloudy', niters, burnin)
-     
-    a = infer_many('sprinkler', niters, burnin)
+    #a = infer_many('cloudy', niters, burnin)
+    #a = infer_many('sprinkler', niters, burnin)
     
     noise_level = .001
-    #sprinkler_ob = observe(noisy('sprinkler', noise_level), True)
+    sprinkler_ob = observe(noisy('sprinkler', noise_level), True)
     print infer_many('cloudy', niters, burnin)
     print infer_many('sprinkler', niters, burnin)
     print 'Should be .833 False, .166 True'
@@ -352,6 +351,7 @@ class TestDirectives(unittest.TestCase):
     self.assertTrue(sample(apply('mem_fibonacci', 20)).val == 10946)
     t4 = time() - t4
 
+    print t1, t2, t3, t4
     self.assertTrue(0.5 < (t1 / t2) < 2)
     self.assertTrue((t3 / t2) < .001)
     self.assertTrue((t3 / t4) < .1)

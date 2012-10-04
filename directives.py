@@ -244,12 +244,12 @@ def infer():
   new_to_old_q = globals.db.uneval_p - math.log(globals.db.count) 
   old_to_new_q += globals.db.eval_p 
   if debug:
-    print "new db", globals.db
-    print "\nq(old -> new) : ", old_to_new_q
-    print "q(new -> old) : ", new_to_old_q 
-    print "p(old) : ", old_p
-    print "p(new) : ", new_p
-    print 'log transition prob : ',  new_p + new_to_old_q - old_p - old_to_new_q , "\n"
+    print "new db", globals.db, \
+          "\nq(old -> new) : ", old_to_new_q, \
+          "q(new -> old) : ", new_to_old_q, \
+          "p(old) : ", old_p, \
+          "p(new) : ", new_p, \
+          'log transition prob : ',  new_p + new_to_old_q - old_p - old_to_new_q , "\n"
 
   if old_p * old_to_new_q > 0:
     p = random.random()
