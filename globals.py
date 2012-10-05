@@ -731,4 +731,4 @@ mem = Directives_Memory()
 
 sys.setrecursionlimit(10000)
 
-use_traces = True
+use_traces = False

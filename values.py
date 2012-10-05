@@ -14,7 +14,7 @@ class Value:
     if type(val) in [int, long]:
       #assert val >= 0
       self.type = 'int'
-    elif type(val) == float:
+    elif type(val) in [float]:
       self.type = 'float'
       # TODO: SHOULD DISTINGUISH BETWEEN SMOOTH COUNT (POSITIVE REAL) AND PROBABILITY 
     elif type(val) == bool:

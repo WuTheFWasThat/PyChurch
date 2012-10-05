@@ -314,8 +314,11 @@ def gamma(a, b):
   return expression(('apply', gamma_args_xrp, [a, b])) 
 
 uniform_args_xrp = uniform_args_XRP() 
-def uniform(n):
-  return expression(('apply', ('xrp', uniform_args_xrp), n)) 
+def uniform(n = None):
+  if n is None:
+    return expression(('apply', ('xrp', beta_args_xrp), [1, 1])) 
+  else:
+    return expression(('apply', ('xrp', uniform_args_xrp), n)) 
 
 gaussian_args_xrp = gaussian_args_XRP() 
 def gaussian(mu, sigma):

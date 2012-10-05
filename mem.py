@@ -7,12 +7,13 @@ class mem_proc_XRP(XRP):
     self.procedure = procedure
     self.n = len(procedure.vars)
     self.state = {}
-  def apply(self, args = None):
+  def apply(self, args = None, call_stack = None):
     assert len(args) == self.n and all([args[i].__class__.__name__ == 'Value' for i in xrange(self.n)])
+    assert type(call_stack) == list 
     if tuple(args) in self.state:
       (val, count) = self.state[tuple(args)]
     else:
-      val = evaluate(apply(self.procedure, args), stack = ['mem', hash(self.procedure), tuple(args)]) 
+      val = evaluate(apply(self.procedure, args), stack = call_stack + [-1, 'mem', hash(self.procedure), tuple(args)]) 
     return val
   def incorporate(self, val, args = None):
     if tuple(args) not in self.state:
@@ -41,10 +42,14 @@ class mem_XRP(XRP):
     self.deterministic = True
     self.state = {}
   def apply(self, args = None):
+    assert len(args) == 1
     procedure = args[0]
     assert procedure.__class__.__name__ == 'Value' and procedure.type == 'procedure'
     if procedure not in self.state:
-      return value(mem_proc_XRP(procedure))
+      mem_proc = mem_proc_XRP(procedure)
+      assert mem_proc.__class__.__name__ == 'mem_proc_XRP'
+      return value(mem_proc)
+    # TODO: do i really want to remember?
     else:
       return self.state[procedure]
   def incorporate(self, val, args = None):

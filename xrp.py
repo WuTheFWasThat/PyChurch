@@ -1,4 +1,5 @@
 import random
+import numpy
 from values import *
 
 class gaussian_args_XRP(XRP):
@@ -55,6 +56,98 @@ class gen_gaussian_XRP(XRP):
     return Value(gaussian_no_args_XRP(mu, sigma)) 
   def __str__(self):
     return 'gaussian_XRP'
+
+class array_XRP(XRP):
+  def __init__(self, array):
+    self.deterministic = True
+    self.state = [value(x) for x in array]
+    self.n = len(self.state)
+    return
+  def apply(self, args = None):
+    assert len(args) == 1
+    i = args[0].val
+    check_num(i)
+    assert 0 <= i < self.n
+    return self.state[i]
+  def prob(self, val, args = None):
+    assert len(args) == 1
+    i = args[0].val
+    check_num(i)
+    assert 0 <= i < self.n
+    return 0
+  def __str__(self):
+    return ('array(%s)' % str(self.state))
+
+class dirichlet_args_XRP(XRP):
+  def __init__(self):
+    self.deterministic = False
+    self.state = None
+    return
+  def apply(self, args = None):
+    for arg in args:
+      check_pos(arg.val)
+    probs = [float(p) for p in numpy.random.mtrand.dirichlet([arg.val for arg in args])]
+    return value(array_XRP(probs))
+  def prob(self, val, args = None):
+    assert val.type == 'xrp'
+    assert isinstance(val.val, array_XRP)
+    probs = [x.val for x in val.val.state]
+    for prob in probs:
+      check_prob(prob)
+    n = len(args)
+    assert len(probs) == n
+
+    alpha = 0
+    for alpha_i in args:
+      check_pos(alpha_i.val)
+      alpha += alpha_i.val
+
+    return math.log(math.gamma(alpha)) + sum((args[i].val - 1) * math.log(probs[i]) for i in xrange(n)) \
+           - sum(math.log(math.gamma(args[i].val)) for i in xrange(n))
+
+  def __str__(self):
+    return 'dirichlet'
+
+class dirichlet_no_args_XRP(XRP):
+  def __init__(self, args):
+    self.deterministic = False
+    self.alphas = [value(arg).val for arg in args]
+    self.alpha = 0
+    for alpha_i in self.alphas:
+      check_pos(alpha_i)
+      self.alpha += alpha_i
+    return
+  def apply(self, args = None):
+    if args != None and len(args) != 0:
+      warnings.warn('Warning: dirichlet_no_args_XRP has no need to take in arguments %s' % str(args))
+    probs = [float(p) for p in numpy.random.mtrand.dirichlet(self.alphas)]
+    return value(array_XRP(probs))
+  def prob(self, val, args = None):
+    if args != None and len(args) != 0:
+      warnings.warn('Warning: dirichlet_no_args_XRP has no need to take in arguments %s' % str(args))
+    assert val.type == 'xrp'
+    assert isinstance(val.val, array_XRP)
+    probs = [x.val for x in val.val.state]
+    for prob in probs:
+      check_prob(prob)
+
+    n = len(self.alphas)
+    assert len(probs) == n
+
+    return math.log(math.gamma(self.alpha)) + sum((self.alphas[i] - 1) * math.log(probs[i]) for i in xrange(n)) \
+           - sum(math.log(math.gamma(self.alphas[i])) for i in xrange(n))
+  def __str__(self):
+    return 'dirichlet(%d, %d)' % (self.a, self.b)
+
+class gen_dirichlet_XRP(XRP):
+  def __init__(self):
+    self.deterministic = True
+    self.state = None
+    return
+  def apply(self, args = None):
+    return Value(dirichlet_no_args_XRP(args)) 
+  def __str__(self):
+    return 'dirichlet_XRP'
 
 class beta_args_XRP(XRP):
   def __init__(self):

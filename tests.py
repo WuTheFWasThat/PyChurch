@@ -4,11 +4,12 @@ from time import *
 
 import unittest
 
-test_expressions = True
-test_recursion = True
+test_expressions = False 
+test_recursion = False 
 test_mem = False
 
-test_bayes_nets = True
+test_HMM = True
+test_bayes_nets = False
 
 test_xor = False 
 
@@ -152,6 +153,33 @@ class TestDirectives(unittest.TestCase):
     #print format(get_pdf(a, -4, 4, .5), '%0.2f') 
     #print 'time taken', time() - t
   
+  @unittest.skipIf(not test_HMM, "skipping test_HMM")
+  def test_HMM(self):
+    n = 5
+
+    assume('dirichlet', dirichlet_no_args_XRP([1]*n))
+    assume('get-column', mem(function('i', apply('dirichlet'))))
+    assume('get-next-state', function('i', 
+                             let([('loop', \
+                                  function(['v', 'j'], \
+                                           let([('w', apply(apply('get-column', 'i'), 'j'))],
+                                            ifelse(var('v') < 'w', 'j', apply('loop', [var('v') -'w', var('j') + 1]))))) \
+                                 ], \
+                                 apply('loop', [uniform(), 0])))) 
+    assume('state', mem(function('i',
+                                 ifelse(var('i') == 0, 0, apply('get-next-state', var('i') - 1)))))
+  
+    assume('start-state', apply('state', n))
+    assume('second-state', apply('state', n))
+    print test_prior(1000, 100)
+  
+#    assume('x', apply('get-datapoint', 0))
+#    observe(gaussian('x', let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.3)
+#    observe(gaussian(apply('get-datapoint', 1), let([('y', gaussian(0, 'outer-noise'))], var('y') * var('y'))), 2.2)
+#    observe(gaussian(apply('get-datapoint', 2), let([('y', gaussian(0, 'outer-noise'))], var('y') * var('y'))), 1.9)
+#    observe(gaussian(apply('get-datapoint', 3), let([('y', gaussian(0, 'outer-noise'))], var('y') * var('y'))), 2.0)
+#    observe(gaussian(apply('get-datapoint', 4), let([('y', gaussian(0, 'outer-noise'))], var('y') * var('y'))), 2.1)
+
   @unittest.skipIf(not test_bayes_nets, "skipping test_bayes_nets")
   def test_bayes_nets(self):
     print "\n TESTING INFERENCE ON CLOUDY/SPRINKLER\n"

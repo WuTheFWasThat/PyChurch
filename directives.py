@@ -120,7 +120,7 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     if op.type == 'procedure':
       globals.db.unevaluate(stack + [-1], tuple(hash(x) for x in args))
       if n != len(op.vars):
-        warnings.warn('Procedure should have %d arguments.  \nVars were \n%s\n, but children were \n%s.' % (n, op.vars, expr.chidlren))
+        warnings.warn('Procedure should have %d arguments.  \nVars were \n%s\n, but children were \n%s.' % (n, op.vars, expr.children))
         assert False
       new_env = op.env.spawn_child()
       for i in range(n):
@@ -138,12 +138,18 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
       else:
         substack = stack + [-1, tuple(hash(x) for x in args)]
         if not globals.db.has(substack):
-          val = value(op.val.apply(args))
+          if op.val.__class__.__name__ == 'mem_proc_XRP':
+            val = value(op.val.apply(args, stack))
+          else:
+            val = value(op.val.apply(args))
           globals.db.insert(substack, op.val, val, args)
         else:
           if reflip:
             globals.db.remove(substack)
-            val = value(op.val.apply(args))
+            if op.val.__class__.__name__ == 'mem_proc_XRP':
+              val = value(op.val.apply(args, stack))
+            else:
+              val = value(op.val.apply(args))
             globals.db.insert(substack, op.val, val, args)
           else:
             (xrp, val, dbargs, is_obs_noise) = globals.db.get(substack) 
@@ -230,7 +236,10 @@ def infer():
   globals.db.save()
 
   globals.db.remove(stack)
-  new_val = xrp.apply(args)
+  if xrp.__class__.__name__ == 'mem_proc_XRP':
+    new_val = xrp.apply(args, list(stack))
+  else:
+    new_val = xrp.apply(args)
   globals.db.insert(stack, xrp, new_val, args)
 
   if debug:
