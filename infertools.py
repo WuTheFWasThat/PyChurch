@@ -1,5 +1,6 @@
 from directives import *
 import matplotlib.pyplot as plt 
+import time
 
 """ Dictionary -> distribution """
 
@@ -12,11 +13,30 @@ def count_up(list):
       d[x] = 1
   return d
 
+def average(list):
+  return sum(list) / (0.0 + len(list))
+
+def standard_deviation(list):
+  avg = average(list)
+  variance = (sum((x-avg)**2 for x in list)) / (0.0 + len(list))
+  return variance**0.5
+
 def normalize(dict):
   z = sum([dict[val] for val in dict])
   for val in dict:
     dict[val] = dict[val] / (z + 0.0)
   return dict
+
+def merge_counts(d1, d2):
+  d = {} 
+  for x in d1:
+    d[x] = d1[x]
+  for x in d2:
+    if x in d:
+      d[x] += d2[x]
+    else:
+      d[x] = d2[x]
+  return d
 
 """ Inference routines """
 
@@ -95,17 +115,22 @@ def follow_prior(names, niter = 1000, burnin = 100, printiters = 0):
     #  expr = globals.mem.vars[name]
     #else:
     #  warnings.warn('%s is not defined' % str(name))
+    assert name not in set(['TIME'])
     dict[name] = []
-
+  dict['TIME'] = []
+  
   for n in xrange(niter):
     if printiters > 0 and n % printiters == 0: 
       print n, "iters"
+    t = time.time()
     infer()
 
     for name in names:
       val = evaluate(name, globals.env, reflip = False, stack = [name])
       if val.type != 'procedure' and val.type != 'xrp': 
         dict[name].append(val)
+    t = time.time() - t
+    dict['TIME'].append(t)
 
   return dict 
 
@@ -117,11 +142,14 @@ def sample_prior(names, niter = 1000, printiters = 0):
     #  expr = globals.mem.vars[name]
     #else:
     #  warnings.warn('%s is not defined' % str(name))
+    assert name not in set(['TIME'])
     dict[name] = {}
+  dict['TIME'] = {}
 
   for n in xrange(niter):
     if printiters > 0 and n % printiters == 0: 
       print n, "iters"
+    t = time.time()
     rerun(True)
     for name in names:
       val = evaluate(name, globals.env, reflip = True, stack = [name])
@@ -130,6 +158,11 @@ def sample_prior(names, niter = 1000, printiters = 0):
           dict[name][val] += 1
         else:
           dict[name][val] = 1
+    t = time.time() - t
+    if t in dict['TIME']:
+      dict['TIME'][t] += 1
+    else:
+      dict['TIME'][t] = 1
 
   return dict 
 
@@ -138,6 +171,7 @@ def test_prior(niter = 1000, burnin = 100):
   varnames = []
 
   for (varname, expr) in globals.mem.assumes:
+    assert varname not in set(['TIME'])
     expressions.append(expr)
     varnames.append(varname)
   # TODO : get all the observed variables
@@ -156,7 +190,9 @@ def test_prior(niter = 1000, burnin = 100):
     assert expr in e2
     d1[varnames[i]] = e1[expr]
     d2[varnames[i]] = count_up(e2[expr])
-  return (d1, d2) 
+  d1['TIME'] = e1['TIME']
+  d2['TIME'] = count_up(e2['TIME'])
+  return (d1, d2)
 
 def test_prior_bool(d, varname):
   return abs(d[0][varname][False] - d[1][varname][False]) / (d[0][varname][False] + d[0][varname][True])
@@ -273,4 +309,3 @@ def perplexity(d, pdf):
   for x in d:
     ans += d[x] * log(pdf(x))
   return ans
-

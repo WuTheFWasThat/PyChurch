@@ -1,5 +1,5 @@
 import random
-import numpy
+from numpy.random.mtrand import dirichlet
 from values import *
 
 class gaussian_args_XRP(XRP):
@@ -86,7 +86,7 @@ class dirichlet_args_XRP(XRP):
   def apply(self, args = None):
     for arg in args:
       check_pos(arg.val)
-    probs = [float(p) for p in numpy.random.mtrand.dirichlet([arg.val for arg in args])]
+    probs = [float(p) for p in dirichlet([arg.val for arg in args])]
     return value(array_XRP(probs))
   def prob(self, val, args = None):
     assert val.type == 'xrp'
@@ -120,7 +120,7 @@ class dirichlet_no_args_XRP(XRP):
   def apply(self, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: dirichlet_no_args_XRP has no need to take in arguments %s' % str(args))
-    probs = [float(p) for p in numpy.random.mtrand.dirichlet(self.alphas)]
+    probs = [float(p) for p in dirichlet(self.alphas)]
     return value(array_XRP(probs))
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
@@ -137,7 +137,7 @@ class dirichlet_no_args_XRP(XRP):
     return math.log(math.gamma(self.alpha)) + sum((self.alphas[i] - 1) * math.log(probs[i]) for i in xrange(n)) \
            - sum(math.log(math.gamma(self.alphas[i])) for i in xrange(n))
   def __str__(self):
-    return 'dirichlet(%d, %d)' % (self.a, self.b)
+    return 'dirichlet(%s)' % str(self.alphas)
 
 class gen_dirichlet_XRP(XRP):
   def __init__(self):

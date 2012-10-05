@@ -156,6 +156,7 @@ class TestDirectives(unittest.TestCase):
   @unittest.skipIf(not test_HMM, "skipping test_HMM")
   def test_HMM(self):
     n = 5
+    t = 20
 
     assume('dirichlet', dirichlet_no_args_XRP([1]*n))
     assume('get-column', mem(function('i', apply('dirichlet'))))
@@ -167,11 +168,13 @@ class TestDirectives(unittest.TestCase):
                                  ], \
                                  apply('loop', [uniform(), 0])))) 
     assume('state', mem(function('i',
-                                 ifelse(var('i') == 0, 0, apply('get-next-state', var('i') - 1)))))
+                                 ifelse(var('i') == 0, 0, apply('get-next-state', apply('state', var('i') - 1))))))
   
-    assume('start-state', apply('state', n))
-    assume('second-state', apply('state', n))
-    print test_prior(1000, 100)
+    assume('start-state', apply('state', 0))
+    assume('second-state', apply('state', t))
+    sample(var('second-state'))
+    print test_prior(100, 100)
+    print len(globals.db.db)
   
 #    assume('x', apply('get-datapoint', 0))
 #    observe(gaussian('x', let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.3)
@@ -493,11 +496,11 @@ class TestDirectives(unittest.TestCase):
   
     print "\n TESTING GAUSSIAN MIXTURE MODEL\n"
     assume('expected-mean', gaussian(0, 5)) 
-    assume('expected-variance', let([('x', gaussian(2,1))], var('x')*var('x'))) # should never be negative
-    assume('alpha', 1) #gaussian(1, 0.2)) # use vague-gamma?
+    assume('expected-variance', gamma(1, 2)) 
+    assume('alpha', gamma(0.1, 10)) 
     assume('gen-cluster-mean', apply('DPmem', ['alpha', function(['x'], gaussian('expected-mean', 'expected-variance'))]))
     assume('get-datapoint', mem(function(['id'], gaussian(apply(apply('gen-cluster-mean', 222)), 0.1))))
-    assume('outer-noise', 0.1) # gaussian(1, 0.2)) # use vague-gamma?
+    assume('noise-variance', gamma(0.01, 1))
   
   #  points = {} 
   #  for i in xrange(100):
@@ -510,11 +513,11 @@ class TestDirectives(unittest.TestCase):
   #      points[val] = 1
   #  plot_pdf(points, -50, 50, 0.1, name = 'graphs/mixturesample.png')
   
-    observe(gaussian(apply('get-datapoint', 0), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.3)
-    observe(gaussian(apply('get-datapoint', 1), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.2)
-    observe(gaussian(apply('get-datapoint', 2), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 1.9)
-    observe(gaussian(apply('get-datapoint', 3), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.0)
-    observe(gaussian(apply('get-datapoint', 4), let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.1)
+    observe(gaussian(apply('get-datapoint', 0), 'noise-variance'), 2.3)
+    observe(gaussian(apply('get-datapoint', 1), 'noise-variance'), 2.2)
+    observe(gaussian(apply('get-datapoint', 2), 'noise-variance'), 1.9)
+    observe(gaussian(apply('get-datapoint', 3), 'noise-variance'), 2.0)
+    observe(gaussian(apply('get-datapoint', 4), 'noise-variance'), 2.1)
   
     #niters, burnin = 100, 100
   
@@ -629,5 +632,115 @@ class TestDirectives(unittest.TestCase):
     print sample(apply('f', 0))
     #print [sample('x') for i in xrange(10)]
 
+def run_HMM(t, s):
+    random.seed(s)
+    n = 5
+    assume('dirichlet', dirichlet_no_args_XRP([1]*n))
+    assume('get-column', mem(function('i', apply('dirichlet'))))
+    assume('get-next-state', function('i',
+                             let([('loop', \
+                                  function(['v', 'j'], \
+                                           let([('w', apply(apply('get-column', 'i'), 'j'))],
+                                            ifelse(var('v') < 'w', 'j', apply('loop', [var('v') -'w', var('j') + 1]))))) \
+                                 ], \
+                                 apply('loop', [uniform(), 0]))))
+    assume('state', mem(function('i',
+                                 ifelse(var('i') == 0, 0, apply('get-next-state', apply('state', var('i') - 1))))))
+  
+    assume('start-state', apply('state', 0))
+    assume('last-state', apply('state', t))
+    a = test_prior(1000, 100)
+    return a
+
+def run_topic_model(docsize, s):
+    random.seed(s)
+    ntopics = 5
+    nwords = 20
+
+    assume('topics-dirichlet', dirichlet_no_args_XRP([1]*ntopics))
+    assume('words-dirichlet', dirichlet_no_args_XRP([1]*nwords))
+
+    assume('get-topic-dist', apply('topics-dirichlet'))
+    assume('get-topic-words-dist', mem(function('i', apply('words-dirichlet'))))
+    assume('sample-dirichlet', function('prob_array',
+                               let([('loop', 
+                                    function(['v', 'i'], 
+                                             let([('w', apply('prob_array', 'i'))], 
+                                              ifelse(var('v') < 'w', 'i', apply('loop', [var('v') -'w', var('i') + 1]))))) 
+                                   ], 
+                                   apply('loop', [uniform(), 0]))))
+    assume('get-topic', mem(function('i', apply('sample-dirichlet', 'get-topic-dist'))))
+    assume('get-word', mem(function('i', apply('sample-dirichlet', apply('get-topic-words-dist', apply('get-topic', 'i'))))))
+
+    for i in range(docsize):
+      assume('get-word' + str(i), apply('get-word', i)) 
+
+    a = test_prior(1000, 100)
+    return a
+
+def run_mixture(n, s):
+    random.seed(s)
+
+    assume('alpha', gamma(0.1, 20))
+    assume('cluster-crp', CRP('alpha'))
+    assume('get-cluster-mean', mem(function('cluster', gaussian(0, 10))))
+    assume('get-cluster-variance', mem(function('cluster', gamma(0.1, 100))))
+    assume('get-cluster', mem(function('id' , apply('cluster-crp'))))
+    assume('get-cluster-model', mem(function('cluster', function([], gaussian(apply('get-cluster-mean', 'cluster'), apply('get-cluster-variance', 'cluster'))))))
+    assume('get-datapoint', mem(function('id', gaussian(apply(apply('get-cluster-model', apply('get-cluster', 'id'))), 0.1))))
+
+    for i in range(n):
+      assume('point' + str(i), apply('get-datapoint', i))
+    a = test_prior(1000, 100)
+    return a
+
+def run_mixture_uncollapsed(n, s):
+    random.seed(s)
+
+    """DEFINITION OF DP"""
+    assume('DP', \
+           function(['concentration', 'basemeasure'], \
+                    let([('sticks', mem(function('j', beta(1, 'concentration')))),
+                         ('atoms',  mem(function('j', apply('basemeasure')))),
+                         ('loop', \
+                          function('j', \
+                                   ifelse(bernoulli(apply('sticks', 'j')), \
+                                          apply('atoms', 'j'), \
+                                          apply('loop', var('j')+1)))) \
+                        ], \
+                        function([], apply('loop', 1))))) 
+
+    """DEFINITION OF ONE ARGUMENT DPMEM"""
+    assume('DPmem', \
+           function(['concentration', 'proc'], \
+                    let([('restaurants', \
+                          mem( function('args', apply('DP', ['concentration', function([], apply('proc', 'args'))]))))], \
+                        function('args', apply('restaurants', 'args'))))) 
+
+    print "\n TESTING GAUSSIAN MIXTURE MODEL\n"
+    assume('expected-mean', gaussian(0, 5)) 
+    assume('expected-variance', gamma(1, 2)) 
+    assume('alpha', gamma(0.1, 10)) 
+    assume('gen-cluster-mean', apply('DPmem', ['alpha', function(['x'], gaussian('expected-mean', 'expected-variance'))]))
+    assume('get-datapoint', mem(function(['id'], gaussian(apply(apply('gen-cluster-mean', 222)), 0.1))))
+    assume('noise-variance', gamma(0.01, 1))
+
+    for i in range(n):
+      assume('point' + str(i), apply('get-datapoint', i))
+    a = infer_many(apply('get-datapoint', 0), 10, 1000)
+    return a
+
 if __name__ == '__main__':
-  unittest.main()
+  t = time()
+  a = run_topic_model(3, 222222)
+  #a = run_HMM(15, 222222)
+  #a = run_mixture(15, 222222)
+  sampletimes = a[0]['TIME']
+  print average(sampletimes)
+  print standard_deviation(sampletimes)
+  
+  followtimes = a[1]['TIME']
+  print average(followtimes)
+  print standard_deviation(followtimes)
+  print time() - t
+  #unittest.main()

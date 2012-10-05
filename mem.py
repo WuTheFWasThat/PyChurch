@@ -140,20 +140,3 @@ crp_xrp = gen_CRP_XRP()
 def CRP(alpha):
   return expression(('apply', crp_xrp, alpha))
 
-  #assume('DP', \
-  #       function(['concentration', 'basemeasure'], \
-  #                let([('sticks', mem(function('j', beta(1, 'concentration')))),
-  #                     ('atoms',  mem(function('j', apply('basemeasure')))),
-  #                     ('loop', \
-  #                      function('j', \
-  #                               ifelse(bernoulli(apply('sticks', 'j')), \
-  #                                      apply('atoms', 'j'), \
-  #                                      apply('loop', var('j')+1)))) \
-  #                    ], \
-  #                    function([], apply('loop', 1))))) 
-
-  #assume('DPmem', \
-  #       function(['concentration', 'proc'], \
-  #                let([('restaurants', \
-  #                      mem( function('args', apply('DP', ['concentration', function([], apply('proc', 'args'))]))))], \
-  #                    function('args', apply('restaurants', 'args')))))
