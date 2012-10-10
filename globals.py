@@ -16,6 +16,7 @@ class Environment:
     return
 
   def set(self, name, value):
+    assert value is not None
     self.assignments[name] = value
 
   def lookup(self, name):
@@ -71,6 +72,9 @@ class EvalNode:
     self.parent = None 
     self.children = {} 
     self.applychildren = {} 
+
+    self.mem = False # Whether this is the root of a mem'd procedure's application
+    self.mem_calls = set()
 
     self.env = env # Environment in which this was evaluated
     self.lookup = None 
@@ -151,18 +155,23 @@ class EvalNode:
       assert self.random_xrp_apply
       val = self.evaluate(reflip = 0.5, xrp_force_val = self.observe_val)
       assert val == oldval
+      # TODO: might this be wrong initially? 
     else:
       if self.random_xrp_apply:
         val = self.evaluate(reflip = 0.5, xrp_force_val = self.val)
         assert val == oldval
       else:
         val = self.evaluate(reflip = 0.5, xrp_force_val = None)
+
       if self.assume:
         assert self.parent is None
         for evalnode in self.env.get_lookups(self.assume_name, self):
           evalnode.propogate_up()
       elif self.parent is not None:
         self.parent.propogate_up()
+    if self.mem:
+      for evalnode in self.mem_calls:
+        evalnode.propogate_up()
 
     self.val = val
     return self.val
@@ -172,6 +181,7 @@ class EvalNode:
       return
     expr = self.expression
     if self.type == 'variable':
+      # Don't remove reference value.
       assert self.lookup
       self.remlookup(expr.name, self.lookup)
     elif self.type == 'apply':
@@ -186,13 +196,7 @@ class EvalNode:
       elif op.type == 'xrp':
         xrp = op.val
         assert args == self.args
-        xrp.remove(self.val, self.args)
-        prob = xrp.prob(self.val, self.args)
-        self.traces.uneval_p += prob
-        self.traces.p -= prob
-
-        if not xrp.deterministic:
-          self.remove_xrp(self)
+        self.remove_xrp(xrp, self.args)
     else:
       for x in self.children:
         self.children[x].unevaluate()
@@ -200,8 +204,26 @@ class EvalNode:
     self.active = False
     return self.val
 
-  def remove_xrp(self, stack):
-    self.traces.remove_xrp(stack)
+  def remove_xrp(self, xrp, args):
+    if xrp.__class__.__name__ == 'mem_proc_XRP':
+      xrp.remove(self.val, args, self)
+    else:
+      xrp.remove(self.val, args)
+    prob = xrp.prob(self.val, self.args)
+    self.traces.uneval_p += prob
+    self.traces.p -= prob
+    if ((not xrp.deterministic) and (not xrp.__class__.__name__ == 'mem_proc_XRP')):
+      self.traces.remove_xrp(self)
+
+  def add_xrp(self, xrp, val, args):
+    prob = xrp.prob(val, args)
+    self.traces.eval_p += prob
+    self.traces.p += prob
+    xrp.incorporate(val, args)
+
+    if ((not xrp.deterministic) and (not xrp.__class__.__name__ == 'mem_proc_XRP')):
+      self.random_xrp_apply = True
+      self.traces.add_xrp(self.stack, args, self)
 
   # reflip = 1 # reflip all
   #          0.5 # reflip current, but don't recurse
@@ -258,7 +280,7 @@ class EvalNode:
       n = len(expr.vars)
       assert len(expr.expressions) == n
       values = []
-      new_env = env
+      new_env = self.env
       for i in range(n): # Bind variables
         new_env = new_env.spawn_child()
         val = evaluate_recurse(expr.expressions[i], new_env, self.stack, i)
@@ -286,35 +308,45 @@ class EvalNode:
           new_env.set(op.vars[i], args[i])
         val = evaluate_recurse(op.body, new_env, self.stack, (-1, tuple(hash(x) for x in args)))
       elif op.type == 'xrp':
-        xrp = op.val
-        if not xrp.deterministic:
-          self.random_xrp_apply = True
-          self.traces.add_xrp(self.stack, args, self)
 
-        self.args = args
+        def apply_helper(xrp, args):
+          if xrp.__class__.__name__ == 'mem_proc_XRP':
+            return value(xrp.apply(args, self))
+          else:
+            return value(xrp.apply(args))
+
+        xrp = op.val
+
         if xrp_force_val != None:
           assert reflip != True
+          assert not xrp.__class__.__name__ == 'mem_proc_XRP'
+          assert not xrp.deterministic
           val = xrp_force_val
-        elif self.active:
-          xrp.remove(self.val, self.args)
-          prob = xrp.prob(self.val, self.args)
-          self.traces.uneval_p += prob
-          self.traces.p -= prob
-
-          if self.observed:
-            val = self.observe_val
-          elif not reflip:
-            val = self.val
-          else:
-            val = value(xrp.apply(args))
+          if self.active:
+            self.remove_xrp(xrp, self.args)
+          self.add_xrp(xrp, val, args)
         elif self.observed:
           val = self.observe_val
-        else:
-          val = value(xrp.apply(args))
-        prob = xrp.prob(val, args)
-        self.traces.eval_p += prob
-        self.traces.p += prob
-        xrp.incorporate(val, args)
+          assert not xrp.__class__.__name__ == 'mem_proc_XRP'
+          assert not xrp.deterministic
+          if self.active:
+            self.remove_xrp(xrp, self.args)
+          self.add_xrp(xrp, val, args)
+        elif xrp.deterministic or (not reflip):
+          if self.active:
+            val = self.val
+          else:
+            val = apply_helper(xrp, args)
+            self.add_xrp(xrp, val, args)
+        else: # not deterministic, eneds reflipping
+          if self.active:
+            self.remove_xrp(xrp, self.args)
+          val = apply_helper(xrp, args)
+          self.add_xrp(xrp, val, args)
+
+        self.args = args
+        assert val is not None
+
         # TODO
         # assert not is_obs_noise
       else:
@@ -446,7 +478,7 @@ class Traces:
     return self.evalnodes[stack]
 
   def reflip(self, reflip_node):
-    debug = False
+    debug = True
 
     if debug:
       print "\n-----------------------------------------\n"
@@ -479,10 +511,10 @@ class Traces:
     new_p = self.p
     uneval_p = self.uneval_p
     eval_p = self.eval_p
-    new_to_old_q = uneval_p - math.log(new_count) 
-    old_to_new_q = eval_p - math.log(old_count)
+    new_to_old_q = - math.log(new_count) 
+    old_to_new_q = - math.log(old_count)
     if debug:
-      print "new db", len(self.db)
+      print "new db", self
       print "\nq(old -> new) : ", old_to_new_q
       print "q(new -> old) : ", new_to_old_q 
       print "p(old) : ", old_p
@@ -495,22 +527,26 @@ class Traces:
         if debug: 
           print 'restore'
         new_val = reflip_node.reflip(old_val)
-        assert self.p == old_p
-        assert self.uneval_p == eval_p
-        assert self.eval_p == uneval_p
+        #assert self.p == old_p
+        #assert self.uneval_p == eval_p
+        #assert self.eval_p == uneval_p
   
     if debug: 
       print "new ", self
 
     # ENVELOPE CALCULATION?
 
-  def evaluate(self, expression, reflip = False):
-    stack = ['expr', expression.hashval]
+  def get_or_make(self, stack, expression):
     if self.has(stack):
       evalnode = self.get(stack)
     else:
       evalnode = EvalNode(self, stack, self.global_env, expression)
       self.set(stack, evalnode)
+    return evalnode
+
+  def evaluate(self, expression, reflip = False):
+    stack = ['expr', expression.hashval]
+    evalnode = self.get_or_make(stack, expression)
     val = evalnode.evaluate(reflip)
     return val
 
@@ -731,4 +767,4 @@ mem = Directives_Memory()
 
 sys.setrecursionlimit(10000)
 
-use_traces = False
+use_traces = True

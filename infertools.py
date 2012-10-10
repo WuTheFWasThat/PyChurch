@@ -1,5 +1,4 @@
 from directives import *
-import matplotlib.pyplot as plt 
 import time
 
 """ Dictionary -> distribution """
@@ -128,10 +127,13 @@ def follow_prior(names, niter = 1000, burnin = 100, printiters = 0):
     for name in names:
       val = evaluate(name, globals.env, reflip = False, stack = [name])
       if val.type != 'procedure' and val.type != 'xrp': 
-        dict[name].append(val)
+        dict[name].append(val.val)
     t = time.time() - t
     dict['TIME'].append(t)
 
+  for name in names:
+    if len(dict[name]) == 0:
+      del dict[name]
   return dict 
 
 def sample_prior(names, niter = 1000, printiters = 0):
@@ -143,8 +145,8 @@ def sample_prior(names, niter = 1000, printiters = 0):
     #else:
     #  warnings.warn('%s is not defined' % str(name))
     assert name not in set(['TIME'])
-    dict[name] = {}
-  dict['TIME'] = {}
+    dict[name] = []
+  dict['TIME'] = []
 
   for n in xrange(niter):
     if printiters > 0 and n % printiters == 0: 
@@ -154,19 +156,16 @@ def sample_prior(names, niter = 1000, printiters = 0):
     for name in names:
       val = evaluate(name, globals.env, reflip = True, stack = [name])
       if val.type != 'procedure' and val.type != 'xrp': 
-        if val in dict[name]:
-          dict[name][val] += 1
-        else:
-          dict[name][val] = 1
+        dict[name].append(val.val)
     t = time.time() - t
-    if t in dict['TIME']:
-      dict['TIME'][t] += 1
-    else:
-      dict['TIME'][t] = 1
+    dict['TIME'].append(t)
 
+  for name in names:
+    if len(dict[name]) == 0:
+      del dict[name]
   return dict 
 
-def test_prior(niter = 1000, burnin = 100):
+def test_prior(niter = 1000, burnin = 100, countup = True):
   expressions = []
   varnames = []
 
@@ -182,16 +181,27 @@ def test_prior(niter = 1000, burnin = 100):
 
   e1 = sample_prior(expressions, niter)
   e2 = follow_prior(expressions, niter, burnin)
+
   d1 = {}
   d2 = {}
   for i in xrange(len(varnames)):
     expr = expressions[i]
-    assert expr in e1
-    assert expr in e2
-    d1[varnames[i]] = e1[expr]
-    d2[varnames[i]] = count_up(e2[expr])
-  d1['TIME'] = e1['TIME']
-  d2['TIME'] = count_up(e2['TIME'])
+    if expr in e1:
+      assert expr in e2
+      if countup:
+        d1[varnames[i]] = count_up(e1[expr])
+        d2[varnames[i]] = count_up(e2[expr])
+      else:
+        d1[varnames[i]] = e1[expr]
+        d2[varnames[i]] = e2[expr]
+    else:
+      assert expr not in e2
+  if countup:
+    d1['TIME'] = count_up(e1['TIME'])
+    d2['TIME'] = count_up(e2['TIME'])
+  else:
+    d1['TIME'] = e1['TIME']
+    d2['TIME'] = e2['TIME']
   return (d1, d2)
 
 def test_prior_bool(d, varname):
@@ -234,32 +244,6 @@ def get_cdf(valuedict, start, end, bucketsize, normalizebool = True):
     assert 0.999 < cumulative[-1] < 1.001
   return cumulative
 
-""" PLOTTING TOOLS """
-
-def plot(xs, ys, name = 'graphs/plot.png', minx = None, maxx = None, miny = None, maxy = None):
-  if minx is None: minx = xs[0]
-  if maxx is None: maxx = xs[-1]
-  if miny is None: miny = min(ys)
-  if maxy is None: maxy = max(ys)
-  plt.axis([minx, maxx, miny, maxy])
-  plt.plot(xs, ys)
-  plt.savefig(name)
-#  plt.close()
-
-def plot_dist(ys, start, end, bucketsize, name = 'graphs/plot.png', ymax = None):
-  numbuckets = int(math.floor((end - start) / bucketsize))
-  xs = [start + i * bucketsize for i in range(numbuckets+1)]
-  plot(xs, ys, name, start, end, 0, ymax)
-
-def plot_pdf(valuedict, start, end, bucketsize, name = 'graphs/plot.png', ymax = None):
-  plot_dist(get_pdf(valuedict, start, end, bucketsize), start + (bucketsize / 2.0), end - (bucketsize / 2.0), bucketsize, name, ymax)
-
-def plot_cdf(valuedict, start, end, bucketsize, name = 'graphs/plot.png'):
-  plot_dist(get_cdf(valuedict, start, end, bucketsize), start, end, bucketsize, name, 1)
-
-def plot_beta_cdf(a, b, bucketsize, name = 'graphs/betaplot.png'):
-  plot_dist(get_beta_cdf(a, b, bucketsize), 0, 1, bucketsize, name, 1)
-
 def get_beta_cdf(a, b, bucketsize):
   assert type(a) == type(b) == int
 
@@ -283,10 +267,6 @@ def get_beta_cdf(a, b, bucketsize):
 
 def format(list, format):
   return [ format % x for x in list]
-
-def plotnames(names, plotname = 'plotnames'):
-  for name in names:
-    plot(range(niter), dict[name], 'graphs/' + plotname + '-' + name + '.png')
 
 """ DISTANCE MEASURES """
 

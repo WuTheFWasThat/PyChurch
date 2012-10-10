@@ -1,4 +1,5 @@
 from directives import *
+from globals import EvalNode
 
 # THIS XRP IMPLEMENTATION IS NOT INDEPENDENT OF DIRECTIVES IMPLEMENTATION 
 class mem_proc_XRP(XRP):
@@ -7,30 +8,65 @@ class mem_proc_XRP(XRP):
     self.procedure = procedure
     self.n = len(procedure.vars)
     self.state = {}
-  def apply(self, args = None, call_stack = None):
+    self.hash = random.randint(0, 2**32-1)
+  def apply(self, args = None, help = None):
+    # help is call_stack if for db, is an evalnode otherwise
     assert len(args) == self.n and all([args[i].__class__.__name__ == 'Value' for i in xrange(self.n)])
-    assert type(call_stack) == list 
-    if tuple(args) in self.state:
-      (val, count) = self.state[tuple(args)]
+    args = tuple(args)
+    if globals.use_traces:
+      assert help.__class__.__name__ == 'EvalNode' 
+      if args not in self.state:
+        stack = ['mem', self.hash, args]
+        evalnode = EvalNode(globals.traces, stack, globals.traces.global_env, apply(self.procedure, args))
+        evalnode.mem = True
+        globals.traces.set(stack, evalnode)
+        self.state[args] = evalnode
+      else:
+        evalnode = self.state[args]
+      print "APPLYING", help.stack, [x.stack for x in evalnode.mem_calls]
+      evalnode.mem_calls.add(help)
+      val = evalnode.evaluate(False)
+      return val
     else:
-      val = evaluate(apply(self.procedure, args), stack = call_stack + [-1, 'mem', hash(self.procedure), tuple(args)]) 
+      assert type(help) == list 
+      if args in self.state:
+        (val, count) = self.state[args]
+      else:
+        val = evaluate(apply(self.procedure, args), stack = help + [-1, 'mem', hash(self.procedure), args]) 
     return val
   def incorporate(self, val, args = None):
-    if tuple(args) not in self.state:
-      self.state[tuple(args)] = (val, 1)
+    print "INCORPORATING"
+    if globals.use_traces:
+      pass
+      # TODO: we essentially assume apply has been called, and that incorporate gets called each time apply does...
     else:
-      (oldval, oldcount) = self.state[tuple(args)]
-      assert oldval == val
-      self.state[tuple(args)] = (oldval, oldcount + 1)
+      args = tuple(args)
+      if args not in self.state:
+        self.state[args] = (val, 1)
+      else:
+        (oldval, oldcount) = self.state[args]
+        assert oldval == val
+        self.state[args] = (oldval, oldcount + 1)
     return self.state
-  def remove(self, val, args = None):
-    assert tuple(args) in self.state
-    (oldval, oldcount) = self.state[tuple(args)]
-    assert oldval == val
-    if oldcount == 1:
-      del self.state[tuple(args)]
+  def remove(self, val, args = None, help = None):
+    args = tuple(args)
+    assert args in self.state
+    if globals.use_traces:
+      assert help is not None
+      evalnode = self.state[args]
+      assert val == evalnode.val
+      print "REMOVING", help.stack, [x.stack for x in evalnode.mem_calls]
+      assert help in evalnode.mem_calls
+      evalnode.mem_calls.remove(help)
+      if len(evalnode.mem_calls) == 0:
+        evalnode.unevaluate()
     else:
-      self.state[tuple(args)] = (oldval, oldcount - 1)
+      (oldval, oldcount) = self.state[args]
+      assert oldval == val
+      if oldcount == 1:
+        del self.state[args]
+      else:
+        self.state[args] = (oldval, oldcount - 1)
     return self.state
   def prob(self, val, args = None):
     return 0 

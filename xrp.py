@@ -1,6 +1,10 @@
 import random
-from numpy.random.mtrand import dirichlet
 from values import *
+
+def dirichlet(params):
+  sample = [random.gammavariate(a,1) for a in params]
+  z = sum(sample) + 0.0
+  return [v/z for v in sample]
 
 class gaussian_args_XRP(XRP):
   def __init__(self):
@@ -422,4 +426,3 @@ class beta_bernoulli_2(XRP):
         return math.log(t) - math.log(h + t)
   def __str__(self):
     return 'beta_bernoulli'
-

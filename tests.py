@@ -8,8 +8,9 @@ test_expressions = False
 test_recursion = False 
 test_mem = False
 
-test_HMM = True
-test_bayes_nets = False
+test_HMM = False
+test_bayes_nets = True
+test_two_layer_nets = False
 
 test_xor = False 
 
@@ -632,7 +633,8 @@ class TestDirectives(unittest.TestCase):
     print sample(apply('f', 0))
     #print [sample('x') for i in xrange(10)]
 
-def run_HMM(t, s):
+def run_HMM(t, s, niters = 1000, burnin = 100, countup = True):
+    reset()
     random.seed(s)
     n = 5
     assume('dirichlet', dirichlet_no_args_XRP([1]*n))
@@ -649,10 +651,11 @@ def run_HMM(t, s):
   
     assume('start-state', apply('state', 0))
     assume('last-state', apply('state', t))
-    a = test_prior(1000, 100)
+    a = test_prior(niters, burnin, countup)
     return a
 
-def run_topic_model(docsize, s):
+def run_topic_model(docsize, s, niters = 1000, burnin = 100, countup = True):
+    reset()
     random.seed(s)
     ntopics = 5
     nwords = 20
@@ -675,10 +678,11 @@ def run_topic_model(docsize, s):
     for i in range(docsize):
       assume('get-word' + str(i), apply('get-word', i)) 
 
-    a = test_prior(1000, 100)
+    a = test_prior(niters, burnin, countup)
     return a
 
-def run_mixture(n, s):
+def run_mixture(n, s, niters = 1000, burnin = 100, countup = True):
+    reset()
     random.seed(s)
 
     assume('alpha', gamma(0.1, 20))
@@ -691,7 +695,7 @@ def run_mixture(n, s):
 
     for i in range(n):
       assume('point' + str(i), apply('get-datapoint', i))
-    a = test_prior(1000, 100)
+    a = test_prior(niters, burnin, countup)
     return a
 
 def run_mixture_uncollapsed(n, s):
@@ -730,17 +734,35 @@ def run_mixture_uncollapsed(n, s):
     a = infer_many(apply('get-datapoint', 0), 10, 1000)
     return a
 
+def run_bayes_net(n, s, niters = 1000, burnin = 100, countup = True):
+    reset()
+    random.seed(s)
+
+    for i in xrange(n):
+      assume('disease' + str(i), bernoulli(0.3))
+    for j in xrange(n):
+      causes = ['disease' + str(random.randint(0,n-1)) for i in xrange(10)]
+      symptom_expression = bernoulli(ifelse(disjunction(causes), .7, .3))
+      assume('symptom' + str(j), symptom_expression)
+
+    a = test_prior(niters, burnin, countup)
+    return a
+
 if __name__ == '__main__':
   t = time()
-  a = run_topic_model(3, 222222)
-  #a = run_HMM(15, 222222)
-  #a = run_mixture(15, 222222)
-  sampletimes = a[0]['TIME']
-  print average(sampletimes)
-  print standard_deviation(sampletimes)
-  
-  followtimes = a[1]['TIME']
-  print average(followtimes)
-  print standard_deviation(followtimes)
-  print time() - t
-  #unittest.main()
+  running_main = False
+  if not running_main:
+    #a = run_topic_model(1, 222222)
+    #a = run_HMM(5, 222222)
+    #a = run_mixture(15, 222222)
+    a = run_bayes_net(2, 222222)
+    sampletimes = a[0]['TIME']
+    print average(sampletimes)
+    print standard_deviation(sampletimes)
+    
+    followtimes = a[1]['TIME']
+    print average(followtimes)
+    print standard_deviation(followtimes)
+    print time() - t
+  else:
+    unittest.main()

@@ -64,9 +64,9 @@ class Expression:
       self.type = 'subtract'
     elif self.type in ['*', 'mul', 'multiply', 'product']: 
       self.type = 'multiply'
-    elif self.type in ['|', 'or']:
+    elif self.type in ['|', 'or', 'disjunction']:
       self.type = '|'
-    elif self.type in ['&', 'and']:
+    elif self.type in ['&', 'and', 'conjunction']:
       self.type = '&'
     elif self.type in ['^', 'xor']:
       self.type = '^'
@@ -293,6 +293,12 @@ def function(vars, body):
 
 def negation(expr):
   return expression(('not', expr)) 
+
+def disjunction(exprs):
+  return expression(('or', exprs)) 
+
+def conjunction(exprs):
+  return expression(('or', exprs)) 
 
 ### XRP ###
 
