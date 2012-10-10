@@ -764,5 +764,6 @@ if __name__ == '__main__':
     print average(followtimes)
     print standard_deviation(followtimes)
     print time() - t
+    print a
   else:
     unittest.main()
