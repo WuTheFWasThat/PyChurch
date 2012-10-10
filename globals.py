@@ -112,7 +112,7 @@ class EvalNode:
       self.applychildren[addition] = child
     else:
       self.children[addition] = child
-    self.traces.evalnodes[tuple(newstack)] = child 
+    self.traces.set(newstack, child)
 
   def add_assume(self, name, env):
     assert env == self.env
@@ -205,6 +205,7 @@ class EvalNode:
     return self.val
 
   def remove_xrp(self, xrp, args):
+    assert self.active
     if xrp.__class__.__name__ == 'mem_proc_XRP':
       xrp.remove(self.val, args, self)
     else:
@@ -229,6 +230,7 @@ class EvalNode:
   #          0.5 # reflip current, but don't recurse
   #          0 # reflip nothing
   def evaluate(self, reflip = False, xrp_force_val = None):
+    assert self.traces.get(self.stack) is self
     if reflip == False and self.active:
       assert self.val is not None
       return self.val
@@ -473,12 +475,14 @@ class Traces:
     return tuple(stack) in self.evalnodes
 
   def get(self, stack):
+    print self
+    print stack
     stack = tuple(stack)
     assert self.has(stack)
     return self.evalnodes[stack]
 
   def reflip(self, reflip_node):
-    debug = True
+    debug = False
 
     if debug:
       print "\n-----------------------------------------\n"
@@ -547,6 +551,7 @@ class Traces:
   def evaluate(self, expression, reflip = False):
     stack = ['expr', expression.hashval]
     evalnode = self.get_or_make(stack, expression)
+    self.roots.add(evalnode)
     val = evalnode.evaluate(reflip)
     return val
 
@@ -558,6 +563,9 @@ class Traces:
     self.db[evalnodecheck] = True
 
   def remove_xrp(self, evalnode):
+    print self
+    print evalnode.stack
+    assert self.get(evalnode.stack) is evalnode 
     assert evalnode in self.db
     del self.db[evalnode] 
 

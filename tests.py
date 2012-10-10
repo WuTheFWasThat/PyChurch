@@ -739,10 +739,10 @@ def run_bayes_net(n, s, niters = 1000, burnin = 100, countup = True):
     random.seed(s)
 
     for i in xrange(n):
-      assume('disease' + str(i), bernoulli(0.3))
+      assume('disease' + str(i), bernoulli(0.2))
     for j in xrange(n):
-      causes = ['disease' + str(random.randint(0,n-1)) for i in xrange(10)]
-      symptom_expression = bernoulli(ifelse(disjunction(causes), .7, .3))
+      causes = ['disease' + str(random.randint(0,n-1)) for i in xrange(3)]
+      symptom_expression = bernoulli(ifelse(disjunction(causes), .8, .2))
       assume('symptom' + str(j), symptom_expression)
 
     a = test_prior(niters, burnin, countup)
@@ -755,7 +755,7 @@ if __name__ == '__main__':
     #a = run_topic_model(1, 222222)
     #a = run_HMM(5, 222222)
     #a = run_mixture(15, 222222)
-    a = run_bayes_net(2, 222222)
+    a = run_bayes_net(20, 222222)
     sampletimes = a[0]['TIME']
     print average(sampletimes)
     print standard_deviation(sampletimes)
@@ -764,6 +764,5 @@ if __name__ == '__main__':
     print average(followtimes)
     print standard_deviation(followtimes)
     print time() - t
-    print a
   else:
     unittest.main()

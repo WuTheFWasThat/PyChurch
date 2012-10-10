@@ -94,7 +94,10 @@ def infer_many(name, niter = 1000, burnin = 100, printiters = 0):
     for t in xrange(burnin):
       infer()
 
-    val = evaluate(name, globals.env, reflip = False, stack = [name])
+    if globals.use_traces:
+      val = globals.traces.get([name]).evaluate(False)
+    else:
+      val = evaluate(name, globals.env, reflip = False, stack = [name])
     if val in dict:
       dict[val] += 1
     else:
@@ -125,7 +128,10 @@ def follow_prior(names, niter = 1000, burnin = 100, printiters = 0):
     infer()
 
     for name in names:
-      val = evaluate(name, globals.env, reflip = False, stack = [name])
+      if globals.use_traces:
+        val = globals.traces.get([name]).evaluate(False)
+      else:
+        val = evaluate(name, globals.env, reflip = False, stack = [name])
       if val.type != 'procedure' and val.type != 'xrp': 
         dict[name].append(val.val)
     t = time.time() - t
@@ -154,7 +160,10 @@ def sample_prior(names, niter = 1000, printiters = 0):
     t = time.time()
     rerun(True)
     for name in names:
-      val = evaluate(name, globals.env, reflip = True, stack = [name])
+      if globals.use_traces:
+        val = globals.traces.get([name]).evaluate(False)
+      else:
+        val = evaluate(name, globals.env, reflip = True, stack = [name])
       if val.type != 'procedure' and val.type != 'xrp': 
         dict[name].append(val.val)
     t = time.time() - t
@@ -179,29 +188,21 @@ def test_prior(niter = 1000, burnin = 100, countup = True):
   #  (expr, obs_val) = globals.mem.observes[hashval] 
   #  expressions.append(expr)
 
-  e1 = sample_prior(expressions, niter)
-  e2 = follow_prior(expressions, niter, burnin)
+  d1 = sample_prior(varnames, niter)
+  d2 = follow_prior(varnames, niter, burnin)
 
-  d1 = {}
-  d2 = {}
   for i in xrange(len(varnames)):
-    expr = expressions[i]
-    if expr in e1:
-      assert expr in e2
+    name = varnames[i]
+    if name in d1:
+      assert name in d2
       if countup:
-        d1[varnames[i]] = count_up(e1[expr])
-        d2[varnames[i]] = count_up(e2[expr])
-      else:
-        d1[varnames[i]] = e1[expr]
-        d2[varnames[i]] = e2[expr]
+        d1[name] = count_up(d1[name])
+        d2[name] = count_up(d2[name])
     else:
-      assert expr not in e2
+      assert expr not in d2
   if countup:
-    d1['TIME'] = count_up(e1['TIME'])
-    d2['TIME'] = count_up(e2['TIME'])
-  else:
-    d1['TIME'] = e1['TIME']
-    d2['TIME'] = e2['TIME']
+    d1['TIME'] = count_up(d1['TIME'])
+    d2['TIME'] = count_up(d2['TIME'])
   return (d1, d2)
 
 def test_prior_bool(d, varname):

@@ -55,7 +55,8 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     env = globals.env
 
   if globals.use_traces:
-    return globals.traces.evaluate(expression(expr), reflip)
+    return globals.traces.get(stack).evaluate(reflip)
+    #return globals.traces.evaluate(expression(expr), reflip)
   expr = expression(expr)
 
   # TODO: remove reflip
