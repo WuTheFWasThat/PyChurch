@@ -3,7 +3,7 @@ from globals import Environment, RandomDB
 from expressions import *
 
 def reset():
-  globals.env.assignments = {}
+  globals.env.reset()
   globals.db.reset()
   globals.traces.reset()
   globals.mem.reset()
@@ -54,9 +54,8 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
   if env is None:
     env = globals.env
 
-  if globals.use_traces:
-    return globals.traces.get(stack).evaluate(reflip)
-    #return globals.traces.evaluate(expression(expr), reflip)
+  assert not globals.use_traces
+
   expr = expression(expr)
 
   # TODO: remove reflip
@@ -211,11 +210,14 @@ def resample(expr, env = None, varname = None):
 
 def rerun(reflip):
 # Class representing environments
-  for (varname, expr) in globals.mem.assumes:
-    assume_helper(varname, expr, reflip)
-  for hashval in globals.mem.observes:
-    (expr, obs_val) = globals.mem.observes[hashval] 
-    observe_helper(expr, obs_val)
+  if globals.use_traces:
+    globals.traces.rerun(reflip)
+  else:
+    for (varname, expr) in globals.mem.assumes:
+      assume_helper(varname, expr, reflip)
+    for hashval in globals.mem.observes:
+      (expr, obs_val) = globals.mem.observes[hashval] 
+      observe_helper(expr, obs_val)
 
 def infer():
   if globals.use_traces:

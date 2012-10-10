@@ -736,12 +736,12 @@ def run_mixture_uncollapsed(n, s):
 
 def run_bayes_net(n, s, niters = 1000, burnin = 100, countup = True):
     reset()
-    random.seed(s)
+    random.seed(s+3)
 
     for i in xrange(n):
       assume('disease' + str(i), bernoulli(0.2))
     for j in xrange(n):
-      causes = ['disease' + str(random.randint(0,n-1)) for i in xrange(3)]
+      causes = ['disease' + str(random.randint(0,n-1)) for i in xrange(10)]
       symptom_expression = bernoulli(ifelse(disjunction(causes), .8, .2))
       assume('symptom' + str(j), symptom_expression)
 

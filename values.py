@@ -23,11 +23,12 @@ class Value:
       self.type = 'xrp'
       self.hash = random.randint(0, 2**32-1)
     else:
+      # TODO: get rid of stack
       (self.vars, self.body, self.stack) = val 
       assert env is not None
       self.type = 'procedure'
       self.env = env 
-      self.hash = hash(tuple(self.stack))
+      self.hash = random.randint(0, 2**32-1)
 
   def __str__(self):
     if self.type == 'procedure':

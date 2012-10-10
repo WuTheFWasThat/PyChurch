@@ -95,7 +95,7 @@ def infer_many(name, niter = 1000, burnin = 100, printiters = 0):
       infer()
 
     if globals.use_traces:
-      val = globals.traces.get([name]).evaluate(False)
+      val = globals.env.assumes[name].evaluate(False)
     else:
       val = evaluate(name, globals.env, reflip = False, stack = [name])
     if val in dict:
@@ -129,7 +129,7 @@ def follow_prior(names, niter = 1000, burnin = 100, printiters = 0):
 
     for name in names:
       if globals.use_traces:
-        val = globals.traces.get([name]).evaluate(False)
+        val = globals.env.assumes[name].evaluate(False)
       else:
         val = evaluate(name, globals.env, reflip = False, stack = [name])
       if val.type != 'procedure' and val.type != 'xrp': 
@@ -161,7 +161,7 @@ def sample_prior(names, niter = 1000, printiters = 0):
     rerun(True)
     for name in names:
       if globals.use_traces:
-        val = globals.traces.get([name]).evaluate(False)
+        val = globals.env.assumes[name].evaluate(False)
       else:
         val = evaluate(name, globals.env, reflip = True, stack = [name])
       if val.type != 'procedure' and val.type != 'xrp': 
