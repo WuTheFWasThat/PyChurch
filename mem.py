@@ -10,7 +10,7 @@ class mem_proc_XRP(XRP):
     self.state = {}
     self.hash = random.randint(0, 2**32-1)
   def apply(self, args = None, help = None):
-    # help is call_stack if for db, is an evalnode otherwise
+    # help is call_stack for db
     assert len(args) == self.n and all([args[i].__class__.__name__ == 'Value' for i in xrange(self.n)])
     args = tuple(args)
     if globals.use_traces:
@@ -36,9 +36,9 @@ class mem_proc_XRP(XRP):
       args = tuple(args)
       assert args in self.state
       evalnode = self.state[args]
+      assert help not in evalnode.mem_calls
       evalnode.mem_calls.add(help)
       pass
-      # TODO: we essentially assume apply has been called, and that incorporate gets called each time apply does...
     else:
       args = tuple(args)
       if args not in self.state:
@@ -54,14 +54,9 @@ class mem_proc_XRP(XRP):
     if globals.use_traces:
       assert help is not None
       evalnode = self.state[args]
-      #print 
-      #print self.procedure, args
-      #print evalnode.expression, val, evalnode.val
       assert help in evalnode.mem_calls
-      #assert val == evalnode.val
       evalnode.mem_calls.remove(help)
-      if len(evalnode.mem_calls) == 0:
-        evalnode.unevaluate()
+      evalnode.unevaluate()
     else:
       (oldval, oldcount) = self.state[args]
       assert oldval == val

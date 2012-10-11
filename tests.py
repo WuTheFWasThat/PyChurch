@@ -385,9 +385,9 @@ class TestDirectives(unittest.TestCase):
 
     print t1, t2, t3, t4
     self.assertTrue(0.5 < (t1 / t2) < 2)
-    self.assertTrue((t3 / t2) < .001)
+    self.assertTrue((t3 / t2) < .01)
     self.assertTrue((t3 / t4) < .1)
-    self.assertTrue((t4 / t2) < .01)
+    self.assertTrue((t4 / t2) < .1)
   
   @unittest.skipIf(not test_geometric, "skipping test_geometric")
   def test_geometric(self):
@@ -753,7 +753,7 @@ if __name__ == '__main__':
   t = time()
   running_main = False
   if not running_main:
-    a = run_topic_model(5, 222222)
+    a = run_topic_model(5, 222222, 100)
     #a = run_HMM(5, 222222)
     #a = run_mixture(15, 222222)
     #a = run_bayes_net(20, 222222)

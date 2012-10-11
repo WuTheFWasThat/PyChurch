@@ -162,7 +162,7 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     for i in range(n): # Bind variables
       new_env.set(expr.vars[i], expr.vars[i])
     procedure_body = expr.body.replace(new_env)
-    val = Value((expr.vars, procedure_body, stack), env)
+    val = Value((expr.vars, procedure_body), env)
     #TODO: SET SOME RELATIONSHIP HERE?  If body contains reference to changed var...
   elif expr.type == '=':
     val = binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x == y)

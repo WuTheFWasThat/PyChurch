@@ -137,18 +137,11 @@ class EvalNode:
     self.lookup = None
     env.rem_lookup(name, self)
 
-  def addchild(self, child, addition):
-    if type(addition) == tuple:
-      self.applychildren[addition] = child
-    else:
-      self.children[addition] = child
-
   def setargs(self, args):
     assert self.type == 'apply'
     self.args = args
 
   def propogate_up(self):
-    # TODO: NEED TO ALSO PROPOGATE ON PROC APPLICATION
     assert self.active
 
     oldval = self.val
@@ -172,7 +165,8 @@ class EvalNode:
       elif self.parent is not None:
         self.parent.propogate_up()
     if self.mem:
-      for evalnode in self.mem_calls:
+      # self.mem_calls can actually be affected while propogating up.  However, if new links are created, they'll use the new value
+      for evalnode in list(self.mem_calls):
         evalnode.propogate_up()
 
     self.val = val
@@ -188,17 +182,16 @@ class EvalNode:
       self.remlookup(expr.name, self.lookup)
     elif self.type == 'apply':
       n = len(expr.children)
-      args = [self.get_child(i, self.env, expr.children[i]).unevaluate() for i in range(n)]
-      op = self.get_child(-2, self.env, expr.op).unevaluate()
-      if op.type == 'procedure':
-        new_env = op.env.spawn_child()
-        for i in range(n):
-          new_env.set(op.vars[i], args[i])
-        val = self.get_child((-1, tuple(hash(x) for x in args)), self.env, op.body).unevaluate()
-      elif op.type == 'xrp':
-        xrp = op.val
-        assert args == self.args
-        self.remove_xrp(xrp, self.args)
+      for i in range(n):
+        self.get_child(i, self.env, expr.children[i]).unevaluate()
+      self.get_child(-2, self.env, expr.op).unevaluate()
+      if self.procedure_apply: 
+        assert (-1, tuple(hash(x) for x in self.args)) in self.applychildren
+        self.applychildren[(-1, tuple(hash(x) for x in self.args))].unevaluate()
+        #self.get_child((-1, tuple(hash(x) for x in self.args)), self.env, op.body).unevaluate()
+      else:
+        assert self.xrp_apply
+        self.remove_xrp(self.xrp, self.args)
     else:
       for x in self.children:
         self.children[x].unevaluate()
@@ -347,6 +340,7 @@ class EvalNode:
           val = value(xrp.apply(args))
           self.add_xrp(xrp, val, args)
 
+        self.xrp = xrp
         assert val is not None
       else:
         warnings.warn('Must apply either a procedure or xrp')
@@ -359,7 +353,7 @@ class EvalNode:
       for i in range(n): # Bind variables
         new_env.set(expr.vars[i], expr.vars[i])
       procedure_body = expr.body.replace(new_env)
-      val = Value((expr.vars, procedure_body, ()), env)
+      val = Value((expr.vars, procedure_body), env)
       #TODO: SET SOME RELATIONSHIP HERE?  If body contains reference to changed var...
     elif self.type == '=':
       val = binary_op_evaluate(lambda x, y : x == y)
@@ -469,7 +463,7 @@ class Traces:
     return evalnode in self.evalnodes
 
   def reflip(self, reflip_node):
-    debug = False
+    debug = True
 
     if debug:
       print "\n-----------------------------------------\n"
@@ -493,8 +487,8 @@ class Traces:
 
     #print old_val, old_count, new_val, new_count
 
+    print "\nCHANGING ", reflip_node, "\n  TO   :  ", new_val, "\n"
     if debug:
-      print "\nCHANGING ", reflip_node, "\n  TO   :  ", new_val, "\n"
       if old_val == new_val:
         print "SAME VAL"
         return
