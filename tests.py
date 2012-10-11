@@ -6,10 +6,10 @@ import unittest
 
 test_expressions = False 
 test_recursion = False 
-test_mem = False
+test_mem = True
 
 test_HMM = False
-test_bayes_nets = True
+test_bayes_nets = False
 test_two_layer_nets = False
 
 test_xor = False 
@@ -734,14 +734,15 @@ def run_mixture_uncollapsed(n, s):
     a = infer_many(apply('get-datapoint', 0), 10, 1000)
     return a
 
-def run_bayes_net(n, s, niters = 1000, burnin = 100, countup = True):
+def run_bayes_net(k, s, niters = 1000, burnin = 100, countup = True):
     reset()
-    random.seed(s+3)
+    random.seed(s)
+    n = 50
 
     for i in xrange(n):
       assume('disease' + str(i), bernoulli(0.2))
     for j in xrange(n):
-      causes = ['disease' + str(random.randint(0,n-1)) for i in xrange(10)]
+      causes = ['disease' + str(random.randint(0,n-1)) for i in xrange(k)]
       symptom_expression = bernoulli(ifelse(disjunction(causes), .8, .2))
       assume('symptom' + str(j), symptom_expression)
 
@@ -752,10 +753,10 @@ if __name__ == '__main__':
   t = time()
   running_main = False
   if not running_main:
-    #a = run_topic_model(1, 222222)
+    a = run_topic_model(5, 222222)
     #a = run_HMM(5, 222222)
     #a = run_mixture(15, 222222)
-    a = run_bayes_net(20, 222222)
+    #a = run_bayes_net(20, 222222)
     sampletimes = a[0]['TIME']
     print average(sampletimes)
     print standard_deviation(sampletimes)

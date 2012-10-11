@@ -14,17 +14,13 @@ class mem_proc_XRP(XRP):
     assert len(args) == self.n and all([args[i].__class__.__name__ == 'Value' for i in xrange(self.n)])
     args = tuple(args)
     if globals.use_traces:
-      assert help.__class__.__name__ == 'EvalNode' 
       if args not in self.state:
-        stack = ['mem', self.hash, args]
-        evalnode = EvalNode(globals.traces, stack, globals.traces.global_env, apply(self.procedure, args))
+        evalnode = EvalNode(globals.traces, globals.traces.global_env, apply(self.procedure, args))
         evalnode.mem = True
-        globals.traces.set(stack, evalnode)
+        globals.traces.add_node(evalnode)
         self.state[args] = evalnode
       else:
         evalnode = self.state[args]
-      print "APPLYING", help.stack, [x.stack for x in evalnode.mem_calls]
-      evalnode.mem_calls.add(help)
       val = evalnode.evaluate(False)
       return val
     else:
@@ -34,9 +30,13 @@ class mem_proc_XRP(XRP):
       else:
         val = evaluate(apply(self.procedure, args), stack = help + [-1, 'mem', hash(self.procedure), args]) 
     return val
-  def incorporate(self, val, args = None):
-    print "INCORPORATING"
+  def incorporate(self, val, args = None, help = None):
     if globals.use_traces:
+      assert help.__class__.__name__ == 'EvalNode' 
+      args = tuple(args)
+      assert args in self.state
+      evalnode = self.state[args]
+      evalnode.mem_calls.add(help)
       pass
       # TODO: we essentially assume apply has been called, and that incorporate gets called each time apply does...
     else:
@@ -54,9 +54,11 @@ class mem_proc_XRP(XRP):
     if globals.use_traces:
       assert help is not None
       evalnode = self.state[args]
-      assert val == evalnode.val
-      print "REMOVING", help.stack, [x.stack for x in evalnode.mem_calls]
+      #print 
+      #print self.procedure, args
+      #print evalnode.expression, val, evalnode.val
       assert help in evalnode.mem_calls
+      #assert val == evalnode.val
       evalnode.mem_calls.remove(help)
       if len(evalnode.mem_calls) == 0:
         evalnode.unevaluate()

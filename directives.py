@@ -197,6 +197,11 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
   return val
 
 def sample(expr, env = None, varname = None, reflip = False):
+  if globals.use_traces:
+    name = str(expr) + str(random.randint(0, 2**32-1))
+    assume(name, expr)
+    return globals.env.assumes[name].evaluate(False)
+
   expr = expression(expr)
   if env is None:
     env = globals.env

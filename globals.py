@@ -90,6 +90,8 @@ class EvalNode:
     self.observe_val = None 
 
     self.random_xrp_apply = False
+    self.xrp_apply = False
+    self.procedure_apply = False
     self.args = None
 
     self.expression = expression
@@ -220,7 +222,10 @@ class EvalNode:
     prob = xrp.prob(val, args)
     self.traces.eval_p += prob
     self.traces.p += prob
-    xrp.incorporate(val, args)
+    if xrp.__class__.__name__ == 'mem_proc_XRP':
+      xrp.incorporate(val, args, self)
+    else:
+      xrp.incorporate(val, args)
 
     if ((not xrp.deterministic) and (not xrp.__class__.__name__ == 'mem_proc_XRP')):
       self.random_xrp_apply = True
@@ -299,6 +304,7 @@ class EvalNode:
       args = [evaluate_recurse(expr.children[i], self.env, i) for i in range(n)]
       op = evaluate_recurse(expr.op, self.env, -2)
       if op.type == 'procedure':
+        self.procedure_apply = True
         for x in self.applychildren:
           if x != tuple(hash(x) for x in args):
             self.applychildren[x].unevaluate()
@@ -311,13 +317,7 @@ class EvalNode:
           new_env.set(op.vars[i], args[i])
         val = evaluate_recurse(op.body, new_env, (-1, tuple(hash(x) for x in args)))
       elif op.type == 'xrp':
-
-        def apply_helper(xrp, args):
-          if xrp.__class__.__name__ == 'mem_proc_XRP':
-            return value(xrp.apply(args, self))
-          else:
-            return value(xrp.apply(args))
-
+        self.xrp_apply = True
         xrp = op.val
 
         if xrp_force_val != None:
@@ -339,21 +339,19 @@ class EvalNode:
           if self.active:
             val = self.val
           else:
-            val = apply_helper(xrp, args)
+            val = value(xrp.apply(args))
             self.add_xrp(xrp, val, args)
-        else: # not deterministic, eneds reflipping
+        else: # not deterministic, needs reflipping
           if self.active:
             self.remove_xrp(xrp, self.args)
-          val = apply_helper(xrp, args)
+          val = value(xrp.apply(args))
           self.add_xrp(xrp, val, args)
 
-        self.args = args
         assert val is not None
-
-        # TODO
-        # assert not is_obs_noise
       else:
         warnings.warn('Must apply either a procedure or xrp')
+
+      self.args = args
     elif self.type == 'function':
       val = self.val
       n = len(expr.vars)
@@ -408,10 +406,12 @@ class EvalNode:
     self.propogate_up()
     return self.val
 
-  def str_helper(self, n = 0):
+  def str_helper(self, n = 0, verbose = True):
     string = "\n" + (' ' * n) + "|- "
-    string += str(self.expression )
-    #string += self.type 
+    if verbose:
+      string += str(self.expression)
+    else:
+      string += self.type 
     if not self.active:
       string += ", INACTIVE"
     else:
