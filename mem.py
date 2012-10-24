@@ -78,21 +78,21 @@ class mem_XRP(XRP):
     assert len(args) == 1
     procedure = args[0]
     assert procedure.__class__.__name__ == 'Value' and procedure.type == 'procedure'
-    if procedure not in self.state:
-      mem_proc = mem_proc_XRP(procedure)
-      assert mem_proc.__class__.__name__ == 'mem_proc_XRP'
-      return value(mem_proc)
-    # TODO: do i really want to remember?
-    else:
-      return self.state[procedure]
+    mem_proc = mem_proc_XRP(procedure)
+    return value(mem_proc)
   def incorporate(self, val, args = None):
-    self.state[args[0]] = val
+    assert val.type == 'xrp'
+    assert val.val not in self.state
+    self.state[val.val] = args[0]
     return self.state
   def remove(self, val, args = None):
-    if args[0] in self.state:
-      del self.state[args[0]]
-    else:
-      warnings.warn('Couldn\'t remove procedure %s from mem_XRP' % (str(args[0])))
+    assert val.val in self.state
+    # unevaluate val's evalnodes
+    if globals.traces:
+      for args in val.val.state:
+        evalnode = val.val.state[args]
+        evalnode.unevaluate()
+    del self.state[val.val]
     return self.state
   def prob(self, val, args = None):
     return 0 # correct since other flips will be added to db? 

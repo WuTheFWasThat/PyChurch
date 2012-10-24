@@ -6,7 +6,7 @@ import unittest
 
 test_expressions = False 
 test_recursion = False 
-test_mem = True
+test_mem = False
 
 test_HMM = False
 test_bayes_nets = False
@@ -669,7 +669,7 @@ def run_topic_model(docsize, s, niters = 1000, burnin = 100, countup = True):
                                let([('loop', 
                                     function(['v', 'i'], 
                                              let([('w', apply('prob_array', 'i'))], 
-                                              ifelse(var('v') < 'w', 'i', apply('loop', [var('v') -'w', var('i') + 1]))))) 
+                                              ifelse(var('v') < 'w', 'i', apply('loop', [var('v') -'w', var('i') + 1])))))
                                    ], 
                                    apply('loop', [uniform(), 0]))))
     assume('get-topic', mem(function('i', apply('sample-dirichlet', 'get-topic-dist'))))

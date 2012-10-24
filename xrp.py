@@ -78,6 +78,7 @@ class array_XRP(XRP):
     i = args[0].val
     check_num(i)
     assert 0 <= i < self.n
+    assert val.val == self.state[i]
     return 0
   def __str__(self):
     return ('array(%s)' % str(self.state))

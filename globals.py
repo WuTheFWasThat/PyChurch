@@ -191,16 +191,18 @@ class EvalNode:
         #self.get_child((-1, tuple(hash(x) for x in self.args)), self.env, op.body).unevaluate()
       else:
         assert self.xrp_apply
-        self.remove_xrp(self.xrp, self.args)
+        self.remove_xrp()
     else:
       for x in self.children:
         self.children[x].unevaluate()
 
     self.active = False
-    return self.val
+    return
 
-  def remove_xrp(self, xrp, args):
+  def remove_xrp(self):
     assert self.active
+    xrp = self.xrp
+    args = self.args
     if xrp.__class__.__name__ == 'mem_proc_XRP':
       xrp.remove(self.val, args, self)
     else:
@@ -319,24 +321,29 @@ class EvalNode:
           assert not xrp.deterministic
           val = xrp_force_val
           if self.active:
-            self.remove_xrp(xrp, self.args)
+            self.remove_xrp()
           self.add_xrp(xrp, val, args)
         elif self.observed:
           val = self.observe_val
           assert not xrp.__class__.__name__ == 'mem_proc_XRP'
           assert not xrp.deterministic
           if self.active:
-            self.remove_xrp(xrp, self.args)
+            self.remove_xrp()
           self.add_xrp(xrp, val, args)
         elif xrp.deterministic or (not reflip):
           if self.active:
-            val = self.val
+            if self.args == args:
+              val = self.val
+            else:
+              self.remove_xrp()
+              val = value(xrp.apply(args))
+              self.add_xrp(xrp, val, args)
           else:
             val = value(xrp.apply(args))
             self.add_xrp(xrp, val, args)
         else: # not deterministic, needs reflipping
           if self.active:
-            self.remove_xrp(xrp, self.args)
+            self.remove_xrp()
           val = value(xrp.apply(args))
           self.add_xrp(xrp, val, args)
 
@@ -487,7 +494,7 @@ class Traces:
 
     #print old_val, old_count, new_val, new_count
 
-    print "\nCHANGING ", reflip_node, "\n  TO   :  ", new_val, "\n"
+    print "\nCHANGING ", reflip_node, "\n  FROM  :  ", old_val, "\n  TO   :  ", new_val, "\n"
     if debug:
       if old_val == new_val:
         print "SAME VAL"
