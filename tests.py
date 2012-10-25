@@ -5,11 +5,11 @@ from time import *
 import unittest
 
 test_expressions = False 
-test_recursion = False 
+test_recursion = False
 test_mem = False
 
 test_HMM = False
-test_bayes_nets = False
+test_bayes_nets = True
 test_two_layer_nets = False
 
 test_xor = False 
@@ -188,19 +188,24 @@ class TestDirectives(unittest.TestCase):
   def test_bayes_nets(self):
     print "\n TESTING INFERENCE ON CLOUDY/SPRINKLER\n"
     
-    niters, burnin = 100, 100
+    niters, burnin = 1000, 100
   
     assume('cloudy', bernoulli(0.5))
     assume('sprinkler', ifelse('cloudy', bernoulli(0.1), bernoulli(0.5)))
-    #print test_prior(1000, 100)
-    #a = infer_many('cloudy', niters, burnin)
-    #a = infer_many('sprinkler', niters, burnin)
+    d = test_prior(1000, 100)
+    self.assertTrue(test_prior_bool(d, 'cloudy') < 0.1)
+    self.assertTrue(test_prior_bool(d, 'sprinkler') < 0.1)
+    #print infer_many('cloudy', niters, burnin)
+    #print 'Should be .5 False, .5 True'
+    #print infer_many('sprinkler', niters, burnin)
+    #print 'Should be .7 False, .3 True'
     
     noise_level = .001
     sprinkler_ob = observe(noisy('sprinkler', noise_level), True)
     print infer_many('cloudy', niters, burnin)
-    print infer_many('sprinkler', niters, burnin)
     print 'Should be .833 False, .166 True'
+    print infer_many('sprinkler', niters, burnin)
+    print 'Should be 0 False, 1 True'
     
     # TODO: remove
     return
@@ -751,7 +756,7 @@ def run_bayes_net(k, s, niters = 1000, burnin = 100, countup = True):
 
 if __name__ == '__main__':
   t = time()
-  running_main = False
+  running_main = True
   if not running_main:
     a = run_topic_model(5, 222222, 100)
     #a = run_HMM(5, 222222)

@@ -93,6 +93,7 @@ class EvalNode:
     self.xrp_apply = False
     self.procedure_apply = False
     self.args = None
+    self.p = None
 
     self.expression = expression
     self.type = expression.type
@@ -199,7 +200,7 @@ class EvalNode:
     self.active = False
     return
 
-  def remove_xrp(self):
+  def remove_xrp(self, keep = False):
     assert self.active
     xrp = self.xrp
     args = self.args
@@ -213,8 +214,9 @@ class EvalNode:
     if ((not xrp.deterministic) and (not xrp.__class__.__name__ == 'mem_proc_XRP')):
       self.traces.remove_xrp(self)
 
-  def add_xrp(self, xrp, val, args):
+  def add_xrp(self, xrp, val, args, keep = False):
     prob = xrp.prob(val, args)
+    self.p = prob
     self.traces.eval_p += prob
     self.traces.p += prob
     if xrp.__class__.__name__ == 'mem_proc_XRP':
@@ -315,13 +317,17 @@ class EvalNode:
         self.xrp_apply = True
         xrp = op.val
 
-        if xrp_force_val != None:
+        if reflip == False and self.val is not None: # also inactive
+          val = self.val
+          self.add_xrp(self.xrp, self.val, self.args)
+        elif xrp_force_val != None:
           assert reflip != True
           assert not xrp.__class__.__name__ == 'mem_proc_XRP'
           assert not xrp.deterministic
           val = xrp_force_val
           if self.active:
-            self.remove_xrp()
+            self.remove_xrp() 
+            # if reflip is 0.5, we want to save uneval/eval probabilities
           self.add_xrp(xrp, val, args)
         elif self.observed:
           val = self.observe_val
@@ -332,7 +338,7 @@ class EvalNode:
           self.add_xrp(xrp, val, args)
         elif xrp.deterministic or (not reflip):
           if self.active:
-            if self.args == args:
+            if self.args == args and self.xrp == xrp:
               val = self.val
             else:
               self.remove_xrp()
@@ -470,7 +476,7 @@ class Traces:
     return evalnode in self.evalnodes
 
   def reflip(self, reflip_node):
-    debug = True
+    debug = False
 
     if debug:
       print "\n-----------------------------------------\n"
@@ -484,9 +490,11 @@ class Traces:
 
     old_p = self.p
     old_val = reflip_node.val
-    old_count = len(self.db)
+    new_to_old_q = reflip_node.p
+    old_to_new_q = - math.log(len(self.db))
     new_val = reflip_node.reflip()
-    new_count = len(self.db)
+    new_to_old_q -= math.log(len(self.db))
+    old_to_new_q += reflip_node.p
 
     assert -2 in reflip_node.children
     assert reflip_node.children[-2].val.type == 'xrp'
@@ -494,37 +502,47 @@ class Traces:
 
     #print old_val, old_count, new_val, new_count
 
-    print "\nCHANGING ", reflip_node, "\n  FROM  :  ", old_val, "\n  TO   :  ", new_val, "\n"
     if debug:
+      print "\nCHANGING ", reflip_node, "\n  FROM  :  ", old_val, "\n  TO   :  ", new_val, "\n"
       if old_val == new_val:
         print "SAME VAL"
         return
   
     new_p = self.p
-    uneval_p = self.uneval_p
     eval_p = self.eval_p
-    new_to_old_q = - math.log(new_count) 
-    old_to_new_q = - math.log(old_count)
+    uneval_p = self.uneval_p
     if debug:
       print "new db", self
-      print "\nq(old -> new) : ", old_to_new_q
-      print "q(new -> old) : ", new_to_old_q 
-      print "p(old) : ", old_p
-      print "p(new) : ", new_p
-      print 'log transition prob : ',  new_p + new_to_old_q - old_p - old_to_new_q , "\n"
+      print "\nq(old -> new) : ", math.exp(old_to_new_q)
+      print "q(new -> old) : ", math.exp(new_to_old_q )
+      print "p(old) : ", math.exp(old_p)
+      print "p(new) : ", math.exp(new_p)
+      print 'transition prob : ',  math.exp(new_p + new_to_old_q - old_p - old_to_new_q) , "\n"
+
+    self.eval_p = 0
+    self.uneval_p = 0
   
-    if old_p * old_to_new_q > 0:
-      p = random.random()
-      if new_p + new_to_old_q - old_p - old_to_new_q < math.log(p):
-        if debug: 
-          print 'restore'
-        new_val = reflip_node.reflip(old_val)
-        #assert self.p == old_p
-        #assert self.uneval_p == eval_p
-        #assert self.eval_p == uneval_p
-  
-    if debug: 
-      print "new ", self
+    p = random.random()
+    if new_p + new_to_old_q - old_p - old_to_new_q < math.log(p):
+      if debug: 
+        print 'restore'
+      new_val = reflip_node.reflip(old_val)
+      if debug:
+        print "back to old ", self
+
+      #assert self.p == old_p
+      #assert self.uneval_p  + uneval_p == eval_p + self.eval_p
+
+      #print "original uneval", math.exp(uneval_p)
+      #print "original eval", math.exp(eval_p)
+      #print "new uneval", math.exp(self.uneval_p)
+      #print "new eval", math.exp(self.eval_p)
+      #assert self.p == old_p
+      #assert self.uneval_p == eval_p
+      #assert self.eval_p == uneval_p
+    else:
+      if debug:
+        print "new ", self
 
     # ENVELOPE CALCULATION?
 

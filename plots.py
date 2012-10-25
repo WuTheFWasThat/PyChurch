@@ -194,11 +194,11 @@ disease_n100_python_data.add_direct(9, 0.0133442070484, 0.00155859498869, 0.0010
 disease_n100_python_data.add_direct(10, 0.0136990873814, 0.00163842051467, 0.000742602348328, 0.000165510082478)
 disease_n100_python_data.write_to_csv()
 
-plt.figure()
-disease_n100_c_data.plot_follow('go')
-disease_n100_pypy_data.plot_follow('yo')
-disease_n100_python_data.plot_follow('ro')
-plt.savefig('graphs/' + 'disease_n100' + '.png')
+#plt.figure()
+#disease_n100_c_data.plot_follow('go')
+#disease_n100_pypy_data.plot_follow('yo')
+#disease_n100_python_data.plot_follow('ro')
+#plt.savefig('graphs/' + 'disease_n100' + '.png')
 
 disease_k10_c_data = Data('disease_k10_c')
 disease_k10_c_data.add_direct(10, 0.000019, 0.000006, 0.000003, 0.000002)
@@ -239,11 +239,15 @@ disease_k10_python_data.add_direct(90, 0.0128745806217, 0.0031156079776, 0.00072
 disease_k10_python_data.add_direct(100, 0.0148376424313, 0.00375497829901, 0.000755171060562, 0.000182275455674)
 disease_k10_python_data.write_to_csv()
 
-plt.figure()
-disease_k10_c_data.plot_follow('go')
-disease_k10_pypy_data.plot_follow('yo')
-disease_k10_python_data.plot_follow('ro')
-plt.savefig('graphs/' + 'disease_k10' + '.png')
+#plt.figure()
+#disease_k10_c_data.plot_follow('go')
+#disease_k10_pypy_data.plot_follow('yo')
+#disease_k10_python_data.plot_follow('ro')
+#plt.savefig('graphs/' + 'disease_k10' + '.png')
+
+
+
+
 
 ##seed = 222222
 #hmm_data = Data('hmm')
@@ -375,8 +379,8 @@ plt.savefig('graphs/' + 'disease_k10' + '.png')
 #plt.legend()
 #plt.savefig('graphs/bayes_10_traces.png')
 
-#d = run_HMM(1, 222222, 1000, 100, False)
-#plotall(d, 'HMM1', 50)
+d = run_HMM(1, 222222, 1000, 100, False)
+plotall(d, 'HMM1', 50)
 #d = run_mixture(1, 222222, 1000, 100, False)
 #plotall(d, 'mixture1', 50)
 #d = run_topic_model(5, 222222, 1000, 100, False)

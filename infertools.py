@@ -206,7 +206,7 @@ def test_prior(niter = 1000, burnin = 100, countup = True):
   return (d1, d2)
 
 def test_prior_bool(d, varname):
-  return abs(d[0][varname][False] - d[1][varname][False]) / (d[0][varname][False] + d[0][varname][True])
+  return abs(d[0][varname][False] - d[1][varname][False]) / (d[0][varname][False] + d[0][varname][True] + 0.0)
 
 def test_prior_L0(d, varname, start, end, bucketsize):
   (d1, d2) = (d[0][varname], d[1][varname])
