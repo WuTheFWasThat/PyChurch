@@ -240,10 +240,8 @@ class EvalNode:
 
     expr = self.expression
 
-    def evaluate_recurse(subexpr, env, addition, reflip_recurse = None):
-      if reflip_recurse is None:
-        reflip_recurse = (reflip == True)
-      val = self.get_child(addition, env, subexpr).evaluate(reflip_recurse)
+    def evaluate_recurse(subexpr, env, addition):
+      val = self.get_child(addition, env, subexpr).evaluate(reflip == True)
       return val
   
     def binary_op_evaluate(op):
@@ -269,10 +267,10 @@ class EvalNode:
       assert type(cond.val) in [bool]
       if cond.val:
         self.get_child(0, self.env, expr.false).unevaluate()
-        val = evaluate_recurse(expr.true, self.env, 1, True)
+        val = evaluate_recurse(expr.true, self.env, 1)
       else:
         self.get_child(1, self.env, expr.true).unevaluate()
-        val = evaluate_recurse(expr.false, self.env, 0, True)
+        val = evaluate_recurse(expr.false, self.env, 0)
     elif self.type == 'switch':
       index = evaluate_recurse(expr.index, self.env, -1)
       assert type(index.val) in [int]
@@ -475,6 +473,12 @@ class Traces:
 
     return evalnode
 
+  def forget(self, evalnode):
+    evalnode.unevaluate()
+    self.remove_node(evalnode)
+    self.roots.remove(evalnode)
+    return
+
   def rerun(self, reflip):
     for root in self.roots:
       root.evaluate(reflip)
@@ -486,8 +490,7 @@ class Traces:
     debug = True
 
     if debug:
-      print "\n-----------------------------------------\n"
-      print self
+      old_self = self.__str__()
 
     assert reflip_node.type == 'apply'
     assert reflip_node.val is not None
@@ -508,8 +511,12 @@ class Traces:
     xrp = reflip_node.children[-2].val.val
 
     #print old_val, old_count, new_val, new_count
+    if reflip_node.assume_name != 'sunny':
+      debug = False
 
     if debug:
+      print "\n-----------------------------------------\n"
+      print old_self
       print "\nCHANGING ", reflip_node, "\n  FROM  :  ", old_val, "\n  TO   :  ", new_val, "\n"
       if old_val == new_val:
         print "SAME VAL"
@@ -562,6 +569,10 @@ class Traces:
   def add_node(self, evalnode):
     assert not self.has(evalnode)
     self.evalnodes.add(evalnode)
+
+  def remove_node(self, evalnode):
+    assert self.has(evalnode)
+    self.evalnodes.remove(evalnode)
 
   # Add an XRP application node to the db
   def add_xrp(self, args, evalnodecheck = None):

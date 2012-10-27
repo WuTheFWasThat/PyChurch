@@ -220,19 +220,19 @@ class TestDirectives(unittest.TestCase):
   
     #print "\n TESTING BEACH NET\n"
     
-    niters, burnin = 1000, 100
+    niters, burnin = 1000, 50
   
     reset()
     assume('sunny', bernoulli(0.5))
     assume('weekend', bernoulli(0.285714))
-    assume('beach', bernoulli(ifelse('weekend', ifelse('sunny', 0.9, 0.5), \
-                                                ifelse('sunny', 0.3, 0.1))))
+    #assume('beach', bernoulli(ifelse('weekend', ifelse('sunny', 0.9, 0.5), \
+    #                                            ifelse('sunny', 0.3, 0.1))))
 
     #assume('beach', ifelse('weekend', bernoulli(ifelse('sunny', 0.9, 0.5)), \
     #                                  bernoulli(ifelse('sunny', 0.3, 0.1))))
 
-    #assume('beach', ifelse('weekend', ifelse('sunny', bernoulli(0.9), bernoulli(0.5)), \
-    #                                  ifelse('sunny', bernoulli(0.3), bernoulli(0.1))))
+    assume('beach', ifelse('weekend', ifelse('sunny', bernoulli(0.9), bernoulli(0.5)), \
+                                      ifelse('sunny', bernoulli(0.3), bernoulli(0.1))))
     #  this mixes poorly sometimes because the inactive branch gets stuck
 
     #print test_prior(1000, 100)
@@ -244,10 +244,34 @@ class TestDirectives(unittest.TestCase):
     observe(noisy('beach', noise_level), True)
     print infer_many('sunny', niters, burnin)
     print 'Should be .357142857 False, .642857143 True'
+
+    #print "\n TESTING BURGLARY NET\n" # An example from AIMA
   
+    #pB = 0.001
+    #pE = 0.002
+    #pAgBE = 0.95
+    #pAgBnE = 0.94
+    #pAgnBE = 0.29
+    #pAgnBnE = 0.001
+    #pJgA = 0.9
+    #pJgnA = 0.05
+    #pMgA = 0.7
+    #pMgnA = 0.01
+    #
+    #pA = pB * pE * pAgBE + (1-pB) * pE * pAgnBE + pB * (1 - pE) * pAgBnE + (1-pB) * (1-pE) * pAgnBnE
+    #
+    #pJ = pA * pJgA + (1 - pA) * pJgnA
+    #
+    #pAgnB = (pE * pAgnBE + (1 - pE) * pAgnBnE) / (1 - pB)
+    #pJgnB = pJgA * pAgnB + pJgnA * (1 - pAgnB) 
+    #
+    #pAgM = pMgA * pA / (pMgA * pA + pMgnA * (1 - pA))
+    #pJgM = pAgM * pJgA + (1 - pAgM) * pJgnA
+    #
+    #pJnB = pJgnB * (1 - pB)
+
     print "\n TESTING MODIFIED BURGLARY NET\n" # An example from AIMA
     reset()
-    return 
   
     niters, burnin = 1000, 100
   
@@ -291,53 +315,6 @@ class TestDirectives(unittest.TestCase):
     print 'Should be %f True' % pJgnB
     forget(burglary_ob)
   
-    print "\n TESTING BURGLARY NET\n" # An example from AIMA
-  
-    pB = 0.001
-    pE = 0.002
-    pAgBE = 0.95
-    pAgBnE = 0.94
-    pAgnBE = 0.29
-    pAgnBnE = 0.001
-    pJgA = 0.9
-    pJgnA = 0.05
-    pMgA = 0.7
-    pMgnA = 0.01
-    
-    pA = pB * pE * pAgBE + (1-pB) * pE * pAgnBE + pB * (1 - pE) * pAgBnE + (1-pB) * (1-pE) * pAgnBnE
-    
-    pJ = pA * pJgA + (1 - pA) * pJgnA
-    
-    pAgnB = (pE * pAgnBE + (1 - pE) * pAgnBnE) / (1 - pB)
-    pJgnB = pJgA * pAgnB + pJgnA * (1 - pAgnB) 
-    
-    pAgM = pMgA * pA / (pMgA * pA + pMgnA * (1 - pA))
-    pJgM = pAgM * pJgA + (1 - pAgM) * pJgnA
-    
-    pJnB = pJgnB * (1 - pB)
-    
-    reset()
-    assume('burglary', bernoulli(pB))
-    assume('earthquake', bernoulli(pE))
-    assume('alarm', ifelse('burglary', ifelse('earthquake', bernoulli(pAgBE), bernoulli(pAgBnE)), \
-                                      ifelse('earthquake', bernoulli(pAgnBE), bernoulli(pAgnBnE))))
-  
-    assume('johnCalls', ifelse('alarm',  bernoulli(pJgA), bernoulli(pJgnA)))
-    assume('maryCalls', ifelse('alarm',  bernoulli(pMgA), bernoulli(pMgnA)))
-    print test_prior(1000, 100)
-  
-    print infer_many('alarm', niters, burnin)
-    print 'Should be %f True' % pA
-  
-    mary_ob = observe(noisy('maryCalls', noise_level), True)
-    print infer_many('johnCalls', niters, burnin)
-    print 'Should be %f True (BUT WONT BE)' % pJgM
-    forget(mary_ob)
-  
-    burglary_ob = observe(noisy(~var('burglary'), noise_level), True)
-    print infer_many('johnCalls', niters, burnin)
-    print 'Should be %f True' % pJgnB
-    forget(burglary_ob)
   
   @unittest.skipIf(not test_xor, "skipping test_xor")
   def test_xor(self):

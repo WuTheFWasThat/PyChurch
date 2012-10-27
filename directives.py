@@ -44,8 +44,7 @@ def forget(observation):
   # if using traces, is an evalnode
 
   if globals.use_traces:
-    # TODO
-    pass
+    globals.traces.forget(observation)
   else:
     globals.db.remove(['obs', observation])
     globals.mem.forget(observation)
@@ -59,7 +58,6 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
 
   expr = expression(expr)
 
-  # TODO: remove reflip
   def evaluate_recurse(subexpr, env, reflip, stack, addition):
     if type(addition) != list:
       val = evaluate(subexpr, env, reflip, stack + [addition])
@@ -164,7 +162,6 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
       new_env.set(expr.vars[i], expr.vars[i])
     procedure_body = expr.body.replace(new_env)
     val = Value((expr.vars, procedure_body), env)
-    #TODO: SET SOME RELATIONSHIP HERE?  If body contains reference to changed var...
   elif expr.type == '=':
     val = binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x == y)
   elif expr.type == '<':
