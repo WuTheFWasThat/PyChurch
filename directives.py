@@ -14,7 +14,6 @@ def assume_helper(varname, expr, reflip):
   return value
 
 def assume(varname, expr):
-  expr = expression(expr)
   globals.mem.add('assume', (varname, expr))
   if globals.use_traces:
     return globals.traces.assume(varname, expr)
@@ -27,8 +26,7 @@ def observe_helper(expr, obs_val):
     return expr.hashval
 
 def observe(expr, obs_val):
-  expr = expression(expr)
-  obs_val = value(obs_val)
+  obs_val = Value(obs_val)
   assert expr.type == 'apply' and expr.op.type == 'value' 
   assert expr.op.val.type == 'xrp'
   assert not expr.op.val.val.deterministic
@@ -55,8 +53,6 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
     env = globals.env
 
   assert not globals.use_traces
-
-  expr = expression(expr)
 
   def evaluate_recurse(subexpr, env, reflip, stack, addition):
     if type(addition) != list:
@@ -138,17 +134,17 @@ def evaluate(expr, env = None, reflip = False, stack = [], xrp_force_val = None)
         substack = stack + [-1, tuple(hash(x) for x in args)]
         if not globals.db.has(substack):
           if op.val.__class__.__name__ == 'mem_proc_XRP':
-            val = value(op.val.apply(args, stack))
+            val = op.val.apply(args, stack)
           else:
-            val = value(op.val.apply(args))
+            val = op.val.apply(args)
           globals.db.insert(substack, op.val, val, args)
         else:
           if reflip:
             globals.db.remove(substack)
             if op.val.__class__.__name__ == 'mem_proc_XRP':
-              val = value(op.val.apply(args, stack))
+              val = op.val.apply(args, stack)
             else:
-              val = value(op.val.apply(args))
+              val = op.val.apply(args)
             globals.db.insert(substack, op.val, val, args)
           else:
             (xrp, val, dbargs, is_obs_noise) = globals.db.get(substack) 
@@ -200,7 +196,6 @@ def sample(expr, env = None, varname = None, reflip = False):
     assume(name, expr)
     return globals.env.assumes[name].evaluate(False)
 
-  expr = expression(expr)
   if env is None:
     env = globals.env
   if varname is None:

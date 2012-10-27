@@ -342,15 +342,15 @@ class EvalNode:
               val = self.val
             else:
               self.remove_xrp()
-              val = value(xrp.apply(args))
+              val = xrp.apply(args)
               self.add_xrp(xrp, val, args)
           else:
-            val = value(xrp.apply(args))
+            val = xrp.apply(args)
             self.add_xrp(xrp, val, args)
         else: # not deterministic, needs reflipping
           if self.active:
             self.remove_xrp()
-          val = value(xrp.apply(args))
+          val = xrp.apply(args)
           self.add_xrp(xrp, val, args)
 
         self.xrp = xrp
@@ -363,9 +363,10 @@ class EvalNode:
       val = self.val
       n = len(expr.vars)
       new_env = env.spawn_child()
+      bound = set()
       for i in range(n): # Bind variables
-        new_env.set(expr.vars[i], expr.vars[i])
-      procedure_body = expr.body.replace(new_env)
+        bound.add(expr.vars[i])
+      procedure_body = expr.body.replace(new_env, bound)
       val = Value((expr.vars, procedure_body), env)
       #TODO: SET SOME RELATIONSHIP HERE?  If body contains reference to changed var...
     elif self.type == '=':
@@ -487,7 +488,7 @@ class Traces:
     return evalnode in self.evalnodes
 
   def reflip(self, reflip_node):
-    debug = True
+    debug = False
 
     if debug:
       old_self = self.__str__()
@@ -510,7 +511,6 @@ class Traces:
     assert reflip_node.children[-2].val.type == 'xrp'
     xrp = reflip_node.children[-2].val.val
 
-    #print old_val, old_count, new_val, new_count
     if reflip_node.assume_name != 'sunny':
       debug = False
 

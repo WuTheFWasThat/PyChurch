@@ -3,12 +3,6 @@ import warnings
 from values import *
 from xrp import *
 
-def expression(tup):
-  if tup.__class__.__name__ == 'Expression':
-    return tup 
-  else:
-    return Expression(tup)
-
 #Class representing expressions 
 class Expression:
   # Initializes an expression, taking in a type string, and a list of other parameter arguments 
@@ -19,19 +13,6 @@ class Expression:
     self.children = []
     self.parents = []
     self.dbstack = []
-
-    if tup.__class__.__name__ == 'str':
-      self.type = 'variable' 
-      self.name = tup 
-      return
-    elif isinstance(tup, XRP):
-      self.type = 'value'
-      self.val = value(tup) 
-      return
-    elif tup.__class__.__name__ != 'tuple':
-      self.type = 'value'
-      self.val = value(tup)
-      return
 
     self.type = tup[0]
     if self.type in ['value', 'constant', 'const', 'c', 'val', 'procedure', 'xrp']:
@@ -83,12 +64,12 @@ class Expression:
       if type(self.name).__name__ != 'str':
         warnings.warn('Variable must be string')
     elif self.type == 'if':
-      self.cond = expression(tup[1])
-      self.true = expression(tup[2])
-      self.false = expression(tup[3])
+      self.cond = tup[1]
+      self.true = tup[2]
+      self.false = tup[3]
     elif self.type == 'switch':
-      self.index = expression(tup[1])
-      self.children = [expression(x) for x in tup[2]]
+      self.index = tup[1]
+      self.children = tup[2] # list of expressions
       self.n = len(self.children)
     elif self.type == 'let':
       if len(tup) == 4:
@@ -97,11 +78,11 @@ class Expression:
         else:
           self.vars = [tup[1]]
         if type(tup[2]) == list or type(tup[2]) == tuple:
-          self.expressions = [expression(x) for x in tup[2]]
+          self.expressions = tup[2] # list of expressions
         else:
-          self.expressions = [expression(tup[2])]
+          self.expressions = [tup[2]]
         assert len(self.expressions) == len(self.vars)
-        self.body = expression(tup[3])
+        self.body = tup[3]
       else:
         if type(tup[1]) == tuple:
           assert len(tup[1]) == 2
@@ -113,15 +94,15 @@ class Expression:
           self.expressions = []
           for (var, expr) in tup[1]:
             self.vars.append(var)
-            self.expressions.append(expression(expr))
-        self.body = expression(tup[2])
+            self.expressions.append(expr)
+        self.body = tup[2]
     elif self.type == 'apply':
-      self.op = expression(tup[1])
+      self.op = tup[1]
       if type(tup[2]) == list or type(tup[2]) == tuple:
-        self.children = [expression(x) for x in tup[2]]
+        self.children = tup[2] # list of expressions
       else:
         if len(tup) == 3:
-          self.children = [expression(tup[2])]
+          self.children = [tup[2]]
         else:
           self.children = []
       if self.op.type == 'function' and len(self.op.vars) < len(self.children):
@@ -131,21 +112,21 @@ class Expression:
         self.vars = list(tup[1])
       else:
         self.vars = [tup[1]]
-      self.body = expression(tup[2])
+      self.body = tup[2]
     elif self.type in ['&', '|', '^']:
-      self.children = [expression(x) for x in tup[1]]
+      self.children = tup[1] # list of expressions
     elif self.type == '~':
-      self.negation = expression(tup[1])
+      self.negation = tup[1] # list of expressions
     elif self.type in ['=', '<=', '>=', '<', '>']:
       assert len(tup[1]) == 2
-      self.children = [expression(x) for x in tup[1]]
+      self.children = tup[1] # list of expressions
     elif self.type == 'add': 
-      self.children = [expression(x) for x in tup[1]]
+      self.children = tup[1] # list of expressions
     elif self.type == 'subtract': 
       assert len(tup[1]) == 2
-      self.children = [expression(x) for x in tup[1]]
+      self.children = tup[1] # list of expressions
     elif self.type == 'multiply': 
-      self.children = [expression(x) for x in tup[1]]
+      self.children = tup[1] # list of expressions
     else:
       warnings.warn('Invalid type %s' % str(self.type))
     return
@@ -161,7 +142,7 @@ class Expression:
       if val is None:
         return self
       else:
-        return Expression(val)
+        return Expression(('value', val))
     elif self.type == 'if':
       cond = self.cond.replace(env, bound)
       true = self.true.replace(env, bound)
@@ -243,7 +224,7 @@ class Expression:
     self.hashval = random.randint(0, 2**64-1)
 
   def operate(self, other, opname):
-    return Expression((opname, [self, expression(other)]))
+    return Expression((opname, [self, other]))
 
   def __eq__(self, other):
     return self.operate(other, '=')
@@ -271,62 +252,62 @@ class Expression:
     return Expression(('not', self))
 
 def constant(c):
-  return expression(('value', c)) 
+  return Expression(('value', Value(c))) 
 
 def var(v):
-  return expression(('variable', v)) 
+  return Expression(('variable', v)) 
 
 def apply(f, args = []):
-  return expression(('apply', f, args))
+  return Expression(('apply', f, args))
 
 def ifelse(ifvar, truevar, falsevar):
-  return expression(('if', ifvar, truevar, falsevar))
+  return Expression(('if', ifvar, truevar, falsevar))
 
 def switch(switchvar, array):
-  return expression(('switch', switchvar, array))
+  return Expression(('switch', switchvar, array))
 
 def let(letmap, body):
-  return expression(('let', letmap, body))
+  return Expression(('let', letmap, body))
 
 def function(vars, body):
-  return expression(('function', vars, body))
+  return Expression(('function', vars, body))
 
 def negation(expr):
-  return expression(('not', expr)) 
+  return Expression(('not', expr)) 
 
 def disjunction(exprs):
-  return expression(('or', exprs)) 
+  return Expression(('or', exprs)) 
 
 def conjunction(exprs):
-  return expression(('or', exprs)) 
+  return Expression(('or', exprs)) 
 
 ### XRP ###
 
 def xrp(xrp):
-  return expression(('xrp', xrp)) 
+  return Expression(('xrp', Value(xrp))) 
 
 ### DISTRIBUTIONS ### 
 
-bernoulli_args_xrp = bernoulli_args_XRP() 
+bernoulli_args_xrp = Expression(('xrp', Value(bernoulli_args_XRP())))
 def bernoulli(p):
-  return expression(('apply',  bernoulli_args_xrp, p)) 
+  return Expression(('apply', bernoulli_args_xrp, p)) 
 
-beta_args_xrp = beta_args_XRP() 
+beta_args_xrp = Expression(('xrp', Value(beta_args_XRP())))
 def beta(a, b): 
-  return expression(('apply', beta_args_xrp, [a, b])) 
+  return Expression(('apply', beta_args_xrp, [a, b]))
 
-gamma_args_xrp = gamma_args_XRP() 
+gamma_args_xrp = Expression(('xrp', Value(gamma_args_XRP())))
 def gamma(a, b): 
-  return expression(('apply', gamma_args_xrp, [a, b])) 
+  return Expression(('apply', gamma_args_xrp, [a, b]))
 
-uniform_args_xrp = uniform_args_XRP() 
+uniform_args_xrp = Expression(('xrp', Value(uniform_args_XRP())))
 def uniform(n = None):
   if n is None:
-    return expression(('apply', ('xrp', beta_args_xrp), [1, 1])) 
+    return beta(1, 1)
   else:
-    return expression(('apply', ('xrp', uniform_args_xrp), n)) 
+    return Expression(('apply', uniform_args_xrp, n))
 
-gaussian_args_xrp = gaussian_args_XRP() 
+gaussian_args_xrp = Expression(('xrp', Value(gaussian_args_XRP())))
 def gaussian(mu, sigma):
-  return expression(('apply', ('xrp', gaussian_args_xrp), [mu, sigma])) 
+  return Expression(('apply', gaussian_args_xrp, [mu, sigma]))
 

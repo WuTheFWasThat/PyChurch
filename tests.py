@@ -4,8 +4,8 @@ from time import *
 
 import unittest
 
-test_expressions = False 
-test_recursion = False
+test_expressions = False
+test_recursion = False 
 test_mem = False
 
 test_HMM = False
@@ -39,29 +39,29 @@ class TestDirectives(unittest.TestCase):
     g = function( ('x', 'z'), apply(f, [var('x'), constant(0), var('z')] ))
     self.assertTrue(sample(g).type == 'procedure')
     
-    a = bernoulli(0.5) 
-    d = count_up([resample(a).val for i in xrange(1000)])
-    self.assertTrue(d[True] + d[False] == 1000)
-    self.assertTrue(450 < d[True] < 550)
+    a = bernoulli(constant(0.5)) 
+    #d = count_up([resample(a).val for i in xrange(1000)])
+    #self.assertTrue(d[True] + d[False] == 1000)
+    #self.assertTrue(450 < d[True] < 550)
     
-    x = apply(g, [a, uniform(22)])
-    b = ifelse(bernoulli(0.2), beta(3,4), beta(4,3))
-    c = (~bernoulli(0.3) & bernoulli(0.4)) | bernoulli(b)
-    d = function('x', ('apply', f, [a,c,'x']))
+    x = apply(g, [a, uniform(constant(22))])
+    b = ifelse(bernoulli(constant(0.2)), beta(constant(3),Num(4)), beta(Num(4),Num(3)))
+    c = (~bernoulli(constant(0.3)) & bernoulli(constant(0.4))) | bernoulli(b)
+    d = function('x', ('apply', f, [a,c,var('x')]))
     e = apply( d, b)
   
     # Testing closure
-    f = function(('x', 'y'), apply('x', 'y'))
-    g = function('x', var('x') + 1)
-    self.assertTrue(sample(apply(f, [g, 21])) == 22)
+    f = function(('x', 'y'), apply(var('x'), var('y')))
+    g = function('x', var('x') + constant(1))
+    self.assertTrue(sample(apply(f, [g, constant(21)])) == Value(22))
 
     assume('f', f)
     assume('g', g)
-    a = let([('b', 1)], var('b') + 3)
-    self.assertTrue(sample(a) == 4)
+    a = let([('b', constant(1))], var('b') + constant(3))
+    self.assertTrue(sample(a) == Value(4))
 
-    b = let([('c', 21), ('d', 'f')], apply('d', ['g', 'c']))
-    self.assertTrue(sample(b) == 22)
+    b = let([('c', constant(21)), ('d', var('f'))], apply(var('d'), [var('g'), var('c')]))
+    self.assertTrue(sample(b) == Value(22))
 
 
   @unittest.skipIf(not test_tricky, "skipping test_tricky")
@@ -73,9 +73,9 @@ class TestDirectives(unittest.TestCase):
     assume('tricky-coin', apply('make-coin'))
     assume('tricky-coin2', apply('make-coin'))
   
-    assume('fair-coin', function([], bernoulli(0.5)))
+    assume('fair-coin', function([], bernoulli(constant(0.5))))
   
-    assume('is-fair', bernoulli(0.5))
+    assume('is-fair', bernoulli(constant(0.5)))
     assume('coin', ifelse('is-fair', 'fair-coin', 'tricky-coin')) 
 
     d = test_prior(1000, 100)
@@ -191,8 +191,8 @@ class TestDirectives(unittest.TestCase):
     #niters, burnin = 1000, 100
     niters, burnin = 1000, 100
   
-    assume('cloudy', bernoulli(0.5))
-    assume('sprinkler', ifelse('cloudy', bernoulli(0.1), bernoulli(0.5)))
+    assume('cloudy', bernoulli(constant(0.5)))
+    assume('sprinkler', ifelse(var('cloudy'), bernoulli(constant(0.1)), bernoulli(constant(0.5))))
     #d = test_prior(niters, burnin)
     #self.assertTrue(test_prior_bool(d, 'cloudy') < 0.1)
     #self.assertTrue(test_prior_bool(d, 'sprinkler') < 0.1)
@@ -202,7 +202,7 @@ class TestDirectives(unittest.TestCase):
     #print 'Should be .7 False, .3 True'
     
     noise_level = .01
-    sprinkler_ob = observe(noisy('sprinkler', noise_level), True)
+    sprinkler_ob = observe(noisy(var('sprinkler'), noise_level), True)
     #d = infer_many('cloudy', niters, burnin)
     #print d
     #self.assertTrue(  abs(d['cloudy'][False] / (niters + 0.0) - 5 / 6.0) < 0.1)
@@ -223,25 +223,25 @@ class TestDirectives(unittest.TestCase):
     niters, burnin = 1000, 50
   
     reset()
-    assume('sunny', bernoulli(0.5))
-    assume('weekend', bernoulli(0.285714))
+    assume('sunny', bernoulli(constant(0.5)))
+    assume('weekend', bernoulli(constant(0.285714)))
     #assume('beach', bernoulli(ifelse('weekend', ifelse('sunny', 0.9, 0.5), \
     #                                            ifelse('sunny', 0.3, 0.1))))
 
     #assume('beach', ifelse('weekend', bernoulli(ifelse('sunny', 0.9, 0.5)), \
     #                                  bernoulli(ifelse('sunny', 0.3, 0.1))))
 
-    assume('beach', ifelse('weekend', ifelse('sunny', bernoulli(0.9), bernoulli(0.5)), \
-                                      ifelse('sunny', bernoulli(0.3), bernoulli(0.1))))
+    assume('beach', ifelse(var('weekend'), ifelse(var('sunny'), bernoulli(constant(0.9)), bernoulli(constant(0.5))), \
+                                           ifelse(var('sunny'), bernoulli(constant(0.3)), bernoulli(constant(0.1)))))
     #  this mixes poorly sometimes because the inactive branch gets stuck
 
     #print test_prior(1000, 100)
     
-    observe(noisy('weekend', noise_level), True)
+    observe(noisy(var('weekend'), noise_level), True)
     #print infer_many('sunny', niters, burnin)
     #print 'Should be .5 False, .5 True'
     
-    observe(noisy('beach', noise_level), True)
+    observe(noisy(var('beach'), noise_level), True)
     print infer_many('sunny', niters, burnin)
     print 'Should be .357142857 False, .642857143 True'
 
@@ -293,19 +293,19 @@ class TestDirectives(unittest.TestCase):
     
     pJnB = pJgnB * (1 - pB)
     
-    assume('burglary', bernoulli(pB))
-    assume('earthquake', bernoulli(pE))
-    assume('alarm', ifelse('burglary', ifelse('earthquake', bernoulli(pAgBE), bernoulli(pAgBnE)), \
-                                      ifelse('earthquake', bernoulli(pAgnBE), bernoulli(pAgnBnE))))
+    assume('burglary', bernoulli(constant(pB)))
+    assume('earthquake', bernoulli(constant(pE)))
+    assume('alarm', ifelse(var('burglary'), ifelse(var('earthquake'), bernoulliconstant((pAgBE)), bernoulli(constant(pAgBnE))), \
+                                            ifelse(var('earthquake'), bernoulli(constant(pAgnBE)), bernoulli(constant(pAgnBnE)))))
   
-    assume('johnCalls', ifelse('alarm',  bernoulli(pJgA), bernoulli(pJgnA)))
-    assume('maryCalls', ifelse('alarm',  bernoulli(pMgA), bernoulli(pMgnA)))
+    assume('johnCalls', ifelse(var('alarm'),  bernoulli(constant(pJgA)), bernoulli(constant(pJgnA))))
+    assume('maryCalls', ifelse(var('alarm'),  bernoulli(constant(pMgA)), bernoulli(constant(pMgnA))))
     print test_prior(1000, 100)
   
     print infer_many('alarm', niters, burnin)
     print 'Should be %f True' % pA
   
-    mary_ob = observe(noisy('maryCalls', noise_level), True)
+    mary_ob = observe(noisy(var('maryCalls'), noise_level), True)
     print infer_many('johnCalls', niters, burnin)
     print 'Should be %f True' % pJgM
     forget(mary_ob)
@@ -322,8 +322,8 @@ class TestDirectives(unittest.TestCase):
     p = 0.6
     q = 0.4
     noise_level = .01
-    assume('a', bernoulli(p)) 
-    assume('b', bernoulli(q)) 
+    assume('a', bernoulli(constant(p))) 
+    assume('b', bernoulli(constant(q))) 
     assume('c', var('a') ^ var('b'))
 
     d = test_prior(1000, 100)
@@ -340,39 +340,39 @@ class TestDirectives(unittest.TestCase):
   @unittest.skipIf(not test_recursion, "skipping test_recursion")
   def test_recursion(self):
     
-    factorial_expr = function('x', ifelse(var('x') == 0, 1, \
-                var('x') * apply('factorial', var('x') - 1))) 
+    factorial_expr = function('x', ifelse(var('x') == constant(0), constant(1), \
+                var('x') * apply(var('factorial'), var('x') - constant(1)))) 
     assume('factorial', factorial_expr) 
     
-    self.assertTrue(sample(apply('factorial', 5)).val == 120)
-    self.assertTrue(sample(apply('factorial', 10)).val == 3628800)
+    self.assertTrue(sample(apply(var('factorial'), constant(5))).val == 120)
+    self.assertTrue(sample(apply(var('factorial'), constant(10))).val == 3628800)
   
   @unittest.skipIf(not test_mem, "skipping test_mem")
   def test_mem(self):
-    fibonacci_expr = function('x', ifelse(var('x') <= 1, 1, \
-                  apply('fibonacci', var('x') - 1) + apply('fibonacci', var('x') - 2) )) 
+    fibonacci_expr = function('x', ifelse(var('x') <= constant(1), constant(1), \
+                  apply(var('fibonacci'), var('x') - constant(1)) + apply(var('fibonacci'), var('x') - constant(2)) )) 
     assume('fibonacci', fibonacci_expr) 
     
     t1 = time()
-    self.assertTrue(sample(apply('fibonacci', 20)).val == 10946)
+    self.assertTrue(sample(apply(var('fibonacci'), constant(20))).val == 10946)
     t1 = time() - t1
 
-    assume('bad_mem_fibonacci', mem('fibonacci')) 
+    assume('bad_mem_fibonacci', mem(var('fibonacci'))) 
   
     t2 = time()
-    self.assertTrue(sample(apply('bad_mem_fibonacci', 20)).val == 10946)
+    self.assertTrue(sample(apply(var('bad_mem_fibonacci'), constant(20))).val == 10946)
     t2 = time() - t2
 
     t3 = time()
-    self.assertTrue(sample(apply('bad_mem_fibonacci', 20)).val == 10946)
+    self.assertTrue(sample(apply(var('bad_mem_fibonacci'), constant(20))).val == 10946)
     t3 = time() - t3
 
-    mem_fibonacci_expr = function('x', ifelse(var('x') <= 1, 1, \
-                  apply('mem_fibonacci', var('x') - 1) + apply('mem_fibonacci', var('x') - 2) )) 
+    mem_fibonacci_expr = function('x', ifelse(var('x') <= constant(1), constant(1), \
+                  apply(var('mem_fibonacci'), var('x') - constant(1)) + apply(var('mem_fibonacci'), var('x') - constant(2)) )) 
     assume('mem_fibonacci', mem(mem_fibonacci_expr)) 
   
     t4 = time()
-    self.assertTrue(sample(apply('mem_fibonacci', 20)).val == 10946)
+    self.assertTrue(sample(apply(var('mem_fibonacci'), constant(20))).val == 10946)
     t4 = time() - t4
 
     print t1, t2, t3, t4
@@ -732,7 +732,7 @@ def run_bayes_net(k, s, niters = 1000, burnin = 100, countup = True):
     n = 50
 
     for i in xrange(n):
-      assume('disease' + str(i), bernoulli(0.2))
+      assume('disease' + str(i), bernoulli(constant(0.2)))
     for j in xrange(n):
       causes = ['disease' + str(random.randint(0,n-1)) for i in xrange(k)]
       symptom_expression = bernoulli(ifelse(disjunction(causes), .8, .2))

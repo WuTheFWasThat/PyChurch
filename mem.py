@@ -15,7 +15,7 @@ class mem_proc_XRP(XRP):
     args = tuple(args)
     if globals.use_traces:
       if args not in self.state:
-        evalnode = EvalNode(globals.traces, globals.traces.global_env, apply(self.procedure, args))
+        evalnode = EvalNode(globals.traces, globals.traces.global_env, apply(Expression(('value', self.procedure)), [Expression(('value', arg)) for arg in args]))
         evalnode.mem = True
         globals.traces.add_node(evalnode)
         self.state[args] = evalnode
@@ -79,7 +79,7 @@ class mem_XRP(XRP):
     procedure = args[0]
     assert procedure.__class__.__name__ == 'Value' and procedure.type == 'procedure'
     mem_proc = mem_proc_XRP(procedure)
-    return value(mem_proc)
+    return Value(mem_proc)
   def incorporate(self, val, args = None):
     assert val.type == 'xrp'
     assert val.val not in self.state
@@ -99,9 +99,9 @@ class mem_XRP(XRP):
   def __str__(self):
     return 'Memoization XRP'
 
-mem_xrp = mem_XRP()
+mem_xrp = Expression(('value', Value(mem_XRP())))
 def mem(function):
-  return expression(('apply', mem_xrp, function))
+  return Expression(('apply', mem_xrp, function))
 
 class CRP_XRP(XRP):
   def __init__(self, alpha):
@@ -119,7 +119,7 @@ class CRP_XRP(XRP):
       x -= self.state[id]
       if x <= 0:
         return id
-    return value(random.randint(0, 2**32-1))
+    return Value(random.randint(0, 2**32-1))
   def incorporate(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
@@ -169,7 +169,7 @@ class gen_CRP_XRP(XRP):
   def __str__(self):
     return 'CRP_XRP'
 
-crp_xrp = gen_CRP_XRP()
+crp_xrp = Expression(('value', Value(gen_CRP_XRP())))
 def CRP(alpha):
-  return expression(('apply', crp_xrp, alpha))
+  return Expression(('apply', crp_xrp, alpha))
 

@@ -218,7 +218,7 @@ def test_prior_L0(d, varname, start, end, bucketsize):
 """ NOISE """
 
 def noisy(expression, error):
-  return bernoulli(ifelse(expression, 1, error))
+  return bernoulli(ifelse(expression, constant(1), constant(error)))
 
 """ OUTPUT MANIPULATION """
 

@@ -15,7 +15,7 @@ class gaussian_args_XRP(XRP):
     (mu, sigma) = (args[0].val, args[1].val)
     check_num(mu)
     check_pos(sigma)
-    return value(random.normalvariate(mu, sigma))
+    return Value(random.normalvariate(mu, sigma))
   def prob(self, val, args = None):
     (mu , sigma) = (args[0].val, args[1].val + 0.0)
     check_num(mu)
@@ -38,7 +38,7 @@ class gaussian_no_args_XRP(XRP):
   def apply(self, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: gaussian_no_args_XRP has no need to take in arguments %s' % str(args))
-    return value(random.normalvariate(self.mu, self.sigma))
+    return Value(random.normalvariate(self.mu, self.sigma))
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: gaussian_no_args_XRP has no need to take in arguments %s' % str(args))
@@ -64,7 +64,7 @@ class gen_gaussian_XRP(XRP):
 class array_XRP(XRP):
   def __init__(self, array):
     self.deterministic = True
-    self.state = [value(x) for x in array]
+    self.state = array
     self.n = len(self.state)
     return
   def apply(self, args = None):
@@ -93,7 +93,7 @@ class dirichlet_args_XRP(XRP):
     for arg in args:
       check_pos(arg.val)
     probs = [float(p) for p in dirichlet([arg.val for arg in args])]
-    return value(array_XRP(probs))
+    return Value(array_XRP(probs))
   def prob(self, val, args = None):
     assert val.type == 'xrp'
     assert isinstance(val.val, array_XRP)
@@ -117,7 +117,7 @@ class dirichlet_args_XRP(XRP):
 class dirichlet_no_args_XRP(XRP):
   def __init__(self, args):
     self.deterministic = False
-    self.alphas = [value(arg).val for arg in args]
+    self.alphas = args
     self.alpha = 0
     for alpha_i in self.alphas:
       check_pos(alpha_i)
@@ -127,7 +127,7 @@ class dirichlet_no_args_XRP(XRP):
     if args != None and len(args) != 0:
       warnings.warn('Warning: dirichlet_no_args_XRP has no need to take in arguments %s' % str(args))
     probs = [float(p) for p in dirichlet(self.alphas)]
-    return value(array_XRP(probs))
+    return Value(array_XRP(probs))
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: dirichlet_no_args_XRP has no need to take in arguments %s' % str(args))
@@ -164,7 +164,7 @@ class beta_args_XRP(XRP):
     (a,b) = (args[0].val, args[1].val)
     check_pos(a)
     check_pos(b)
-    return value(random.betavariate(a, b))
+    return Value(random.betavariate(a, b))
   def prob(self, val, args = None):
     (a , b) = (args[0].val, args[1].val)
     check_pos(a)
@@ -187,7 +187,7 @@ class beta_no_args_XRP(XRP):
   def apply(self, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: beta_no_args_XRP has no need to take in arguments %s' % str(args))
-    return value(random.betavariate(self.a, self.b))
+    return Value(random.betavariate(self.a, self.b))
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: beta_no_args_XRP has no need to take in arguments %s' % str(args))
@@ -218,7 +218,7 @@ class gamma_args_XRP(XRP):
     (a,b) = (args[0].val, args[1].val)
     check_pos(a)
     check_pos(b)
-    return value(random.gammavariate(a, b))
+    return Value(random.gammavariate(a, b))
   def prob(self, val, args = None):
     (a , b) = (args[0].val, args[1].val)
     check_pos(a)
@@ -243,7 +243,7 @@ class gamma_no_args_XRP(XRP):
   def apply(self, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: gamma_no_args_XRP has no need to take in arguments %s' % str(args))
-    return value(random.gammavariate(self.a, self.b))
+    return Value(random.gammavariate(self.a, self.b))
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: gamma_no_args_XRP has no need to take in arguments %s' % str(args))
@@ -276,7 +276,7 @@ class bernoulli_args_XRP(XRP):
   def apply(self, args = None):
     p = args[0].val
     p = check_prob(p)
-    return value(random.random() < p)
+    return Value(random.random() < p)
   def prob(self, val, args = None):
     p = args[0].val
     p = check_prob(p)
@@ -298,7 +298,7 @@ class bernoulli_no_args_XRP(XRP):
   def apply(self, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: bernoulli_no_args_XRP has no need to take in arguments %s' % str(args))
-    return value(random.random() < self.p)
+    return Value(random.random() < self.p)
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: bernoulli_no_args_XRP has no need to take in arguments %s' % str(args))
@@ -330,7 +330,7 @@ class uniform_args_XRP(XRP):
   def apply(self, args = None):
     n = args[0].val
     check_nat(n)
-    return value(random.randint(0, n-1))
+    return Value(random.randint(0, n-1))
   def prob(self, val, args = None):
     n = args[0].val
     check_nat(n)
@@ -349,7 +349,7 @@ class uniform_no_args_XRP(XRP):
   def apply(self, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: uniform_no_args_XRP has no need to take in arguments %s' % str(args))
-    return value(random.randint(0, self.n-1))
+    return Value(random.randint(0, self.n-1))
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: uniform_no_args_XRP has no need to take in arguments %s' % str(args))
@@ -377,7 +377,7 @@ class beta_bernoulli_1(XRP):
     self.state = random.betavariate(a, b)
     p = check_prob(self.state)
   def apply(self, args = None):
-    return value((random.random() < self.state))
+    return Value((random.random() < self.state))
   def prob(self, val, args = None):
     # PREPROCESS?
     if val.val:
@@ -397,7 +397,7 @@ class beta_bernoulli_2(XRP):
       val = (random.random() < 0.5)
     else:
       val = (random.random() * (h + t) < h)
-    return value(val)
+    return Value(val)
   def incorporate(self, val, args = None):
     (h, t) = self.state
     if val.val:

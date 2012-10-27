@@ -2,12 +2,6 @@ import random
 import warnings
 import math
 
-def value(tup):
-  if tup.__class__.__name__ == 'Value':
-    return tup 
-  else:
-    return Value(tup)
-
 class Value:
   def __init__(self, val, env = None):
     self.val = val 
@@ -47,7 +41,6 @@ class Value:
       return hash(self.val)
 
   def __eq__(self, other):
-    other = value(other)
     if self.type != other.type:
       return False # change this perhaps? 
     elif self.type == 'procedure' or self.type == 'xrp':
@@ -56,13 +49,11 @@ class Value:
       return self.val == other.val
 
   def __gt__(self, other):
-    other = value(other)
     assert self.type in ['int', 'float']
     assert other.type in ['int', 'float']
     return self.val > other.val
 
   def __lt__(self, other):
-    other = value(other)
     assert self.type in ['int', 'float']
     assert other.type in ['int', 'float']
     return self.val < other.val
