@@ -240,8 +240,10 @@ class EvalNode:
 
     expr = self.expression
 
-    def evaluate_recurse(subexpr, env, addition):
-      val = self.get_child(addition, env, subexpr).evaluate(reflip == True)
+    def evaluate_recurse(subexpr, env, addition, reflip_recurse = None):
+      if reflip_recurse is None:
+        reflip_recurse = (reflip == True)
+      val = self.get_child(addition, env, subexpr).evaluate(reflip_recurse)
       return val
   
     def binary_op_evaluate(op):
@@ -267,10 +269,10 @@ class EvalNode:
       assert type(cond.val) in [bool]
       if cond.val:
         self.get_child(0, self.env, expr.false).unevaluate()
-        val = evaluate_recurse(expr.true, self.env, 1)
+        val = evaluate_recurse(expr.true, self.env, 1, True)
       else:
         self.get_child(1, self.env, expr.true).unevaluate()
-        val = evaluate_recurse(expr.false, self.env, 0)
+        val = evaluate_recurse(expr.false, self.env, 0, True)
     elif self.type == 'switch':
       index = evaluate_recurse(expr.index, self.env, -1)
       assert type(index.val) in [int]
@@ -415,7 +417,9 @@ class EvalNode:
 
   def str_helper(self, n = 0, verbose = True):
     string = "\n" + (' ' * n) + "|- "
-    if verbose:
+    if self.assume_name is not None:
+      string += self.assume_name 
+    elif verbose:
       string += str(self.expression)
     else:
       string += self.type 
@@ -430,7 +434,10 @@ class EvalNode:
     return string
 
   def __str__(self):
-    return ("EvalNode of type %s, with expression %s and value %s" % (self.type, str(self.expression), str(self.val)))
+    if self.assume_name is None:
+      return ("EvalNode of type %s, with expression %s and value %s" % (self.type, str(self.expression), str(self.val)))
+    else:
+      return ("EvalNode %s" % (self.assume_name))
 
 class Traces:
   def __init__(self, env):
@@ -476,7 +483,7 @@ class Traces:
     return evalnode in self.evalnodes
 
   def reflip(self, reflip_node):
-    debug = False
+    debug = True
 
     if debug:
       print "\n-----------------------------------------\n"
@@ -506,6 +513,7 @@ class Traces:
       print "\nCHANGING ", reflip_node, "\n  FROM  :  ", old_val, "\n  TO   :  ", new_val, "\n"
       if old_val == new_val:
         print "SAME VAL"
+        print "new:\n", self
         return
   
     new_p = self.p
@@ -527,8 +535,6 @@ class Traces:
       if debug: 
         print 'restore'
       new_val = reflip_node.reflip(old_val)
-      if debug:
-        print "back to old ", self
 
       #assert self.p == old_p
       #assert self.uneval_p  + uneval_p == eval_p + self.eval_p
@@ -540,9 +546,8 @@ class Traces:
       #assert self.p == old_p
       #assert self.uneval_p == eval_p
       #assert self.eval_p == uneval_p
-    else:
-      if debug:
-        print "new ", self
+    if debug:
+      print "new:\n", self
 
     # ENVELOPE CALCULATION?
 

@@ -44,6 +44,7 @@ def forget(observation):
   # if using traces, is an evalnode
 
   if globals.use_traces:
+    # TODO
     pass
   else:
     globals.db.remove(['obs', observation])
