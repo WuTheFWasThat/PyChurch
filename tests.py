@@ -9,12 +9,12 @@ test_recursion = False
 test_mem = False
 
 test_HMM = False
-test_bayes_nets = True
+test_bayes_nets = False
 test_two_layer_nets = False
 
 test_xor = False 
 
-test_tricky  = False 
+test_tricky  = True 
 
 # something wrong with this test
 test_geometric = False 
@@ -45,7 +45,7 @@ class TestDirectives(unittest.TestCase):
     #self.assertTrue(450 < d[True] < 550)
     
     x = apply(g, [a, uniform(constant(22))])
-    b = ifelse(bernoulli(constant(0.2)), beta(constant(3),Num(4)), beta(Num(4),Num(3)))
+    b = ifelse(bernoulli(constant(0.2)), beta(constant(3),constant(4)), beta(constant(4),constant(3)))
     c = (~bernoulli(constant(0.3)) & bernoulli(constant(0.4))) | bernoulli(b)
     d = function('x', ('apply', f, [a,c,var('x')]))
     e = apply( d, b)
@@ -66,32 +66,32 @@ class TestDirectives(unittest.TestCase):
 
   @unittest.skipIf(not test_tricky, "skipping test_tricky")
   def test_tricky(self):
-    noise_level = .001
+    noise_level = .01
   
-    assume('make-coin', function([], apply(function('weight', function([], bernoulli('weight'))), beta(1, 1))))
+    assume('make-coin', function([], apply(function('weight', function([], bernoulli(var('weight')))), beta(constant(1), constant(1)))))
   
-    assume('tricky-coin', apply('make-coin'))
-    assume('tricky-coin2', apply('make-coin'))
+    assume('tricky-coin', apply(var('make-coin')))
+    assume('tricky-coin2', apply(var('make-coin')))
   
     assume('fair-coin', function([], bernoulli(constant(0.5))))
   
     assume('is-fair', bernoulli(constant(0.5)))
-    assume('coin', ifelse('is-fair', 'fair-coin', 'tricky-coin')) 
+    assume('coin', ifelse(var('is-fair'), var('fair-coin'), var('tricky-coin'))) 
 
     d = test_prior(1000, 100)
     self.assertTrue(test_prior_bool(d, 'is-fair') < 0.05)
   
     ## EXTENSIVE TEST
 
-    #nheads = 5
-    #niters, burnin = 1000, 100
+    nheads = 2
+    niters, burnin = 1000, 100
   
-    #print infer_many('is-fair', niters, burnin)
-    #
-    #for i in xrange(nheads):
-    #  print '\nsaw', i+1, 'heads'
-    #  observe(noisy(apply('coin'), noise_level), True)
-    #  print infer_many('is-fair', niters, burnin)
+    print infer_many('is-fair', niters, burnin)
+    
+    for i in xrange(nheads):
+      print '\nsaw', i+1, 'heads'
+      observe(noisy(apply(var('coin')), noise_level), True)
+      print infer_many('is-fair', niters, burnin)
   
   @unittest.skipIf(not test_CRP, "skipping test_CRP")
   def test_CRP(self):
@@ -295,7 +295,7 @@ class TestDirectives(unittest.TestCase):
     
     assume('burglary', bernoulli(constant(pB)))
     assume('earthquake', bernoulli(constant(pE)))
-    assume('alarm', ifelse(var('burglary'), ifelse(var('earthquake'), bernoulliconstant((pAgBE)), bernoulli(constant(pAgBnE))), \
+    assume('alarm', ifelse(var('burglary'), ifelse(var('earthquake'), bernoulli(constant(pAgBE)), bernoulli(constant(pAgBnE))), \
                                             ifelse(var('earthquake'), bernoulli(constant(pAgnBE)), bernoulli(constant(pAgnBnE)))))
   
     assume('johnCalls', ifelse(var('alarm'),  bernoulli(constant(pJgA)), bernoulli(constant(pJgnA))))

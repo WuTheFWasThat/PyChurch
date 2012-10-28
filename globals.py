@@ -105,11 +105,15 @@ class EvalNode:
     if type(addition) == tuple:
       if addition not in self.applychildren:
         self.spawnchild(addition, env, subexpr, True)
-      return self.applychildren[addition]
+      evalnode = self.applychildren[addition]
+      evalnode.env = env
+      return evalnode
     else:
       if addition not in self.children:
         self.spawnchild(addition, env, subexpr, False)
-      return self.children[addition]
+      evalnode = self.children[addition]
+      evalnode.env = env
+      return evalnode
   
   def spawnchild(self, addition, env, subexpr, is_apply):
     child = EvalNode(self.traces, env, subexpr)
@@ -241,7 +245,8 @@ class EvalNode:
     expr = self.expression
 
     def evaluate_recurse(subexpr, env, addition):
-      val = self.get_child(addition, env, subexpr).evaluate(reflip == True)
+      child = self.get_child(addition, env, subexpr)
+      val = child.evaluate(reflip == True)
       return val
   
     def binary_op_evaluate(op):
@@ -362,12 +367,12 @@ class EvalNode:
     elif self.type == 'function':
       val = self.val
       n = len(expr.vars)
-      new_env = env.spawn_child()
+      new_env = self.env.spawn_child()
       bound = set()
       for i in range(n): # Bind variables
         bound.add(expr.vars[i])
       procedure_body = expr.body.replace(new_env, bound)
-      val = Value((expr.vars, procedure_body), env)
+      val = Value((expr.vars, procedure_body), self.env)
       #TODO: SET SOME RELATIONSHIP HERE?  If body contains reference to changed var...
     elif self.type == '=':
       val = binary_op_evaluate(lambda x, y : x == y)
