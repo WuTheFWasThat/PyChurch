@@ -303,7 +303,7 @@ def gamma(a, b):
 uniform_args_xrp = Expression(('xrp', Value(uniform_args_XRP())))
 def uniform(n = None):
   if n is None:
-    return beta(1, 1)
+    return beta(constant(1), constant(1))
   else:
     return Expression(('apply', uniform_args_xrp, n))
 

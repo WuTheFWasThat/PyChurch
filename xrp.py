@@ -78,8 +78,7 @@ class array_XRP(XRP):
     i = args[0].val
     check_num(i)
     assert 0 <= i < self.n
-    print val.val, self.state[i]
-    assert val.val == self.state[i]
+    assert val == self.state[i]
     return 0
   def __str__(self):
     return ('array(%s)' % str(self.state))
@@ -126,7 +125,7 @@ class dirichlet_no_args_XRP(XRP):
   def apply(self, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: dirichlet_no_args_XRP has no need to take in arguments %s' % str(args))
-    probs = [float(p) for p in dirichlet(self.alphas)]
+    probs = [Value(float(p)) for p in dirichlet(self.alphas)]
     return Value(array_XRP(probs))
   def prob(self, val, args = None):
     if args != None and len(args) != 0:

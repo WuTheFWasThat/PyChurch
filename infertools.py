@@ -105,7 +105,7 @@ def infer_many(name, niter = 1000, burnin = 100, printiters = 0):
 
   return dict 
 
-def follow_prior(names, niter = 1000, burnin = 100, printiters = 0):
+def follow_prior(names, niter = 1000, burnin = 100, timer = True, printiters = 0):
   rerun(True)
   dict = {}
 
@@ -119,7 +119,8 @@ def follow_prior(names, niter = 1000, burnin = 100, printiters = 0):
     #  warnings.warn('%s is not defined' % str(name))
     assert name not in set(['TIME'])
     dict[name] = []
-  dict['TIME'] = []
+  if timer:
+    dict['TIME'] = []
   
   for n in xrange(niter):
     if printiters > 0 and n % printiters == 0: 
@@ -135,14 +136,15 @@ def follow_prior(names, niter = 1000, burnin = 100, printiters = 0):
       if val.type != 'procedure' and val.type != 'xrp': 
         dict[name].append(val.val)
     t = time.time() - t
-    dict['TIME'].append(t)
+    if timer:
+      dict['TIME'].append(t)
 
   for name in names:
     if len(dict[name]) == 0:
       del dict[name]
   return dict 
 
-def sample_prior(names, niter = 1000, printiters = 0):
+def sample_prior(names, niter = 1000, timer = True, printiters = 0):
   dict = {}
 
   for name in names:
@@ -152,7 +154,8 @@ def sample_prior(names, niter = 1000, printiters = 0):
     #  warnings.warn('%s is not defined' % str(name))
     assert name not in set(['TIME'])
     dict[name] = []
-  dict['TIME'] = []
+  if timer:
+    dict['TIME'] = []
 
   for n in xrange(niter):
     if printiters > 0 and n % printiters == 0: 
@@ -167,14 +170,15 @@ def sample_prior(names, niter = 1000, printiters = 0):
       if val.type != 'procedure' and val.type != 'xrp': 
         dict[name].append(val.val)
     t = time.time() - t
-    dict['TIME'].append(t)
+    if timer:
+      dict['TIME'].append(t)
 
   for name in names:
     if len(dict[name]) == 0:
       del dict[name]
   return dict 
 
-def test_prior(niter = 1000, burnin = 100, countup = True):
+def test_prior(niter = 1000, burnin = 100, countup = True, timer = True):
   expressions = []
   varnames = []
 
@@ -188,8 +192,8 @@ def test_prior(niter = 1000, burnin = 100, countup = True):
   #  (expr, obs_val) = globals.mem.observes[hashval] 
   #  expressions.append(expr)
 
-  d1 = sample_prior(varnames, niter)
-  d2 = follow_prior(varnames, niter, burnin)
+  d1 = sample_prior(varnames, niter, timer)
+  d2 = follow_prior(varnames, niter, burnin, timer)
 
   for i in xrange(len(varnames)):
     name = varnames[i]
@@ -200,7 +204,7 @@ def test_prior(niter = 1000, burnin = 100, countup = True):
         d2[name] = count_up(d2[name])
     else:
       assert expr not in d2
-  if countup:
+  if countup and timer:
     d1['TIME'] = count_up(d1['TIME'])
     d2['TIME'] = count_up(d2['TIME'])
   return (d1, d2)
@@ -228,11 +232,11 @@ def get_pdf(valuedict, start, end, bucketsize, normalizebool = True):
   numbuckets = int(math.floor((end - start) / bucketsize))
   density = [0] * numbuckets
   for value in valuedict:
-    if not start <= value.val <= end:
+    if not start <= value <= end:
       warnings.warn('value %s is not in the interval [%s, %s]' % (str(value), str(start), str(end)))
       continue
-    index = int(math.floor((value.val - start) / bucketsize))
-    density[index] += valuedict[value.val]
+    index = int(math.floor((value - start) / bucketsize))
+    density[index] += valuedict[value]
   return density
 
 def get_cdf(valuedict, start, end, bucketsize, normalizebool = True):

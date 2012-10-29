@@ -8,13 +8,13 @@ test_expressions = False
 test_recursion = False 
 test_mem = False
 
-test_HMM = False
+test_HMM = True
 test_bayes_nets = False
 test_two_layer_nets = False
 
 test_xor = False 
 
-test_tricky  = True 
+test_tricky  = False 
 
 # something wrong with this test
 test_geometric = False 
@@ -78,13 +78,14 @@ class TestDirectives(unittest.TestCase):
     assume('is-fair', bernoulli(constant(0.5)))
     assume('coin', ifelse(var('is-fair'), var('fair-coin'), var('tricky-coin'))) 
 
-    d = test_prior(1000, 100)
-    self.assertTrue(test_prior_bool(d, 'is-fair') < 0.05)
+    d = test_prior(1000, 10)
+    print d
+    #self.assertTrue(test_prior_bool(d, 'is-fair') < 0.05)
   
     ## EXTENSIVE TEST
 
     nheads = 2
-    niters, burnin = 1000, 100
+    niters, burnin = 1000, 10
   
     print infer_many('is-fair', niters, burnin)
     
@@ -159,23 +160,26 @@ class TestDirectives(unittest.TestCase):
     n = 5
     t = 20
 
-    assume('dirichlet', dirichlet_no_args_XRP([1]*n))
-    assume('get-column', mem(function('i', apply('dirichlet'))))
+    assume('dirichlet', constant(dirichlet_no_args_XRP([1]*n)))
+    assume('get-column', mem(function('i', apply(var('dirichlet')))))
     assume('get-next-state', function('i', 
                              let([('loop', \
                                   function(['v', 'j'], \
-                                           let([('w', apply(apply('get-column', 'i'), 'j'))],
-                                            ifelse(var('v') < 'w', 'j', apply('loop', [var('v') -'w', var('j') + 1]))))) \
+                                           let([('w', apply(apply(var('get-column'), var('i')), var('j')))],
+                                            ifelse(var('v') < var('w'), var('j'), apply(var('loop'), [var('v') - var('w'), var('j') + constant(1)]))))) \
                                  ], \
-                                 apply('loop', [uniform(), 0])))) 
+                                 apply(var('loop'), [uniform(), constant(0)])))) 
     assume('state', mem(function('i',
-                                 ifelse(var('i') == 0, 0, apply('get-next-state', apply('state', var('i') - 1))))))
+                                 ifelse(var('i') == constant(0), constant(0), apply(var('get-next-state'), apply(var('state'), var('i') - constant(1)))))))
   
-    assume('start-state', apply('state', 0))
-    assume('second-state', apply('state', t))
-    sample(var('second-state'))
-    print test_prior(100, 100)
-    print len(globals.db.db)
+    assume('start-state', apply(var('state'), constant(0)))
+    assume('second-state', apply(var('state'), constant(t)))
+
+    print sample(var('second-state'))
+
+    print test_prior(10, 10)
+
+    print len(globals.traces.db)
   
 #    assume('x', apply('get-datapoint', 0))
 #    observe(gaussian('x', let([('x', gaussian(0, 'outer-noise'))], var('x') * var('x'))), 2.3)
@@ -326,7 +330,8 @@ class TestDirectives(unittest.TestCase):
     assume('b', bernoulli(constant(q))) 
     assume('c', var('a') ^ var('b'))
 
-    d = test_prior(1000, 100)
+    d = test_prior(1000, 100, timer = False)
+    print d
     self.assertTrue(test_prior_bool(d, 'a') < 0.05)
     self.assertTrue(test_prior_bool(d, 'b') < 0.05)
     self.assertTrue(test_prior_bool(d, 'c') < 0.05)
@@ -389,17 +394,18 @@ class TestDirectives(unittest.TestCase):
   
     niters, burnin = 1000, 100 
   
-    assume('decay', beta(a, b))
-    assume('geometric', function('x', ifelse(bernoulli('decay'), 'x', apply('geometric', var('x') + 1))))
-    assume('timetodecay', apply('geometric', 0))
+    assume('decay', beta(constant(a), constant(b)))
+    assume('geometric', function('x', ifelse(bernoulli(var('decay')), var('x'), apply(var('geometric'), var('x') + constant(1)))))
+    assume('timetodecay', apply(var('geometric'), constant(0)))
 
-    d = test_prior(1000, 100)
-    self.assertTrue(test_prior_L0(d, 'decay', 0, 1, .01) < .1)
-    self.assertTrue(test_prior_L0(d, 'timetodecay', 0, 100, 1) < .1)
+    d = test_prior(1000, 100, timer = False)
+    print d
+    #self.assertTrue(test_prior_L0(d, 'decay', 0, 1, .01) < .1)
+    #self.assertTrue(test_prior_L0(d, 'timetodecay', 0, 100, 1) < .1)
 
     # hmm... random walk systematically decays faster
   
-    observe(noisy(var('timetodecay') == timetodecay, .001), True)
+    observe(noisy(var('timetodecay') == constant(timetodecay), .001), True)
     dist = infer_many('decay', niters, burnin)
     #print dist 
     #print 'pdf:', get_pdf(dist, 0, 1, .1)

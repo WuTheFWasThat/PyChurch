@@ -147,7 +147,12 @@ class EvalNode:
     self.args = args
 
   def propogate_up(self):
-    assert self.active
+    # NOTE: 
+    # assert self.active <--- almost true
+    # This only breaks when this node is unevaluated from another branch of propogate_up
+    # but this means children may have changed, so if we activate this branch and don't re-evaluate,
+    # the result may be wrong!  We can't always re-evaluate the branches, because of the way reflip restores.
+    # TODO: optimize to not re-propogate. needs to calculate explicit trace structure
 
     oldval = self.val
     if self.observed:
@@ -164,14 +169,16 @@ class EvalNode:
 
       if self.assume:
         assert self.parent is None
-        for evalnode in self.env.get_lookups(self.assume_name, self):
+        # lookups can be affected *while* propogating up. 
+        for evalnode in list(self.env.get_lookups(self.assume_name, self)):
           assert self.traces.has(evalnode)
           evalnode.propogate_up()
       elif self.parent is not None:
         self.parent.propogate_up()
     if self.mem:
-      # self.mem_calls can actually be affected while propogating up.  However, if new links are created, they'll use the new value
+      # self.mem_calls can be affected *while* propogating up.  However, if new links are created, they'll use the new value
       for evalnode in list(self.mem_calls):
+        assert self.traces.has(evalnode)
         evalnode.propogate_up()
 
     self.val = val
@@ -448,7 +455,8 @@ class Traces:
     self.evalnodes = set() 
 
     # set of evalnodes with no parents
-    self.roots = set() 
+    self.assumes = []
+    self.observes = set() 
 
     self.db = RandomChoiceDict() 
 
@@ -463,7 +471,7 @@ class Traces:
     evalnode = EvalNode(self, self.global_env, expr)
     self.add_node(evalnode)
 
-    self.roots.add(evalnode)
+    self.assumes.append(evalnode)
     val = evalnode.evaluate()
     self.global_env.add_assume(name, evalnode)
     self.global_env.set(name, val)
@@ -474,7 +482,7 @@ class Traces:
     self.add_node(evalnode)
 
     evalnode.observe(obs_val)
-    self.roots.add(evalnode)
+    self.observes.add(evalnode)
     evalnode.evaluate()
 
     return evalnode
@@ -482,12 +490,14 @@ class Traces:
   def forget(self, evalnode):
     evalnode.unevaluate()
     self.remove_node(evalnode)
-    self.roots.remove(evalnode)
+    self.observes.remove(evalnode)
     return
 
   def rerun(self, reflip):
-    for root in self.roots:
-      root.evaluate(reflip)
+    for assume_node in self.assumes:
+      assume_node.evaluate(reflip)
+    for observe_node in self.observes:
+      observe_node.evaluate(reflip)
 
   def has(self, evalnode):
     return evalnode in self.evalnodes
@@ -515,9 +525,6 @@ class Traces:
     assert -2 in reflip_node.children
     assert reflip_node.children[-2].val.type == 'xrp'
     xrp = reflip_node.children[-2].val.val
-
-    if reflip_node.assume_name != 'sunny':
-      debug = False
 
     if debug:
       print "\n-----------------------------------------\n"
@@ -567,7 +574,7 @@ class Traces:
     assert False
     stack = ['expr', expression.hashval]
     evalnode = self.get_or_make(stack, expression)
-    self.roots.add(evalnode)
+    #self.roots.add(evalnode)
     val = evalnode.evaluate(reflip)
     return val
 
@@ -583,6 +590,7 @@ class Traces:
   def add_xrp(self, args, evalnodecheck = None):
     assert evalnodecheck in self.evalnodes
     evalnodecheck.setargs(args)
+    assert evalnodecheck not in self.db
     self.db[evalnodecheck] = True
 
   def remove_xrp(self, evalnode):
@@ -599,7 +607,7 @@ class Traces:
     
   def __str__(self):
     string = "EvalNodeTree:"
-    for evalnode in self.roots:
+    for evalnode in self.assumes:
       string += evalnode.str_helper()
     return string
 

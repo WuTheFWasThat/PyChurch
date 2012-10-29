@@ -38,7 +38,6 @@ class mem_proc_XRP(XRP):
       evalnode = self.state[args]
       assert help not in evalnode.mem_calls
       evalnode.mem_calls.add(help)
-      pass
     else:
       args = tuple(args)
       if args not in self.state:
@@ -50,13 +49,15 @@ class mem_proc_XRP(XRP):
     return self.state
   def remove(self, val, args = None, help = None):
     args = tuple(args)
+
     assert args in self.state
     if globals.use_traces:
       assert help is not None
       evalnode = self.state[args]
       assert help in evalnode.mem_calls
       evalnode.mem_calls.remove(help)
-      evalnode.unevaluate()
+      if len(evalnode.mem_calls) == 0:
+        evalnode.unevaluate()
     else:
       (oldval, oldcount) = self.state[args]
       assert oldval == val
