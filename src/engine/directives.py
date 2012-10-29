@@ -14,10 +14,10 @@ def assume_helper(varname, expr, reflip):
   return value
 
 def assume(varname, expr):
-  globals.mem.add('assume', (varname, expr))
   if globals.use_traces:
     return globals.traces.assume(varname, expr)
   else:
+    globals.mem.add('assume', (varname, expr))
     return assume_helper(varname, expr, True)
 
 def observe_helper(expr, obs_val):
@@ -30,10 +30,10 @@ def observe(expr, obs_val):
   assert expr.op.val.type == 'xrp'
   assert not expr.op.val.val.deterministic
 
-  globals.mem.add('observe', (expr, obs_val))
   if globals.use_traces:
     return globals.traces.observe(expr, obs_val)
   else:
+    globals.mem.add('observe', (expr, obs_val))
     return observe_helper(expr, obs_val)
 
 def forget(observation):
