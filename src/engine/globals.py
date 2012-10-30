@@ -20,7 +20,7 @@ class Environment:
     self.__init__()
 
   def set(self, name, value):
-    assert value is not None
+    assert value.__class__.__name__ == 'Value'
     self.assignments[name] = value
 
   def lookup(self, name):
@@ -460,7 +460,8 @@ class Traces:
 
     self.db = RandomChoiceDict() 
 
-    self.global_env = env
+    env.reset()
+    self.env = env
 
     self.uneval_p = 0
     self.eval_p = 0
@@ -468,17 +469,17 @@ class Traces:
     return
 
   def assume(self, name, expr):
-    evalnode = EvalNode(self, self.global_env, expr)
+    evalnode = EvalNode(self, self.env, expr)
     self.add_node(evalnode)
 
     self.assumes.append(evalnode)
     val = evalnode.evaluate()
-    self.global_env.add_assume(name, evalnode)
-    self.global_env.set(name, val)
+    self.env.add_assume(name, evalnode)
+    self.env.set(name, val)
     return val
 
   def observe(self, expr, obs_val):
-    evalnode = EvalNode(self, self.global_env, expr)
+    evalnode = EvalNode(self, self.env, expr)
     self.add_node(evalnode)
 
     evalnode.observe(obs_val)
@@ -603,7 +604,7 @@ class Traces:
     return evalnode
 
   def reset(self):
-    self.__init__(self.global_env)
+    self.__init__(self.env)
     
   def __str__(self):
     string = "EvalNodeTree:"
@@ -613,18 +614,56 @@ class Traces:
 
 # Class representing random db
 class RandomDB:
-  def __init__(self):
+  def __init__(self, env):
     #self.db = {} 
     self.db = RandomChoiceDict() 
     self.db_noise = {}
     # TODO: remove count
     self.count = 0
     assert self.count == len(self.db)
-    self.memory = []
+    self.log = []
     # ALWAYS WORKING WITH LOG PROBABILITIES
     self.uneval_p = 0
     self.eval_p = 0
     self.p = 0 
+
+    env.reset()
+    self.env = env
+
+    self.assumes = []
+    self.observes = {}
+    self.vars = {}
+
+  def reset(self):
+    self.__init__()
+
+  def assume(self, varname, expr): 
+    self.assumes.append((varname, expr))
+    self.vars[varname] = expr
+    value = self.evaluate(expr, self.env, reflip = True, stack = [varname])
+    self.env.set(varname, value)
+    return value
+
+  def observe(self, expr, obs_val):
+    if expr.hashval in self.observes:
+      warnings.warn('Already observed %s' % str(expr))
+    self.observes[expr.hashval] = (expr, obs_val) 
+    # bit of a hack, here, to make it recognize same things as with noisy_expr
+    self.evaluate(expr, self.env, reflip = False, stack = ['obs', expr.hashval], xrp_force_val = obs_val)
+    return expr.hashval
+
+  def rerun(self, reflip):
+    for (varname, expr) in self.assumes:
+      value = self.evaluate(expr, self.env, reflip = reflip, stack = [varname])
+      self.env.set(varname, value)
+    for hashval in self.observes:
+      (expr, obs_val) = self.observes[hashval]
+      self.evaluate(expr, self.env, reflip = False, stack = ['obs', expr.hashval], xrp_force_val = obs_val)
+
+  def forget(self, hashval):
+    self.remove(['obs', hashval])
+    assert hashval in self.observes
+    del self.observes[hashval]
     return
 
   def insert(self, stack, xrp, value, args, is_obs_noise = False, memorize = True):
@@ -644,7 +683,7 @@ class RandomDB:
       self.eval_p += prob # hmmm.. 
       assert self.count == len(self.db)
     if memorize:
-      self.memory.append(('insert', stack, xrp, value, args, is_obs_noise))
+      self.log.append(('insert', stack, xrp, value, args, is_obs_noise))
 
   def remove(self, stack, memorize = True):
     stack = tuple(stack)
@@ -662,7 +701,7 @@ class RandomDB:
       self.uneval_p += prob # previously unindented...
     assert self.count == len(self.db)
     if memorize:
-      self.memory.append(('remove', stack, xrp, value, args, is_obs_noise))
+      self.log.append(('remove', stack, xrp, value, args, is_obs_noise))
 
   def has(self, stack):
     stack = tuple(stack)
@@ -682,15 +721,148 @@ class RandomDB:
     key = self.db.randomKey()
     return key
 
-  #def prob(self):
-  #  ans = 0
-  #  for key in self.db:
-  #    (xrp, value, prob, args, is_obs_noise) = self.db[key]
-  #    ans += prob
-  #  for key in self.db_noise:
-  #    (xrp, value, prob, args, is_obs_noise) = self.db_noise[key]
-  #    ans += prob
-  #  return ans 
+  # Draws a sample value (without re-sampling other values) given its parents, and sets it
+  def evaluate(self, expr, env = None, reflip = False, stack = [], xrp_force_val = None):
+    if env is None:
+      env = self.env
+        
+    def evaluate_recurse(subexpr, env, reflip, stack, addition):
+      if type(addition) != list:
+        val = self.evaluate(subexpr, env, reflip, stack + [addition])
+      else:
+        val = self.evaluate(subexpr, env, reflip, stack + addition)
+      return val
+      
+    def binary_op_evaluate(expr, env, reflip, stack, op):
+      val1 = evaluate_recurse(expr.children[0], env, reflip, stack, 0).val
+      val2 = evaluate_recurse(expr.children[1], env, reflip, stack, 1).val
+      return Value(op(val1 , val2))
+  
+    def list_op_evaluate(expr, env, reflip, stack, op):
+      vals = [evaluate_recurse(expr.children[i], env, reflip, stack, i).val for i in xrange(len(expr.children))]
+      return Value(reduce(op, vals))
+      
+    if xrp_force_val != None: 
+      assert expr.type == 'apply'
+      
+    if expr.type == 'value':
+      val = expr.val
+    elif expr.type == 'variable':
+      var = expr.name
+      (val, lookup_env) = env.lookup(var)
+    elif expr.type == 'if':
+      cond = evaluate_recurse(expr.cond, env, reflip, stack , -1)
+      assert type(cond.val) in [bool]
+      if cond.val: 
+        self.unevaluate(stack + [0])
+        val = evaluate_recurse(expr.true, env, reflip, stack , 1)
+      else:
+        self.unevaluate(stack + [1])
+        val = evaluate_recurse(expr.false, env, reflip, stack , 0)
+    elif expr.type == 'switch':
+      index = evaluate_recurse(expr.index, env, reflip, stack , -1)
+      assert type(index.val) in [int] 
+      assert 0 <= index.val < expr.n
+      # unevaluate?
+      val = evaluate_recurse(expr.children[index.val], env, reflip, stack, index.val)
+    elif expr.type == 'let':
+      # TODO:think more about the behavior with environments here...
+      n = len(expr.vars)
+      assert len(expr.expressions) == n
+      values = []
+      new_env = env
+      for i in range(n): # Bind variables
+        new_env = new_env.spawn_child()
+        val = evaluate_recurse(expr.expressions[i], new_env, reflip, stack, i)
+        values.append(val)
+        new_env.set(expr.vars[i], values[i])
+        if val.type == 'procedure':
+          val.env = new_env
+      new_body = expr.body.replace(new_env)
+      val = evaluate_recurse(new_body, new_env, reflip, stack, -1)
+    elif expr.type == 'apply':
+      n = len(expr.children)
+      args = [evaluate_recurse(expr.children[i], env, reflip, stack, i) for i in range(n)]
+      op = evaluate_recurse(expr.op, env, reflip, stack , -2)
+      if op.type == 'procedure':
+        self.unevaluate(stack + [-1], tuple(hash(x) for x in args))
+        if n != len(op.vars):
+          warnings.warn('Procedure should have %d arguments.  \nVars were \n%s\n, but children were \n%s.' % (n, op.vars, expr.children))
+          assert False
+        new_env = op.env.spawn_child()
+        for i in range(n):
+          new_env.set(op.vars[i], args[i])
+        val = evaluate_recurse(op.body, new_env, reflip, stack, (-1, tuple(hash(x) for x in args)))
+      elif op.type == 'xrp':
+        self.unevaluate(stack + [-1], tuple(hash(x) for x in args))
+  
+        if xrp_force_val != None:
+          assert not reflip
+          if self.has(stack):
+            self.remove(stack)
+          self.insert(stack, op.val, xrp_force_val, args, True)
+          val = xrp_force_val
+        else:
+          substack = stack + [-1, tuple(hash(x) for x in args)]
+          if not self.has(substack):
+            if op.val.__class__.__name__ == 'mem_proc_XRP':
+              val = op.val.apply(args, stack)
+            else:
+              val = op.val.apply(args)
+            self.insert(substack, op.val, val, args)
+          else:
+            if reflip:
+              self.remove(substack)
+              if op.val.__class__.__name__ == 'mem_proc_XRP':
+                val = op.val.apply(args, stack)
+              else:
+                val = op.val.apply(args)
+              self.insert(substack, op.val, val, args)
+            else:
+              (xrp, val, dbargs, is_obs_noise) = self.get(substack)
+              assert not is_obs_noise
+      else:
+        warnings.warn('Must apply either a procedure or xrp')
+    elif expr.type == 'function':
+      n = len(expr.vars)
+      new_env = env.spawn_child()
+      bound = set()
+      for i in range(n): # Bind variables
+        bound.add(expr.vars[i])
+      procedure_body = expr.body.replace(new_env, bound)
+      val = Value((expr.vars, procedure_body), env)
+    elif expr.type == '=':
+      val = binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x == y)
+    elif expr.type == '<':
+      val = binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x < y)
+    elif expr.type == '>':
+      val = binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x > y)
+    elif expr.type == '<=':
+      val = binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x <= y)
+    elif expr.type == '>=':
+      val = binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x >= y)
+    elif expr.type == '&':
+      val = list_op_evaluate(expr, env, reflip, stack, lambda x, y : x & y)
+    elif expr.type == '^':
+      val = list_op_evaluate(expr, env, reflip, stack, lambda x, y : x ^ y)
+    elif expr.type == '|':
+      val = list_op_evaluate(expr, env, reflip, stack, lambda x, y : x | y)
+    elif expr.type == '~':
+      negval = evaluate_recurse(expr.negation, env, reflip, stack, 0).val
+      val = Value(not negval)
+    elif expr.type == 'add':
+      val = list_op_evaluate(expr, env, reflip, stack, lambda x, y : x + y)
+    elif expr.type == 'subtract':
+      val1 = evaluate_recurse(expr.children[0], env, reflip, stack , 0).val
+      val2 = evaluate_recurse(expr.children[1], env, reflip, stack , 1).val
+      val = Value(val1 - val2)
+    elif expr.type == 'multiply':
+      val = list_op_evaluate(expr, env, reflip, stack, lambda x, y : x * y)
+    else:
+      warnings.warn('Invalid expression type %s' % expr.type)
+      assert False
+    return val
+
 
   def unevaluate(self, uneval_stack, args = None):
     if args is not None:
@@ -717,27 +889,71 @@ class RandomDB:
       self.remove(tuple_stack)
 
   def save(self):
-    self.memory = []
+    self.log = []
     self.uneval_p = 0
     self.eval_p = 0
 
   def restore(self):
-    self.memory.reverse()
-    for (type, stack, xrp, value, args, is_obs_noise) in self.memory:
+    self.log.reverse()
+    for (type, stack, xrp, value, args, is_obs_noise) in self.log:
       if type == 'insert':
         self.remove(stack, False)
       else:
         assert type == 'remove'
         self.insert(stack, xrp, value, args, is_obs_noise, False)
 
-  def reset(self):
-    #self.db = {} 
-    self.db = RandomChoiceDict() 
-    self.db_noise = {}
-    self.count = 0
-    assert self.count == len(self.db)
+  def reflip(self, stack):
+    (xrp, val, args, is_obs_noise) = self.get(stack)
+  
+    #debug = True 
+    debug = False
+  
+    old_p = self.p
+    old_to_new_q = - math.log(self.count)
+    if debug:
+      print  "old_db", self 
+  
     self.save()
-    self.p = 0
+  
+    self.remove(stack)
+    if xrp.__class__.__name__ == 'mem_proc_XRP':
+      new_val = xrp.apply(args, list(stack))
+    else:
+      new_val = xrp.apply(args)
+    self.insert(stack, xrp, new_val, args)
+  
+    if debug:
+      print "\nCHANGING ", stack, "\n  TO   :  ", new_val, "\n"
+  
+    if val == new_val:
+      return
+  
+    self.rerun(False)
+    new_p = self.p
+    new_to_old_q = self.uneval_p - math.log(self.count)
+    old_to_new_q += self.eval_p
+    if debug:
+      print "new db", self, \
+            "\nq(old -> new) : ", old_to_new_q, \
+            "q(new -> old) : ", new_to_old_q, \
+            "p(old) : ", old_p, \
+            "p(new) : ", new_p, \
+            'log transition prob : ',  new_p + new_to_old_q - old_p - old_to_new_q , "\n"
+  
+    if old_p * old_to_new_q > 0:
+      p = random.random()
+      if new_p + new_to_old_q - old_p - old_to_new_q < math.log(p):
+        self.restore()
+        if debug:
+          print 'restore'
+        self.rerun(False)
+  
+    if debug:
+      print "new db", self
+      print "\n-----------------------------------------\n"
+
+  def reset(self):
+    self.__init__(self.env)
 
   def __str__(self):
     string = 'DB with state:'
@@ -755,47 +971,21 @@ class RandomDB:
   def __getitem__(self, stack):
     return self.get(self, stack)
 
-class Directives_Memory:
-  def __init__(self):
-    self.assumes = []
-    self.observes = {}
-    self.vars = {}
-
-  def reset(self):
-    self.__init__()
-
-  def add(self, type, tup): 
-    if type == 'assume':
-      (varname, expr) = tup
-      self.assumes.append(tup)
-      self.vars[varname] = expr
-    else:
-      assert type == 'observe'
-      (expr, obs_val) = tup
-      if expr.hashval in self.observes:
-        warnings.warn('Already observed %s' % str(expr))
-      self.observes[expr.hashval] = tup 
-
-  def forget(self, hashval):
-    assert hashval in self.observes
-    del self.observes[hashval]
-
 # The global environment. Has assignments of names to expressions, and parent pointer 
 env = Environment()
+
+use_traces = True
 
 # The traces datastructure. 
 # DAG of two interlinked trees: 
 #   1. eval (with subcases: IF, symbollookup, combination, lambda) + apply
 #   2. environments
 # crosslinked by symbol lookup nodes and by the env argument to eval
-traces = Traces(env)
-
-# Table storing a list of (xrp, value, probability) tuples
-db = RandomDB()
-
-# Global memory.  List of (directive type, args)
-mem = Directives_Memory() 
+if use_traces:
+  traces = Traces(env)
+else:
+  # Table storing a list of (xrp, value, probability) tuples
+  db = RandomDB(env)
 
 sys.setrecursionlimit(10000)
 
-use_traces = True

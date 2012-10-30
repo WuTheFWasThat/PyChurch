@@ -8,8 +8,8 @@ test_expressions = False
 test_recursion = False 
 test_mem = False
 
-test_HMM = True
-test_bayes_nets = False
+test_HMM = False
+test_bayes_nets = True
 test_two_layer_nets = False
 
 test_xor = False 
@@ -91,7 +91,7 @@ class TestDirectives(unittest.TestCase):
     
     for i in xrange(nheads):
       print '\nsaw', i+1, 'heads'
-      observe(noisy(apply(var('coin')), noise_level), constant(True))
+      observe(noisy(apply(var('coin')), noise_level), Value(True))
       print infer_many('is-fair', niters, burnin)
   
   @unittest.skipIf(not test_CRP, "skipping test_CRP")
@@ -129,11 +129,11 @@ class TestDirectives(unittest.TestCase):
     #plot_pdf(points, -50, 50, 0.1, name = 'graphs/crpmixturesample.png')
   
     assume('x', apply('get-datapoint', 0))
-    observe(gaussian('x', let([('x', gaussian(constant(0), var('outer-noise')))], var('x') * var('x'))), constant(2.3))
-    observe(gaussian(apply('get-datapoint', 1), let([('y', gaussian(0, 'outer-noise'))], var('y') * var('y'))), constant(2.2))
-    observe(gaussian(apply('get-datapoint', 2), let([('y', gaussian(0, 'outer-noise'))], var('y') * var('y'))), constant(1.9))
-    observe(gaussian(apply('get-datapoint', 3), let([('y', gaussian(0, 'outer-noise'))], var('y') * var('y'))), constant(2.0))
-    observe(gaussian(apply('get-datapoint', 4), let([('y', gaussian(0, 'outer-noise'))], var('y') * var('y'))), constant(2.1))
+    observe(gaussian('x', let([('x', gaussian(constant(0), var('outer-noise')))], var('x') * var('x'))), Value(2.3))
+    observe(gaussian(apply('get-datapoint', 1), let([('y', gaussian(0, 'outer-noise'))], var('y') * var('y'))), Value(2.2))
+    observe(gaussian(apply('get-datapoint', 2), let([('y', gaussian(0, 'outer-noise'))], var('y') * var('y'))), Value(1.9))
+    observe(gaussian(apply('get-datapoint', 3), let([('y', gaussian(0, 'outer-noise'))], var('y') * var('y'))), Value(2.0))
+    observe(gaussian(apply('get-datapoint', 4), let([('y', gaussian(0, 'outer-noise'))], var('y') * var('y'))), Value(2.1))
   
     niters, burnin = 100, 1000
   
@@ -178,8 +178,6 @@ class TestDirectives(unittest.TestCase):
     print sample(var('second-state'))
 
     print test_prior(10, 10)
-
-    print len(globals.traces.db)
   
 
   @unittest.skipIf(not test_bayes_nets, "skipping test_bayes_nets")
@@ -200,7 +198,7 @@ class TestDirectives(unittest.TestCase):
     #print 'Should be .7 False, .3 True'
     
     noise_level = .01
-    sprinkler_ob = observe(noisy(var('sprinkler'), noise_level), constant(True))
+    sprinkler_ob = observe(noisy(var('sprinkler'), noise_level), Value(True))
     #d = infer_many('cloudy', niters, burnin)
     #print d
     #self.assertTrue(  abs(d['cloudy'][False] / (niters + 0.0) - 5 / 6.0) < 0.1)
@@ -209,7 +207,7 @@ class TestDirectives(unittest.TestCase):
     #print infer_many('sprinkler', niters, burnin)
     #print 'Should be 0 False, 1 True'
     
-    a = follow_prior(['cloudy', 'sprinkler'], 1000, 100)
+    a = follow_prior(['cloudy', 'sprinkler'], 1000, 100, timer = False)
     #print [(x, count_up(a[x])) for x in a]
   
     forget(sprinkler_ob)
@@ -235,11 +233,11 @@ class TestDirectives(unittest.TestCase):
 
     #print test_prior(1000, 100)
     
-    observe(noisy(var('weekend'), noise_level), constant(True))
+    observe(noisy(var('weekend'), noise_level), Value(True))
     #print infer_many('sunny', niters, burnin)
     #print 'Should be .5 False, .5 True'
     
-    observe(noisy(var('beach'), noise_level), constant(True))
+    observe(noisy(var('beach'), noise_level), Value(True))
     print infer_many('sunny', niters, burnin)
     print 'Should be .357142857 False, .642857143 True'
 
@@ -303,12 +301,12 @@ class TestDirectives(unittest.TestCase):
     print infer_many('alarm', niters, burnin)
     print 'Should be %f True' % pA
   
-    mary_ob = observe(noisy(var('maryCalls'), noise_level), constant(True))
+    mary_ob = observe(noisy(var('maryCalls'), noise_level), Value(True))
     print infer_many('johnCalls', niters, burnin)
     print 'Should be %f True' % pJgM
     forget(mary_ob)
   
-    burglary_ob = observe(noisy(~var('burglary'), noise_level), constant(True))
+    burglary_ob = observe(noisy(~var('burglary'), noise_level), Value(True))
     print infer_many('johnCalls', niters, burnin)
     print 'Should be %f True' % pJgnB
     forget(burglary_ob)
@@ -330,7 +328,7 @@ class TestDirectives(unittest.TestCase):
     self.assertTrue(test_prior_bool(d, 'b') < 0.05)
     self.assertTrue(test_prior_bool(d, 'c') < 0.05)
   
-    #xor_ob = observe(noisy('c', noise_level), constant(True)) 
+    #xor_ob = observe(noisy('c', noise_level), Value(True)) 
     #print infer_many('a', 100, 500) 
     #print 'should be 0.69 true'
     # should be True : p(1-q)/(p(1-q)+(1-p)q), False : q(1-p)/(p(1-q) + q(1-p)) 
@@ -399,7 +397,7 @@ class TestDirectives(unittest.TestCase):
 
     # hmm... random walk systematically decays faster
   
-    observe(noisy(var('timetodecay') == constant(timetodecay), .001), constant(True))
+    observe(noisy(var('timetodecay') == constant(timetodecay), .001), Value(True))
     dist = infer_many('decay', niters, burnin)
     #print dist 
     #print 'pdf:', get_pdf(dist, 0, 1, .1)
@@ -507,17 +505,17 @@ class TestDirectives(unittest.TestCase):
   #  plot_pdf(points, -50, 50, 0.1, name = 'graphs/mixturesample.png')
   
     #assume('x', apply(var('get-datapoint'), constant(0)))
-    #observe(gaussian('x', let([('x', gaussian(constant(0), var('outer-noise')))], var('x') * var('x'))), constant(2.3))
-    #observe(gaussian(apply(var('get-datapoint'), constant(1)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), constant(2.2))
-    #observe(gaussian(apply(var('get-datapoint'), constant(2)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), constant(1.9))
-    #observe(gaussian(apply(var('get-datapoint'), constant(3)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), constant(2.0))
-    #observe(gaussian(apply(var('get-datapoint'), constant(4)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), constant(2.1))
+    #observe(gaussian('x', let([('x', gaussian(constant(0), var('outer-noise')))], var('x') * var('x'))), Value(2.3))
+    #observe(gaussian(apply(var('get-datapoint'), constant(1)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), Value(2.2))
+    #observe(gaussian(apply(var('get-datapoint'), constant(2)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), Value(1.9))
+    #observe(gaussian(apply(var('get-datapoint'), constant(3)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), Value(2.0))
+    #observe(gaussian(apply(var('get-datapoint'), constant(4)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), Value(2.1))
 
-    observe(gaussian(apply(var('get-datapoint'), constant(0)), var('noise-variance')), constant(2.3))
-    observe(gaussian(apply(var('get-datapoint'), constant(1)), var('noise-variance')), constant(2.2))
-    observe(gaussian(apply(var('get-datapoint'), constant(2)), var('noise-variance')), constant(1.9))
-    observe(gaussian(apply(var('get-datapoint'), constant(3)), var('noise-variance')), constant(2.0))
-    observe(gaussian(apply(var('get-datapoint'), constant(4)), var('noise-variance')), constant(2.1))
+    observe(gaussian(apply(var('get-datapoint'), constant(0)), var('noise-variance')), Value(2.3))
+    observe(gaussian(apply(var('get-datapoint'), constant(1)), var('noise-variance')), Value(2.2))
+    observe(gaussian(apply(var('get-datapoint'), constant(2)), var('noise-variance')), Value(1.9))
+    observe(gaussian(apply(var('get-datapoint'), constant(3)), var('noise-variance')), Value(2.0))
+    observe(gaussian(apply(var('get-datapoint'), constant(4)), var('noise-variance')), Value(2.1))
   
     #niters, burnin = 100, 100
   
@@ -552,14 +550,14 @@ class TestDirectives(unittest.TestCase):
       points = [2.2, 2.0, 1.5, 2.1, 1.8, 1.9]
       print "points: " + str(points)
       for (idx, p) in enumerate(points):
-        observe(gaussian(apply('get-datapoint-2', idx), 0.1), constant(p))
+        observe(gaussian(apply('get-datapoint-2', idx), 0.1), Value(p))
   
       #assume('x', apply(var('get-datapoint'), constant(0)))
-      #observe(gaussian(var('x'), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), constant(2.3))
-      #observe(gaussian(apply(var('get-datapoint'), constant(1)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), constant(2.2))
-      #observe(gaussian(apply(var('get-datapoint'), constant(2)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), constant(1.9))
-      #observe(gaussian(apply(var('get-datapoint'), constant(3)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), constant(2.0))
-      #observe(gaussian(apply(var('get-datapoint'), constant(4)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), constant(2.1))
+      #observe(gaussian(var('x'), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), Value(2.3))
+      #observe(gaussian(apply(var('get-datapoint'), constant(1)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), Value(2.2))
+      #observe(gaussian(apply(var('get-datapoint'), constant(2)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), Value(1.9))
+      #observe(gaussian(apply(var('get-datapoint'), constant(3)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), Value(2.0))
+      #observe(gaussian(apply(var('get-datapoint'), constant(4)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), Value(2.1))
   
       avg_logpdf = 0
       num_repeats = 10
@@ -602,11 +600,11 @@ class TestDirectives(unittest.TestCase):
     assume('get-datapoint', mem(function('id', gaussian(apply(apply('get-cluster-model', apply('get-cluster', 'id'))), 0.1))))
   
     assume('x', apply('get-datapoint', 0))
-    #observe(gaussian('x', let([('y', gaussian(0, .1))], var('y') * var('y'))), -2.3)
-    #observe(gaussian(apply('get-datapoint', 1), let([('y', gaussian(0, .1))], var('y') * var('y'))), -2.2)
-    #observe(gaussian(apply('get-datapoint', 2), let([('y', gaussian(0, .1))], var('y') * var('y'))), -1.9)
-    #observe(gaussian(apply('get-datapoint', 3), let([('y', gaussian(0, .1))], var('y') * var('y'))), -2.0)
-    #observe(gaussian(apply('get-datapoint', 4), let([('y', gaussian(0, .1))], var('y') * var('y'))), -2.1)
+    #observe(gaussian('x', let([('y', gaussian(0, .1))], var('y') * var('y'))), Value(-2.3))
+    #observe(gaussian(apply('get-datapoint', 1), let([('y', gaussian(0, .1))], var('y') * var('y'))), Value(-2.2))
+    #observe(gaussian(apply('get-datapoint', 2), let([('y', gaussian(0, .1))], var('y') * var('y'))), Value(-1.9))
+    #observe(gaussian(apply('get-datapoint', 3), let([('y', gaussian(0, .1))], var('y') * var('y'))), Value(-2.0))
+    #observe(gaussian(apply('get-datapoint', 4), let([('y', gaussian(0, .1))], var('y') * var('y'))), Value(-2.1))
   
     #a = infer_many('x', 10, 1000)
     #print a
@@ -627,7 +625,7 @@ class TestDirectives(unittest.TestCase):
     assume('x', apply('f', 0))
     print test_prior(1000, 100)
   
-    observe(noisy(apply('f',0) < 2222222222, 0.001), constant(True))
+    observe(noisy(apply('f',0) < 2222222222, 0.001), Value(True))
     a = infer_many(apply('f',0), 10, 1000)
     print a
     print sample(apply('f', 0))

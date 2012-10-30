@@ -41,14 +41,15 @@ def merge_counts(d1, d2):
 
 # OUTDATED
 def reject_infer():
+  assert not globals.use_traces
   flag = False
   while not flag:
     rerun(True)
 
     # Reject if observations untrue
     flag = True
-    for obs_hash in globals.mem.observes:
-      (obs_expr, obs_val) = globals.mem.observes[obs_hash] 
+    for obs_hash in globals.db.observes:
+      (obs_expr, obs_val) = globals.db.observes[obs_hash] 
       val = resample(obs_expr)
       if val.val != obs_val:
         flag = False
@@ -56,8 +57,9 @@ def reject_infer():
 
 # Rejection based inference
 def reject_infer_many(name, niter = 1000):
-  if name in globals.mem.vars:
-    expr = globals.mem.vars[name]
+  assert not globals.use_traces
+  if name in globals.db.vars:
+    expr = globals.db.vars[name]
   else:
     warnings.warn('%s is not defined' % str(name))
 
@@ -65,7 +67,7 @@ def reject_infer_many(name, niter = 1000):
   for n in xrange(niter):
     # Re-draw from prior
     reject_infer()
-    ans = evaluate(expr, globals.env, False, [name]) 
+    ans = globals.db.evaluate(expr, None, False, [name]) 
 
     if ans.val in dict:
       dict[ans.val] += 1
@@ -78,10 +80,10 @@ def reject_infer_many(name, niter = 1000):
   return dict 
 
 def infer_many(name, niter = 1000, burnin = 100, printiters = 0):
-  if name in globals.mem.vars:
-    expr = globals.mem.vars[name]
-  else:
-    warnings.warn('%s is not defined' % str(name))
+  #if name in globals.mem.vars:
+  #  expr = globals.mem.vars[name]
+  #else:
+  #  warnings.warn('%s is not defined' % str(name))
 
   if globals.use_traces:
     rerun(True)
@@ -97,7 +99,7 @@ def infer_many(name, niter = 1000, burnin = 100, printiters = 0):
     if globals.use_traces:
       val = globals.env.assumes[name].evaluate(False)
     else:
-      val = evaluate(name, globals.env, reflip = False, stack = [name])
+      val = globals.db.evaluate(Expression(('var', name)), reflip = False, stack = [name])
     if val in dict:
       dict[val] += 1
     else:
@@ -113,10 +115,6 @@ def follow_prior(names, niter = 1000, burnin = 100, timer = True, printiters = 0
     infer()
 
   for name in names:
-    #if name in globals.mem.vars:
-    #  expr = globals.mem.vars[name]
-    #else:
-    #  warnings.warn('%s is not defined' % str(name))
     assert name not in set(['TIME'])
     dict[name] = []
   if timer:
@@ -130,9 +128,9 @@ def follow_prior(names, niter = 1000, burnin = 100, timer = True, printiters = 0
 
     for name in names:
       if globals.use_traces:
-        val = globals.env.assumes[name].evaluate(False)
+        val = globals.traces.env.assumes[name].evaluate(False)
       else:
-        val = evaluate(name, globals.env, reflip = False, stack = [name])
+        val = globals.db.env.lookup(name)[0] #(Expression(('var', name)), reflip = False, stack = [name])
       if val.type != 'procedure' and val.type != 'xrp': 
         dict[name].append(val.val)
     t = time.time() - t
@@ -148,10 +146,6 @@ def sample_prior(names, niter = 1000, timer = True, printiters = 0):
   dict = {}
 
   for name in names:
-    #if name in globals.mem.vars:
-    #  expr = globals.mem.vars[name]
-    #else:
-    #  warnings.warn('%s is not defined' % str(name))
     assert name not in set(['TIME'])
     dict[name] = []
   if timer:
@@ -164,9 +158,9 @@ def sample_prior(names, niter = 1000, timer = True, printiters = 0):
     rerun(True)
     for name in names:
       if globals.use_traces:
-        val = globals.env.assumes[name].evaluate(False)
+        val = globals.traces.env.assumes[name].evaluate(False)
       else:
-        val = evaluate(name, globals.env, reflip = True, stack = [name])
+        val = globals.db.evaluate(Expression(('var', name)), None, reflip = True, stack = [name])
       if val.type != 'procedure' and val.type != 'xrp': 
         dict[name].append(val.val)
     t = time.time() - t
@@ -182,15 +176,17 @@ def test_prior(niter = 1000, burnin = 100, countup = True, timer = True):
   expressions = []
   varnames = []
 
-  for (varname, expr) in globals.mem.assumes:
-    assert varname not in set(['TIME'])
-    expressions.append(expr)
-    varnames.append(varname)
   # TODO : get all the observed variables
-  # 
-  #for hashval in globals.mem.observes:
-  #  (expr, obs_val) = globals.mem.observes[hashval] 
-  #  expressions.append(expr)
+  if globals.use_traces:
+    for evalnode in globals.traces.assumes:
+      assert evalnode.assume_name not in set(['TIME'])
+      expressions.append(evalnode.expression)
+      varnames.append(evalnode.assume_name)
+  else:
+    for (varname, expr) in globals.db.assumes:
+      assert varname not in set(['TIME'])
+      expressions.append(expr)
+      varnames.append(varname)
 
   d1 = sample_prior(varnames, niter, timer)
   d2 = follow_prior(varnames, niter, burnin, timer)
@@ -203,7 +199,7 @@ def test_prior(niter = 1000, burnin = 100, countup = True, timer = True):
         d1[name] = count_up(d1[name])
         d2[name] = count_up(d2[name])
     else:
-      assert expr not in d2
+      assert name not in d2
   if countup and timer:
     d1['TIME'] = count_up(d1['TIME'])
     d2['TIME'] = count_up(d2['TIME'])

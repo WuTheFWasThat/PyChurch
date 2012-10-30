@@ -15,7 +15,7 @@ class mem_proc_XRP(XRP):
     args = tuple(args)
     if globals.use_traces:
       if args not in self.state:
-        evalnode = EvalNode(globals.traces, globals.traces.global_env, apply(Expression(('value', self.procedure)), [Expression(('value', arg)) for arg in args]))
+        evalnode = EvalNode(globals.traces, globals.traces.env, apply(Expression(('value', self.procedure)), [Expression(('value', arg)) for arg in args]))
         evalnode.mem = True
         globals.traces.add_node(evalnode)
         self.state[args] = evalnode
@@ -28,7 +28,7 @@ class mem_proc_XRP(XRP):
       if args in self.state:
         (val, count) = self.state[args]
       else:
-        val = evaluate(apply(self.procedure, args), stack = help + [-1, 'mem', hash(self.procedure), args]) 
+        val = globals.db.evaluate(apply(Expression(('value', self.procedure)), [Expression(('value', arg)) for arg in args]), stack = help + [-1, 'mem', hash(self.procedure), args]) 
     return val
   def incorporate(self, val, args = None, help = None):
     if globals.use_traces:
@@ -89,7 +89,7 @@ class mem_XRP(XRP):
   def remove(self, val, args = None):
     assert val.val in self.state
     # unevaluate val's evalnodes
-    if globals.traces:
+    if globals.use_traces:
       for args in val.val.state:
         evalnode = val.val.state[args]
         evalnode.unevaluate()
