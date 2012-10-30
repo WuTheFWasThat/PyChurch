@@ -8,7 +8,7 @@ test_expressions = True
 test_recursion = True
 test_mem = True
 
-test_HMM = False
+test_HMM = True
 test_bayes_nets = True
 test_two_layer_nets = False
 
@@ -33,10 +33,10 @@ class TestDirectives(unittest.TestCase):
   @unittest.skipIf(not test_expressions, "skipping test_expressions")
   def test_expressions(self):
   
-    f = function(('x','y','z'), ifelse(var('x'), var('y'), var('z')))
+    f = function(['x','y','z'], ifelse(var('x'), var('y'), var('z')))
     self.assertTrue(sample(f).type == 'procedure')
     
-    g = function( ('x', 'z'), apply(f, [var('x'), constant(0), var('z')] ))
+    g = function(['x', 'z'], apply(f, [var('x'), constant(0), var('z')] ))
     self.assertTrue(sample(g).type == 'procedure')
     
     a = bernoulli(constant(0.5)) 
@@ -47,12 +47,12 @@ class TestDirectives(unittest.TestCase):
     x = apply(g, [a, uniform(constant(22))])
     b = ifelse(bernoulli(constant(0.2)), beta(constant(3),constant(4)), beta(constant(4),constant(3)))
     c = (~bernoulli(constant(0.3)) & bernoulli(constant(0.4))) | bernoulli(b)
-    d = function('x', ('apply', f, [a,c,var('x')]))
-    e = apply( d, b)
+    d = function(['x'], ('apply', f, [a,c,var('x')]))
+    e = apply( d, [b])
   
     # Testing closure
-    f = function(('x', 'y'), apply(var('x'), var('y')))
-    g = function('x', var('x') + constant(1))
+    f = function(['x', 'y'], apply(var('x'), [var('y')]))
+    g = function(['x'], var('x') + constant(1))
     self.assertTrue(sample(apply(f, [g, constant(21)])) == Value(22))
 
     assume('f', f)
@@ -68,7 +68,7 @@ class TestDirectives(unittest.TestCase):
   def test_tricky(self):
     noise_level = .01
   
-    assume('make-coin', function([], apply(function('weight', function([], bernoulli(var('weight')))), beta(constant(1), constant(1)))))
+    assume('make-coin', function([], apply(function(['weight'], function([], bernoulli(var('weight')))), beta(constant(1), constant(1)))))
   
     assume('tricky-coin', apply(var('make-coin')))
     assume('tricky-coin2', apply(var('make-coin')))
@@ -108,11 +108,11 @@ class TestDirectives(unittest.TestCase):
   
     assume('alpha', gamma(0.1, 20))
     assume('cluster-crp', CRP('alpha'))
-    assume('get-cluster-mean', mem(function('cluster', gaussian(0, 10))))
-    assume('get-cluster-variance', mem(function('cluster', gamma(0.1, 100))))
-    assume('get-cluster', mem(function('id' , apply('cluster-crp'))))
-    assume('get-cluster-model', mem(function('cluster', function([], gaussian(apply('get-cluster-mean', 'cluster'), apply('get-cluster-variance', 'cluster'))))))
-    assume('get-datapoint', mem(function('id', gaussian(apply(apply('get-cluster-model', apply('get-cluster', 'id'))), 0.1))))
+    assume('get-cluster-mean', mem(function(['cluster'], gaussian(0, 10))))
+    assume('get-cluster-variance', mem(function(['cluster'], gamma(0.1, 100))))
+    assume('get-cluster', mem(function(['id'] , apply('cluster-crp'))))
+    assume('get-cluster-model', mem(function(['cluster'], function([], gaussian(apply('get-cluster-mean', 'cluster'), apply('get-cluster-variance', 'cluster'))))))
+    assume('get-datapoint', mem(function(['id'], gaussian(apply(apply('get-cluster-model', apply('get-cluster', 'id'))), 0.1))))
     assume('outer-noise', gamma(0.1, 10)) 
   
     print test_prior(1000, 100)
@@ -161,19 +161,19 @@ class TestDirectives(unittest.TestCase):
     t = 20
 
     assume('dirichlet', constant(dirichlet_no_args_XRP([1]*n)))
-    assume('get-column', mem(function('i', apply(var('dirichlet')))))
-    assume('get-next-state', function('i', 
+    assume('get-column', mem(function(['i'], apply(var('dirichlet'), []))))
+    assume('get-next-state', function(['i'], 
                              let([('loop', \
                                   function(['v', 'j'], \
-                                           let([('w', apply(apply(var('get-column'), var('i')), var('j')))],
+                                           let([('w', apply(apply(var('get-column'), [var('i')]), [var('j')]))],
                                             ifelse(var('v') < var('w'), var('j'), apply(var('loop'), [var('v') - var('w'), var('j') + constant(1)]))))) \
                                  ], \
                                  apply(var('loop'), [uniform(), constant(0)])))) 
-    assume('state', mem(function('i',
-                                 ifelse(var('i') == constant(0), constant(0), apply(var('get-next-state'), apply(var('state'), var('i') - constant(1)))))))
+    assume('state', mem(function(['i'],
+                                 ifelse(var('i') == constant(0), constant(0), apply(var('get-next-state'), [apply(var('state'), [var('i') - constant(1)])])))))
   
-    assume('start-state', apply(var('state'), constant(0)))
-    assume('second-state', apply(var('state'), constant(t)))
+    assume('start-state', apply(var('state'), [constant(0)]))
+    assume('second-state', apply(var('state'), [constant(t)]))
 
     print sample(var('second-state'))
 
@@ -184,8 +184,8 @@ class TestDirectives(unittest.TestCase):
   def test_bayes_nets(self):
     print "\n TESTING INFERENCE ON CLOUDY/SPRINKLER\n"
     
-    #niters, burnin = 1000, 100
-    niters, burnin = 10, 10
+    niters, burnin = 1000, 100
+    #niters, burnin = 10, 10
   
     assume('cloudy', bernoulli(constant(0.5)))
     assume('sprinkler', ifelse(var('cloudy'), bernoulli(constant(0.1)), bernoulli(constant(0.5))))
@@ -207,7 +207,7 @@ class TestDirectives(unittest.TestCase):
     #print infer_many('sprinkler', niters, burnin)
     #print 'Should be 0 False, 1 True'
     
-    a = follow_prior(['cloudy', 'sprinkler'], 1000, 100, timer = False)
+    #a = follow_prior(['cloudy', 'sprinkler'], 1000, 100, timer = False)
     #print [(x, count_up(a[x])) for x in a]
   
     forget(sprinkler_ob)
@@ -216,8 +216,8 @@ class TestDirectives(unittest.TestCase):
   
     #print "\n TESTING BEACH NET\n"
     
-    #niters, burnin = 1000, 50
-    niters, burnin = 10, 5
+    niters, burnin = 1000, 50
+    #niters, burnin = 10, 5
   
     reset()
     assume('sunny', bernoulli(constant(0.5)))
@@ -241,6 +241,7 @@ class TestDirectives(unittest.TestCase):
     observe(noisy(var('beach'), noise_level), Value(True))
     print infer_many('sunny', niters, burnin)
     print 'Should be .357142857 False, .642857143 True'
+    return
 
     #print "\n TESTING BURGLARY NET\n" # An example from AIMA
   
@@ -339,39 +340,39 @@ class TestDirectives(unittest.TestCase):
   @unittest.skipIf(not test_recursion, "skipping test_recursion")
   def test_recursion(self):
     
-    factorial_expr = function('x', ifelse(var('x') == constant(0), constant(1), \
-                var('x') * apply(var('factorial'), var('x') - constant(1)))) 
+    factorial_expr = function(['x'], ifelse(var('x') == constant(0), constant(1), \
+                var('x') * apply(var('factorial'), [var('x') - constant(1)]))) 
     assume('factorial', factorial_expr) 
     
-    self.assertTrue(sample(apply(var('factorial'), constant(5))).val == 120)
-    self.assertTrue(sample(apply(var('factorial'), constant(10))).val == 3628800)
+    self.assertTrue(sample(apply(var('factorial'), [constant(5)])).val == 120)
+    self.assertTrue(sample(apply(var('factorial'), [constant(10)])).val == 3628800)
   
   @unittest.skipIf(not test_mem, "skipping test_mem")
   def test_mem(self):
-    fibonacci_expr = function('x', ifelse(var('x') <= constant(1), constant(1), \
-                  apply(var('fibonacci'), var('x') - constant(1)) + apply(var('fibonacci'), var('x') - constant(2)) )) 
+    fibonacci_expr = function(['x'], ifelse(var('x') <= constant(1), constant(1), \
+                  apply(var('fibonacci'), [var('x') - constant(1)]) + apply(var('fibonacci'), [var('x') - constant(2)]) )) 
     assume('fibonacci', fibonacci_expr) 
     
     t1 = time()
-    self.assertTrue(sample(apply(var('fibonacci'), constant(20))).val == 10946)
+    self.assertTrue(sample(apply(var('fibonacci'), [constant(20)])).val == 10946)
     t1 = time() - t1
 
     assume('bad_mem_fibonacci', mem(var('fibonacci'))) 
   
     t2 = time()
-    self.assertTrue(sample(apply(var('bad_mem_fibonacci'), constant(20))).val == 10946)
+    self.assertTrue(sample(apply(var('bad_mem_fibonacci'), [constant(20)])).val == 10946)
     t2 = time() - t2
 
     t3 = time()
-    self.assertTrue(sample(apply(var('bad_mem_fibonacci'), constant(20))).val == 10946)
+    self.assertTrue(sample(apply(var('bad_mem_fibonacci'), [constant(20)])).val == 10946)
     t3 = time() - t3
 
-    mem_fibonacci_expr = function('x', ifelse(var('x') <= constant(1), constant(1), \
-                  apply(var('mem_fibonacci'), var('x') - constant(1)) + apply(var('mem_fibonacci'), var('x') - constant(2)) )) 
+    mem_fibonacci_expr = function(['x'], ifelse(var('x') <= constant(1), constant(1), \
+                  apply(var('mem_fibonacci'), [var('x') - constant(1)]) + apply(var('mem_fibonacci'), [var('x') - constant(2)]) )) 
     assume('mem_fibonacci', mem(mem_fibonacci_expr)) 
   
     t4 = time()
-    self.assertTrue(sample(apply(var('mem_fibonacci'), constant(20))).val == 10946)
+    self.assertTrue(sample(apply(var('mem_fibonacci'), [constant(20)])).val == 10946)
     t4 = time() - t4
 
     print t1, t2, t3, t4
@@ -389,8 +390,8 @@ class TestDirectives(unittest.TestCase):
     niters, burnin = 1000, 100 
   
     assume('decay', beta(constant(a), constant(b)))
-    assume('geometric', function('x', ifelse(bernoulli(var('decay')), var('x'), apply(var('geometric'), var('x') + constant(1)))))
-    assume('timetodecay', apply(var('geometric'), constant(0)))
+    assume('geometric', function(['x'], ifelse(bernoulli(var('decay')), var('x'), apply(var('geometric'), [var('x') + constant(1)]))))
+    assume('timetodecay', apply(var('geometric'), [constant(0)]))
 
     d = test_prior(1000, 100, timer = False)
     print d
@@ -446,10 +447,10 @@ class TestDirectives(unittest.TestCase):
   
     assume('DP', \
            function(['concentration', 'basemeasure'], \
-                    let([('sticks', mem(function('j', beta(1, 'concentration')))),
-                         ('atoms',  mem(function('j', apply('basemeasure')))),
+                    let([('sticks', mem(function(['j'], beta(1, 'concentration')))),
+                         ('atoms',  mem(function(['j'], apply('basemeasure')))),
                          ('loop', \
-                          function('j', \
+                          function(['j'], \
                                    ifelse(bernoulli(apply('sticks', 'j')), \
                                           apply('atoms', 'j'), \
                                           apply('loop', var('j')+1)))) \
@@ -480,8 +481,8 @@ class TestDirectives(unittest.TestCase):
     assume('DPmem', \
            function(['concentration', 'proc'], \
                     let([('restaurants', \
-                          mem( function('args', apply('DP', ['concentration', function([], apply('proc', 'args'))]))))], \
-                        function('args', apply('restaurants', 'args'))))) 
+                          mem( function(['args'], apply('DP', ['concentration', function([], apply('proc', 'args'))]))))], \
+                        function(['args'], apply('restaurants', 'args'))))) 
   
     """TESTING DPMEM"""
     concentration = 1 # when close to 0, just mem.  when close to infinity, sample 
@@ -546,8 +547,8 @@ class TestDirectives(unittest.TestCase):
       assume('get-cluster-mean', gaussian(0, 10))
       assume('get-cluster-variance', gamma(1, 10))
       assume('get-cluster-model', function([], gaussian('get-cluster-mean', 'get-cluster-variance')))
-      assume('get-datapoint-2', mem(function('id', apply('get-cluster-model'))))
-      assume('get-datapoint', mem(function('id', gaussian(apply('get-cluster-model'), 0.1))))
+      assume('get-datapoint-2', mem(function(['id'], apply('get-cluster-model'))))
+      assume('get-datapoint', mem(function(['id'], gaussian(apply('get-cluster-model'), 0.1))))
   
       points = [2.2, 2.0, 1.5, 2.1, 1.8, 1.9]
       print "points: " + str(points)
@@ -595,11 +596,11 @@ class TestDirectives(unittest.TestCase):
     print " \n TESTING 2 COMPONENT MIXTURE\n"
   
     assume('cluster-crp', function([], uniform(2)))
-    assume('get-cluster-mean', function('cluster', gaussian(0, 10)))
-    assume('get-cluster-variance', function('cluster', gamma(1, 10)))
-    assume('get-cluster', function('id' , apply('cluster-crp')))
-    assume('get-cluster-model', mem(function('cluster', function([], gaussian(apply('get-cluster-mean', 'cluster'), apply('get-cluster-variance', 'cluster'))))))
-    assume('get-datapoint', mem(function('id', gaussian(apply(apply('get-cluster-model', apply('get-cluster', 'id'))), 0.1))))
+    assume('get-cluster-mean', function(['cluster'], gaussian(0, 10)))
+    assume('get-cluster-variance', function(['cluster'], gamma(1, 10)))
+    assume('get-cluster', function(['id'] , apply('cluster-crp')))
+    assume('get-cluster-model', mem(function(['cluster'], function([], gaussian(apply('get-cluster-mean', 'cluster'), apply('get-cluster-variance', 'cluster'))))))
+    assume('get-datapoint', mem(function(['id'], gaussian(apply(apply('get-cluster-model', apply('get-cluster', 'id'))), 0.1))))
   
     assume('x', apply('get-datapoint', 0))
     #observe(gaussian('x', let([('y', gaussian(0, .1))], var('y') * var('y'))), Value(-2.3))
@@ -641,15 +642,15 @@ def run_HMM(t, s, niters = 1000, burnin = 100, countup = True):
     rrandom.random.seed(s)
     n = 5
     assume('dirichlet', dirichlet_no_args_XRP([1]*n))
-    assume('get-column', mem(function('i', apply('dirichlet'))))
-    assume('get-next-state', function('i',
+    assume('get-column', mem(function(['i'], apply('dirichlet'))))
+    assume('get-next-state', function(['i'],
                              let([('loop', \
-                                  function(['v', 'j'], \
+                                  function([['v'], 'j'], \
                                            let([('w', apply(apply('get-column', 'i'), 'j'))],
                                             ifelse(var('v') < 'w', 'j', apply('loop', [var('v') -'w', var('j') + 1]))))) \
                                  ], \
                                  apply('loop', [uniform(), 0]))))
-    assume('state', mem(function('i',
+    assume('state', mem(function(['i'],
                                  ifelse(var('i') == 0, 0, apply('get-next-state', apply('state', var('i') - 1))))))
   
     assume('start-state', apply('state', 0))
@@ -667,16 +668,16 @@ def run_topic_model(docsize, s, niters = 1000, burnin = 100, countup = True):
     assume('words-dirichlet', dirichlet_no_args_XRP([1]*nwords))
 
     assume('get-topic-dist', apply('topics-dirichlet'))
-    assume('get-topic-words-dist', mem(function('i', apply('words-dirichlet'))))
-    assume('sample-dirichlet', function('prob_array',
+    assume('get-topic-words-dist', mem(function(['i'], apply('words-dirichlet'))))
+    assume('sample-dirichlet', function(['prob_array'],
                                let([('loop', 
                                     function(['v', 'i'], 
                                              let([('w', apply('prob_array', 'i'))], 
                                               ifelse(var('v') < 'w', 'i', apply('loop', [var('v') -'w', var('i') + 1])))))
                                    ], 
                                    apply('loop', [uniform(), 0]))))
-    assume('get-topic', mem(function('i', apply('sample-dirichlet', 'get-topic-dist'))))
-    assume('get-word', mem(function('i', apply('sample-dirichlet', apply('get-topic-words-dist', apply('get-topic', 'i'))))))
+    assume('get-topic', mem(function(['i'], apply('sample-dirichlet', 'get-topic-dist'))))
+    assume('get-word', mem(function(['i'], apply('sample-dirichlet', apply('get-topic-words-dist', apply('get-topic', 'i'))))))
 
     for i in range(docsize):
       assume('get-word' + str(i), apply('get-word', i)) 
@@ -690,11 +691,11 @@ def run_mixture(n, s, niters = 1000, burnin = 100, countup = True):
 
     assume('alpha', gamma(0.1, 20))
     assume('cluster-crp', CRP('alpha'))
-    assume('get-cluster-mean', mem(function('cluster', gaussian(0, 10))))
-    assume('get-cluster-variance', mem(function('cluster', gamma(0.1, 100))))
-    assume('get-cluster', mem(function('id' , apply('cluster-crp'))))
-    assume('get-cluster-model', mem(function('cluster', function([], gaussian(apply('get-cluster-mean', 'cluster'), apply('get-cluster-variance', 'cluster'))))))
-    assume('get-datapoint', mem(function('id', gaussian(apply(apply('get-cluster-model', apply('get-cluster', 'id'))), 0.1))))
+    assume('get-cluster-mean', mem(function(['cluster'], gaussian(0, 10))))
+    assume('get-cluster-variance', mem(function(['cluster'], gamma(0.1, 100))))
+    assume('get-cluster', mem(function(['id'] , apply('cluster-crp'))))
+    assume('get-cluster-model', mem(function(['cluster'], function([], gaussian(apply('get-cluster-mean', 'cluster'), apply('get-cluster-variance', 'cluster'))))))
+    assume('get-datapoint', mem(function(['id'], gaussian(apply(apply('get-cluster-model', apply('get-cluster', 'id'))), 0.1))))
 
     for i in range(n):
       assume('point' + str(i), apply('get-datapoint', i))
@@ -707,10 +708,10 @@ def run_mixture_uncollapsed(n, s):
     """DEFINITION OF DP"""
     assume('DP', \
            function(['concentration', 'basemeasure'], \
-                    let([('sticks', mem(function('j', beta(1, 'concentration')))),
-                         ('atoms',  mem(function('j', apply('basemeasure')))),
+                    let([('sticks', mem(function(['j'], beta(1, 'concentration')))),
+                         ('atoms',  mem(function(['j'], apply('basemeasure')))),
                          ('loop', \
-                          function('j', \
+                          function(['j'], \
                                    ifelse(bernoulli(apply('sticks', 'j')), \
                                           apply('atoms', 'j'), \
                                           apply('loop', var('j')+1)))) \
@@ -721,8 +722,8 @@ def run_mixture_uncollapsed(n, s):
     assume('DPmem', \
            function(['concentration', 'proc'], \
                     let([('restaurants', \
-                          mem( function('args', apply('DP', ['concentration', function([], apply('proc', 'args'))]))))], \
-                        function('args', apply('restaurants', 'args'))))) 
+                          mem( function(['args'], apply('DP', ['concentration', function([], apply('proc', 'args'))]))))], \
+                        function(['args'], apply('restaurants', 'args'))))) 
 
     print "\n TESTING GAUSSIAN MIXTURE MODEL\n"
     assume('expected-mean', gaussian(0, 5)) 

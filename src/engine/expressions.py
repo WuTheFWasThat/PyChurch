@@ -59,8 +59,6 @@ class Expression:
         self.val = Value(tup[1])
     elif self.type == 'variable':
       self.name = tup[1]
-      if type(self.name).__name__ != 'str':
-        raise Exception('Variable must be string')
     elif self.type == 'if':
       self.cond = tup[1]
       self.true = tup[2]
@@ -70,46 +68,19 @@ class Expression:
       self.children = tup[2] # list of expressions
       self.n = len(self.children)
     elif self.type == 'let':
-      if len(tup) == 4:
-        if type(tup[1]) == list or type(tup[1]) == tuple:
-          self.vars = list(tup[1])
-        else:
-          self.vars = [tup[1]]
-        if type(tup[2]) == list or type(tup[2]) == tuple:
-          self.expressions = tup[2] # list of expressions
-        else:
-          self.expressions = [tup[2]]
-        assert len(self.expressions) == len(self.vars)
-        self.body = tup[3]
-      else:
-        if type(tup[1]) == tuple:
-          assert len(tup[1]) == 2
-          self.vars = [tup[1][0]]
-          self.expressions = [tup[1][1]]
-        else:
-          assert type(tup[1]) == list
-          self.vars = []
-          self.expressions = []
-          for (var, expr) in tup[1]:
-            self.vars.append(var)
-            self.expressions.append(expr)
-        self.body = tup[2]
+      self.vars = []
+      self.expressions = []
+      for (var, expr) in tup[1]:
+        self.vars.append(var)
+        self.expressions.append(expr)
+      self.body = tup[2]
     elif self.type == 'apply':
       self.op = tup[1]
-      if type(tup[2]) == list or type(tup[2]) == tuple:
-        self.children = tup[2] # list of expressions
-      else:
-        if len(tup) == 3:
-          self.children = [tup[2]]
-        else:
-          self.children = []
+      self.children = tup[2] # list of expressions
       if self.op.type == 'function' and len(self.op.vars) < len(self.children):
         raise Exception('Applying function to too many arguments!')
     elif self.type == 'function':
-      if type(tup[1]) == list or type(tup[1]) == tuple:
-        self.vars = list(tup[1])
-      else:
-        self.vars = [tup[1]]
+      self.vars = tup[1]
       self.body = tup[2]
     elif self.type in ['&', '|', '^']:
       self.children = tup[1] # list of expressions
@@ -153,9 +124,9 @@ class Expression:
     elif self.type == 'let':
       expressions = [x.replace(env, bound) for x in self.expressions]
       for var in self.vars:
-        bound.add(var)
+        bound[var] = True
       body = self.body.replace(env, bound)
-      return Expression(('let', self.vars, expressions, body)) 
+      return Expression(('let', [(self.vars[i], expressions[i]) for i in range(len(expressions))], body)) 
     elif self.type == 'apply':
       # hmm .. replace non-bound things in op?  causes recursion to break...
       children = [x.replace(env, bound) for x in self.children] 
@@ -164,7 +135,7 @@ class Expression:
       # hmm .. replace variables?  maybe wipe those assignments out ...
       children = [x.replace(env, bound) for x in self.children] 
       for var in self.vars: # do we really want this?  probably.  (this is the only reason we use 'bound' at all
-        bound.add(var)
+        bound[var] = True
       body = self.body.replace(env, bound)
       return Expression(('function', self.vars, body)) 
     elif self.type in ['=', '<', '>', '>=', '<=', '&', '^', '|', 'add', 'subtract', 'multiply']:
@@ -286,7 +257,7 @@ def xrp(xrp):
 
 bernoulli_args_xrp = Expression(('xrp', Value(bernoulli_args_XRP())))
 def bernoulli(p):
-  return Expression(('apply', bernoulli_args_xrp, p)) 
+  return Expression(('apply', bernoulli_args_xrp, [p])) 
 
 beta_args_xrp = Expression(('xrp', Value(beta_args_XRP())))
 def beta(a, b): 
@@ -301,7 +272,7 @@ def uniform(n = None):
   if n is None:
     return beta(constant(1), constant(1))
   else:
-    return Expression(('apply', uniform_args_xrp, n))
+    return Expression(('apply', uniform_args_xrp, [n]))
 
 gaussian_args_xrp = Expression(('xrp', Value(gaussian_args_XRP())))
 def gaussian(mu, sigma):

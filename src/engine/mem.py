@@ -103,7 +103,7 @@ class mem_XRP(XRP):
 
 mem_xrp = Expression(('value', Value(mem_XRP())))
 def mem(function):
-  return Expression(('apply', mem_xrp, function))
+  return Expression(('apply', mem_xrp, [function]))
 
 class CRP_XRP(XRP):
   def __init__(self, alpha):

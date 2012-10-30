@@ -99,21 +99,16 @@ class EvalNode:
     self.val = None
     return
 
-  def get_child(self, addition, env, subexpr):
-    if type(addition) == tuple:
-      if addition not in self.applychildren:
-        self.spawnchild(addition, env, subexpr, True)
-      evalnode = self.applychildren[addition]
-      evalnode.env = env
-      return evalnode
-    else:
-      if addition not in self.children:
-        self.spawnchild(addition, env, subexpr, False)
-      evalnode = self.children[addition]
-      evalnode.env = env
-      return evalnode
+  def get_child(self, addition, env, subexpr, is_apply = False):
+    children = (self.applychildren if is_apply else self.children)
+
+    if addition not in children:
+      self.spawnchild(addition, env, subexpr, is_apply)
+    evalnode = children[addition]
+    evalnode.env = env
+    return evalnode
   
-  def spawnchild(self, addition, env, subexpr, is_apply):
+  def spawnchild(self, addition, env, subexpr, is_apply = False):
     child = EvalNode(self.traces, env, subexpr)
     child.parent = self
     if is_apply:
@@ -237,8 +232,8 @@ class EvalNode:
       self.random_xrp_apply = True
       self.traces.add_xrp(args, self)
 
-  def evaluate_recurse(self, subexpr, env, addition, reflip):
-    child = self.get_child(addition, env, subexpr)
+  def evaluate_recurse(self, subexpr, env, addition, reflip, is_apply = False):
+    child = self.get_child(addition, env, subexpr, is_apply)
     val = child.evaluate(reflip == True)
     return val
   
@@ -274,7 +269,6 @@ class EvalNode:
       self.setlookup(lookup_env)
     elif self.type == 'if':
       cond = self.evaluate_recurse(expr.cond, self.env, -1, reflip)
-      assert type(cond.val) in [bool]
       if cond.val:
         self.get_child(0, self.env, expr.false).unevaluate()
         val = self.evaluate_recurse(expr.true, self.env, 1, reflip)
@@ -283,14 +277,13 @@ class EvalNode:
         val = self.evaluate_recurse(expr.false, self.env, 0, reflip)
     elif self.type == 'switch':
       index = self.evaluate_recurse(expr.index, self.env, -1, reflip)
-      assert type(index.val) in [int]
       assert 0 <= index.val < expr.n
       for i in range(expr.n):
         if i != index.val:
           self.get_child(i, self.env, expr.children[i]).unevaluate()
       val = self.evaluate_recurse(self.children[index.val] , self.env, index.val, reflip)
     elif self.type == 'let':
-      # TODO: think more about the behavior with environments here...
+      # TODO: this really is a let*
       
       n = len(expr.vars)
       assert len(expr.expressions) == n
@@ -313,15 +306,14 @@ class EvalNode:
       if op.type == 'procedure':
         self.procedure_apply = True
         for x in self.applychildren:
-          if x != tuple(hash(x) for x in args):
-            self.applychildren[x].unevaluate()
+          self.applychildren[x].unevaluate()
 
         if n != len(op.vars):
           raise Exception('Procedure should have %d arguments.  \nVars were \n%s\n, but children were \n%s.' % (n, op.vars, self.chidlren))
         new_env = op.env.spawn_child()
         for i in range(n):
           new_env.set(op.vars[i], args[i])
-        val = self.evaluate_recurse(op.body, new_env, (-1, tuple(hash(x) for x in args)), reflip)
+        val = self.evaluate_recurse(op.body, new_env, (-1, tuple(hash(x) for x in args)), reflip, True)
       elif op.type == 'xrp':
         self.xrp_apply = True
         xrp = op.val
@@ -571,7 +563,6 @@ class Traces:
     assert False
     stack = ['expr', expression.hashval]
     evalnode = self.get_or_make(stack, expression)
-    #self.roots.add(evalnode)
     val = evalnode.evaluate(reflip)
     return val
 
@@ -747,7 +738,6 @@ class RandomDB:
       (val, lookup_env) = env.lookup(var)
     elif expr.type == 'if':
       cond = self.evaluate_recurse(expr.cond, env, reflip, stack , -1)
-      assert type(cond.val) in [bool]
       if cond.val: 
         self.unevaluate(stack + [0])
         val = self.evaluate_recurse(expr.true, env, reflip, stack , 1)
@@ -756,12 +746,12 @@ class RandomDB:
         val = self.evaluate_recurse(expr.false, env, reflip, stack , 0)
     elif expr.type == 'switch':
       index = self.evaluate_recurse(expr.index, env, reflip, stack , -1)
-      assert type(index.val) in [int] 
       assert 0 <= index.val < expr.n
       # unevaluate?
       val = self.evaluate_recurse(expr.children[index.val], env, reflip, stack, index.val)
     elif expr.type == 'let':
-      # TODO:think more about the behavior with environments here...
+      # TODO: this really is a let*
+
       n = len(expr.vars)
       assert len(expr.expressions) == n
       values = []
