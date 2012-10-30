@@ -4,9 +4,9 @@ from time import *
 
 import unittest
 
-test_expressions = False
-test_recursion = False 
-test_mem = False
+test_expressions = True
+test_recursion = True
+test_mem = True
 
 test_HMM = False
 test_bayes_nets = True
@@ -185,7 +185,7 @@ class TestDirectives(unittest.TestCase):
     print "\n TESTING INFERENCE ON CLOUDY/SPRINKLER\n"
     
     #niters, burnin = 1000, 100
-    niters, burnin = 1000, 100
+    niters, burnin = 10, 10
   
     assume('cloudy', bernoulli(constant(0.5)))
     assume('sprinkler', ifelse(var('cloudy'), bernoulli(constant(0.1)), bernoulli(constant(0.5))))
@@ -216,7 +216,8 @@ class TestDirectives(unittest.TestCase):
   
     #print "\n TESTING BEACH NET\n"
     
-    niters, burnin = 1000, 50
+    #niters, burnin = 1000, 50
+    niters, burnin = 10, 5
   
     reset()
     assume('sunny', bernoulli(constant(0.5)))
@@ -269,7 +270,8 @@ class TestDirectives(unittest.TestCase):
     print "\n TESTING MODIFIED BURGLARY NET\n" # An example from AIMA
     reset()
   
-    niters, burnin = 1000, 100
+    #niters, burnin = 1000, 100
+    niters, burnin = 10, 10
   
     pB = 0.1
     pE = 0.2
@@ -296,7 +298,7 @@ class TestDirectives(unittest.TestCase):
   
     assume('johnCalls', ifelse(var('alarm'),  bernoulli(constant(pJgA)), bernoulli(constant(pJgnA))))
     assume('maryCalls', ifelse(var('alarm'),  bernoulli(constant(pMgA)), bernoulli(constant(pMgnA))))
-    print test_prior(1000, 100)
+    print test_prior(1000, 100, timer = False)
   
     print infer_many('alarm', niters, burnin)
     print 'Should be %f True' % pA
@@ -423,8 +425,8 @@ class TestDirectives(unittest.TestCase):
   def test_DPmem(self):
   
     def count_distinct(ls):
-      d = set()
-      dd = set()
+      d = Set()
+      dd = Set()
       count = 0
       duplicates = 0
       for x in ls:

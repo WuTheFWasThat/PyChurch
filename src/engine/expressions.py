@@ -1,5 +1,3 @@
-import random
-import warnings
 from values import *
 from xrp import *
 
@@ -8,7 +6,7 @@ class Expression:
   # Initializes an expression, taking in a type string, and a list of other parameter arguments 
   def __init__(self, tup):
     self.tup = tup
-    self.hashval = random.randint(0, 2**64-1)
+    self.hashval = rrandom.random.randint()
     self.val = None
     self.children = []
     self.parents = []
@@ -62,7 +60,7 @@ class Expression:
     elif self.type == 'variable':
       self.name = tup[1]
       if type(self.name).__name__ != 'str':
-        warnings.warn('Variable must be string')
+        raise Exception('Variable must be string')
     elif self.type == 'if':
       self.cond = tup[1]
       self.true = tup[2]
@@ -106,7 +104,7 @@ class Expression:
         else:
           self.children = []
       if self.op.type == 'function' and len(self.op.vars) < len(self.children):
-        warnings.warn('Applying function to too many arguments!')
+        raise Exception('Applying function to too many arguments!')
     elif self.type == 'function':
       if type(tup[1]) == list or type(tup[1]) == tuple:
         self.vars = list(tup[1])
@@ -128,11 +126,11 @@ class Expression:
     elif self.type == 'multiply': 
       self.children = tup[1] # list of expressions
     else:
-      warnings.warn('Invalid type %s' % str(self.type))
+      raise Exception('Invalid type %s' % str(self.type))
     return
 
   # Replaces variables with the values from the environment 
-  def replace(self, env, bound = set()):
+  def replace(self, env, bound = {}):
     if self.type == 'value':
       return self
     elif self.type == 'variable':
@@ -175,8 +173,7 @@ class Expression:
     elif self.type == '~':
       return Expression(('not', self.negation.replace(env, bound)))
     else:
-      warnings.warn('Invalid expression type %s' % self.type)
-      assert False
+      raise Exception('Invalid expression type %s' % self.type)
   
   def str_op(self, children, opstring, funstring = None):
     if (len(children) < 5) or (funstring is None):
@@ -210,8 +207,7 @@ class Expression:
     elif self.type == 'multiply': 
       return self.str_op(self.children, '*', 'product')
     else:
-      warnings.warn('Invalid type %s' % str(self.type))
-      return 'Invalid Expression'
+      raise Exception('Expression with invalid type %s' % str(self.type))
 
   def __repr__(self):
     return self.__str__()
@@ -221,7 +217,7 @@ class Expression:
     return self.hashval
 
   def rehash(self):
-    self.hashval = random.randint(0, 2**64-1)
+    self.hashval = rrandom.random.randint()
 
   def operate(self, other, opname):
     return Expression((opname, [self, other]))

@@ -1,5 +1,5 @@
 from expressions import *
-from random_choice_dict import *
+from utils.random_choice_dict import RandomChoiceDict
 import sys
 
 # Class representing environments
@@ -7,12 +7,12 @@ class Environment:
   def __init__(self, parent = None):
     self.parent = parent # The parent environment
     self.assignments = {} # Dictionary from names to values
-    self.children = set() 
-    if parent is not None:
-      self.parent.children.add(self)
+    #self.children = set() 
+    #if parent is not None:
+    #  self.parent.children.add(self)
 
     self.assumes = {}
-    self.lookups = {}
+    self.lookups = {} # just a set
     return
 
   def reset(self):
@@ -28,8 +28,7 @@ class Environment:
       return (self.assignments[name], self)
     else:
       if self.parent is None:
-        warnings.warn('Variable %s undefined in env:\n%s' % (name, str(env)))
-        assert False
+        raise Exception('Variable %s undefined in env:\n%s' % (name, str(env)))
       else:
         return self.parent.lookup(name)
 
@@ -39,14 +38,13 @@ class Environment:
 
   def add_lookup(self, name, evalnode):
     assert evalnode.traces.has(evalnode)
-    if name in self.lookups:
-      self.lookups[name].add(evalnode)
-    else:
-      self.lookups[name] = set([evalnode])
+    if name not in self.lookups:
+      self.lookups[name] = {}
+    self.lookups[name][evalnode] = True
 
   def rem_lookup(self, name, evalnode):
     assert name in self.lookups
-    self.lookups[name].remove(evalnode)
+    del self.lookups[name][evalnode]
 
   def get_lookups(self, name, evalnode):
     assert name in self.assumes
@@ -54,7 +52,7 @@ class Environment:
     if name in self.lookups:
       return self.lookups[name]
     else:
-      return set()
+      return {}
 
   def spawn_child(self): 
     return Environment(self)
@@ -79,7 +77,7 @@ class EvalNode:
     self.applychildren = {} 
 
     self.mem = False # Whether this is the root of a mem'd procedure's application
-    self.mem_calls = set()
+    self.mem_calls = {} # just a set
 
     self.env = env # Environment in which this was evaluated
     self.lookup = None 
@@ -177,7 +175,7 @@ class EvalNode:
         self.parent.propogate_up()
     if self.mem:
       # self.mem_calls can be affected *while* propogating up.  However, if new links are created, they'll use the new value
-      for evalnode in list(self.mem_calls):
+      for evalnode in self.mem_calls.keys():
         assert self.traces.has(evalnode)
         evalnode.propogate_up()
 
@@ -319,8 +317,7 @@ class EvalNode:
             self.applychildren[x].unevaluate()
 
         if n != len(op.vars):
-          warnings.warn('Procedure should have %d arguments.  \nVars were \n%s\n, but children were \n%s.' % (n, op.vars, self.chidlren))
-          assert False
+          raise Exception('Procedure should have %d arguments.  \nVars were \n%s\n, but children were \n%s.' % (n, op.vars, self.chidlren))
         new_env = op.env.spawn_child()
         for i in range(n):
           new_env.set(op.vars[i], args[i])
@@ -368,16 +365,16 @@ class EvalNode:
         self.xrp = xrp
         assert val is not None
       else:
-        warnings.warn('Must apply either a procedure or xrp')
+        raise Exception('Must apply either a procedure or xrp')
 
       self.args = args
     elif self.type == 'function':
       val = self.val
       n = len(expr.vars)
       new_env = self.env.spawn_child()
-      bound = set()
+      bound = {}
       for i in range(n): # Bind variables
-        bound.add(expr.vars[i])
+        bound[expr.vars[i]] = True
       procedure_body = expr.body.replace(new_env, bound)
       val = Value((expr.vars, procedure_body), self.env)
       #TODO: SET SOME RELATIONSHIP HERE?  If body contains reference to changed var...
@@ -409,8 +406,7 @@ class EvalNode:
     elif self.type == 'multiply':
       val = list_op_evaluate(lambda x, y : x * y)
     else:
-      warnings.warn('Invalid expression type %s' % self.type)
-      assert False
+      raise Exception('Invalid expression type %s' % self.type)
 
     self.val = val
     self.active = True
@@ -452,11 +448,11 @@ class EvalNode:
 
 class Traces:
   def __init__(self, env):
-    self.evalnodes = set() 
+    self.evalnodes = {} # just a set
 
     # set of evalnodes with no parents
     self.assumes = []
-    self.observes = set() 
+    self.observes = {} # just a set
 
     self.db = RandomChoiceDict() 
 
@@ -483,7 +479,7 @@ class Traces:
     self.add_node(evalnode)
 
     evalnode.observe(obs_val)
-    self.observes.add(evalnode)
+    self.observes[evalnode] = True
     evalnode.evaluate()
 
     return evalnode
@@ -491,7 +487,7 @@ class Traces:
   def forget(self, evalnode):
     evalnode.unevaluate()
     self.remove_node(evalnode)
-    self.observes.remove(evalnode)
+    del self.observes[evalnode]
     return
 
   def rerun(self, reflip):
@@ -550,7 +546,7 @@ class Traces:
     self.eval_p = 0
     self.uneval_p = 0
   
-    p = random.random()
+    p = rrandom.random.random()
     if new_p + new_to_old_q - old_p - old_to_new_q < math.log(p):
       if debug: 
         print 'restore'
@@ -581,11 +577,11 @@ class Traces:
 
   def add_node(self, evalnode):
     assert not self.has(evalnode)
-    self.evalnodes.add(evalnode)
+    self.evalnodes[evalnode] = True
 
   def remove_node(self, evalnode):
     assert self.has(evalnode)
-    self.evalnodes.remove(evalnode)
+    del self.evalnodes[evalnode]
 
   # Add an XRP application node to the db
   def add_xrp(self, args, evalnodecheck = None):
@@ -646,7 +642,7 @@ class RandomDB:
 
   def observe(self, expr, obs_val):
     if expr.hashval in self.observes:
-      warnings.warn('Already observed %s' % str(expr))
+      raise Exception('Already observed %s' % str(expr))
     self.observes[expr.hashval] = (expr, obs_val) 
     # bit of a hack, here, to make it recognize same things as with noisy_expr
     self.evaluate(expr, self.env, reflip = False, stack = ['obs', expr.hashval], xrp_force_val = obs_val)
@@ -714,8 +710,7 @@ class RandomDB:
     elif stack in self.db_noise:
       return self.db_noise[stack]
     else:
-      warnings.warn('Failed to get stack %s' % str(stack))
-      return None
+      raise Exception('Failed to get stack %s' % str(stack))
 
   def random_stack(self):
     key = self.db.randomKey()
@@ -787,8 +782,7 @@ class RandomDB:
       if op.type == 'procedure':
         self.unevaluate(stack + [-1], tuple(hash(x) for x in args))
         if n != len(op.vars):
-          warnings.warn('Procedure should have %d arguments.  \nVars were \n%s\n, but children were \n%s.' % (n, op.vars, expr.children))
-          assert False
+          raise Exception('Procedure should have %d arguments.  \nVars were \n%s\n, but children were \n%s.' % (n, op.vars, expr.children))
         new_env = op.env.spawn_child()
         for i in range(n):
           new_env.set(op.vars[i], args[i])
@@ -822,13 +816,13 @@ class RandomDB:
               (xrp, val, dbargs, is_obs_noise) = self.get(substack)
               assert not is_obs_noise
       else:
-        warnings.warn('Must apply either a procedure or xrp')
+        raise Exception('Must apply either a procedure or xrp')
     elif expr.type == 'function':
       n = len(expr.vars)
       new_env = env.spawn_child()
-      bound = set()
+      bound = {}
       for i in range(n): # Bind variables
-        bound.add(expr.vars[i])
+        bound[expr.vars[i]] = True
       procedure_body = expr.body.replace(new_env, bound)
       val = Value((expr.vars, procedure_body), env)
     elif expr.type == '=':
@@ -859,8 +853,7 @@ class RandomDB:
     elif expr.type == 'multiply':
       val = list_op_evaluate(expr, env, reflip, stack, lambda x, y : x * y)
     else:
-      warnings.warn('Invalid expression type %s' % expr.type)
-      assert False
+      raise Exception('Invalid expression type %s' % expr.type)
     return val
 
 
@@ -941,7 +934,7 @@ class RandomDB:
             'log transition prob : ',  new_p + new_to_old_q - old_p - old_to_new_q , "\n"
   
     if old_p * old_to_new_q > 0:
-      p = random.random()
+      p = rrandom.random.random()
       if new_p + new_to_old_q - old_p - old_to_new_q < math.log(p):
         self.restore()
         if debug:

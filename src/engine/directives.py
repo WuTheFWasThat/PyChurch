@@ -35,7 +35,7 @@ def forget(observation):
 
 def sample(expr, env = None, varname = None, reflip = False):
   if globals.use_traces:
-    name = str(expr) + str(random.randint(0, 2**32-1))
+    name = str(expr) + str(rrandom.random.randint())
     assume(name, expr)
     return globals.traces.env.assumes[name].evaluate(False)
   else:

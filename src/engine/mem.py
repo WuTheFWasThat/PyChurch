@@ -1,5 +1,6 @@
-from directives import *
 from globals import EvalNode
+import globals
+from expressions import *
 
 # THIS XRP IMPLEMENTATION IS NOT INDEPENDENT OF DIRECTIVES IMPLEMENTATION 
 class mem_proc_XRP(XRP):
@@ -8,7 +9,7 @@ class mem_proc_XRP(XRP):
     self.procedure = procedure
     self.n = len(procedure.vars)
     self.state = {}
-    self.hash = random.randint(0, 2**32-1)
+    self.hash = rrandom.random.randint()
   def apply(self, args = None, help = None):
     # help is call_stack for db
     assert len(args) == self.n and all([args[i].__class__.__name__ == 'Value' for i in xrange(self.n)])
@@ -37,7 +38,7 @@ class mem_proc_XRP(XRP):
       assert args in self.state
       evalnode = self.state[args]
       assert help not in evalnode.mem_calls
-      evalnode.mem_calls.add(help)
+      evalnode.mem_calls[help] = True
     else:
       args = tuple(args)
       if args not in self.state:
@@ -55,7 +56,7 @@ class mem_proc_XRP(XRP):
       assert help is not None
       evalnode = self.state[args]
       assert help in evalnode.mem_calls
-      evalnode.mem_calls.remove(help)
+      del evalnode.mem_calls[help]
       if len(evalnode.mem_calls) == 0:
         evalnode.unevaluate()
     else:
@@ -115,12 +116,12 @@ class CRP_XRP(XRP):
   def apply(self, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
-    x = random.random() * self.weight
+    x = rrandom.random.random() * self.weight
     for id in self.state:
       x -= self.state[id]
       if x <= 0:
         return id
-    return Value(random.randint(0, 2**32-1))
+    return Value(rrandom.random.randint())
   def incorporate(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: CRP_XRP has no need to take in arguments %s' % str(args))

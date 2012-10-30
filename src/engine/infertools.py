@@ -115,7 +115,7 @@ def follow_prior(names, niter = 1000, burnin = 100, timer = True, printiters = 0
     infer()
 
   for name in names:
-    assert name not in set(['TIME'])
+    assert name not in ['TIME']
     dict[name] = []
   if timer:
     dict['TIME'] = []
@@ -146,7 +146,7 @@ def sample_prior(names, niter = 1000, timer = True, printiters = 0):
   dict = {}
 
   for name in names:
-    assert name not in set(['TIME'])
+    assert name not in ['TIME']
     dict[name] = []
   if timer:
     dict['TIME'] = []
@@ -179,12 +179,12 @@ def test_prior(niter = 1000, burnin = 100, countup = True, timer = True):
   # TODO : get all the observed variables
   if globals.use_traces:
     for evalnode in globals.traces.assumes:
-      assert evalnode.assume_name not in set(['TIME'])
+      assert evalnode.assume_name not in ['TIME']
       expressions.append(evalnode.expression)
       varnames.append(evalnode.assume_name)
   else:
     for (varname, expr) in globals.db.assumes:
-      assert varname not in set(['TIME'])
+      assert varname not in ['TIME']
       expressions.append(expr)
       varnames.append(varname)
 
