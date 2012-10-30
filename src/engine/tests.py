@@ -638,7 +638,7 @@ class TestDirectives(unittest.TestCase):
 
 def run_HMM(t, s, niters = 1000, burnin = 100, countup = True):
     reset()
-    random.seed(s)
+    rrandom.random.seed(s)
     n = 5
     assume('dirichlet', dirichlet_no_args_XRP([1]*n))
     assume('get-column', mem(function('i', apply('dirichlet'))))
@@ -659,7 +659,7 @@ def run_HMM(t, s, niters = 1000, burnin = 100, countup = True):
 
 def run_topic_model(docsize, s, niters = 1000, burnin = 100, countup = True):
     reset()
-    random.seed(s)
+    rrandom.random.seed(s)
     ntopics = 5
     nwords = 20
 
@@ -686,7 +686,7 @@ def run_topic_model(docsize, s, niters = 1000, burnin = 100, countup = True):
 
 def run_mixture(n, s, niters = 1000, burnin = 100, countup = True):
     reset()
-    random.seed(s)
+    rrandom.random.seed(s)
 
     assume('alpha', gamma(0.1, 20))
     assume('cluster-crp', CRP('alpha'))
@@ -702,7 +702,7 @@ def run_mixture(n, s, niters = 1000, burnin = 100, countup = True):
     return a
 
 def run_mixture_uncollapsed(n, s):
-    random.seed(s)
+    rrandom.random.seed(s)
 
     """DEFINITION OF DP"""
     assume('DP', \
@@ -739,7 +739,7 @@ def run_mixture_uncollapsed(n, s):
 
 def run_bayes_net(k, s, niters = 1000, burnin = 100, countup = True):
     reset()
-    random.seed(s)
+    rrandom.random.seed(s)
     n = 50
 
     for i in xrange(n):

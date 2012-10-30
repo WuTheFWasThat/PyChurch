@@ -26,6 +26,9 @@ class Random(object):
         self.index = 0
         self.init_genrand(seed)
 
+    def seed(self, seed=0):
+        self.__init__(r_uint(seed))
+        
     def init_genrand(self, s):
         mt = self.state
         mt[0]= s & MASK_32
@@ -115,5 +118,5 @@ class Random(object):
             mt[i] += r_uint(i + 1)
         self.index = N
 
-random = Random(222222)
+random = Random()
 

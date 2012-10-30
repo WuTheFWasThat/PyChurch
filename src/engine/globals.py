@@ -237,6 +237,20 @@ class EvalNode:
       self.random_xrp_apply = True
       self.traces.add_xrp(args, self)
 
+  def evaluate_recurse(self, subexpr, env, addition, reflip):
+    child = self.get_child(addition, env, subexpr)
+    val = child.evaluate(reflip == True)
+    return val
+  
+  def binary_op_evaluate(self, op, reflip):
+    val1 = self.evaluate_recurse(self.expression.children[0], self.env, 0, reflip).val
+    val2 = self.evaluate_recurse(self.expression.children[1], self.env, 1, reflip).val
+    return Value(op(val1 , val2))
+
+  def list_op_evaluate(self, op, reflip):
+    vals = [self.evaluate_recurse(self.expression.children[i], self.env, i, reflip).val for i in range(len(self.expression.children))]
+    return Value(reduce(op, vals))
+  
   # reflip = 1 # reflip all
   #          0.5 # reflip current, but don't recurse
   #          0 # reflip nothing
@@ -249,20 +263,6 @@ class EvalNode:
 
     expr = self.expression
 
-    def evaluate_recurse(subexpr, env, addition):
-      child = self.get_child(addition, env, subexpr)
-      val = child.evaluate(reflip == True)
-      return val
-  
-    def binary_op_evaluate(op):
-      val1 = evaluate_recurse(expr.children[0], self.env, 0).val
-      val2 = evaluate_recurse(expr.children[1], self.env, 1).val
-      return Value(op(val1 , val2))
-
-    def list_op_evaluate(op):
-      vals = [evaluate_recurse(expr.children[i], self.env, i).val for i in xrange(len(expr.children))]
-      return Value(reduce(op, vals))
-  
     if xrp_force_val is not None:
       assert self.type == 'apply'
 
@@ -273,22 +273,22 @@ class EvalNode:
       (val, lookup_env) = self.env.lookup(expr.name)
       self.setlookup(lookup_env)
     elif self.type == 'if':
-      cond = evaluate_recurse(expr.cond, self.env, -1)
+      cond = self.evaluate_recurse(expr.cond, self.env, -1, reflip)
       assert type(cond.val) in [bool]
       if cond.val:
         self.get_child(0, self.env, expr.false).unevaluate()
-        val = evaluate_recurse(expr.true, self.env, 1)
+        val = self.evaluate_recurse(expr.true, self.env, 1, reflip)
       else:
         self.get_child(1, self.env, expr.true).unevaluate()
-        val = evaluate_recurse(expr.false, self.env, 0)
+        val = self.evaluate_recurse(expr.false, self.env, 0, reflip)
     elif self.type == 'switch':
-      index = evaluate_recurse(expr.index, self.env, -1)
+      index = self.evaluate_recurse(expr.index, self.env, -1, reflip)
       assert type(index.val) in [int]
       assert 0 <= index.val < expr.n
       for i in range(expr.n):
         if i != index.val:
           self.get_child(i, self.env, expr.children[i]).unevaluate()
-      val = evaluate_recurse(self.children[index.val] , self.env, index.val)
+      val = self.evaluate_recurse(self.children[index.val] , self.env, index.val, reflip)
     elif self.type == 'let':
       # TODO: think more about the behavior with environments here...
       
@@ -298,18 +298,18 @@ class EvalNode:
       new_env = self.env
       for i in range(n): # Bind variables
         new_env = new_env.spawn_child()
-        val = evaluate_recurse(expr.expressions[i], new_env, i)
+        val = self.evaluate_recurse(expr.expressions[i], new_env, i, reflip)
         values.append(val)
         new_env.set(expr.vars[i], values[i])
         if val.type == 'procedure':
           val.env = new_env
       new_body = expr.body.replace(new_env)
-      val = evaluate_recurse(new_body, new_env, -1)
+      val = self.evaluate_recurse(new_body, new_env, -1, reflip)
 
     elif self.type == 'apply':
       n = len(expr.children)
-      args = [evaluate_recurse(expr.children[i], self.env, i) for i in range(n)]
-      op = evaluate_recurse(expr.op, self.env, -2)
+      args = [self.evaluate_recurse(expr.children[i], self.env, i, reflip) for i in range(n)]
+      op = self.evaluate_recurse(expr.op, self.env, -2, reflip)
       if op.type == 'procedure':
         self.procedure_apply = True
         for x in self.applychildren:
@@ -321,7 +321,7 @@ class EvalNode:
         new_env = op.env.spawn_child()
         for i in range(n):
           new_env.set(op.vars[i], args[i])
-        val = evaluate_recurse(op.body, new_env, (-1, tuple(hash(x) for x in args)))
+        val = self.evaluate_recurse(op.body, new_env, (-1, tuple(hash(x) for x in args)), reflip)
       elif op.type == 'xrp':
         self.xrp_apply = True
         xrp = op.val
@@ -379,32 +379,32 @@ class EvalNode:
       val = Value((expr.vars, procedure_body), self.env)
       #TODO: SET SOME RELATIONSHIP HERE?  If body contains reference to changed var...
     elif self.type == '=':
-      val = binary_op_evaluate(lambda x, y : x == y)
+      val = self.binary_op_evaluate(lambda x, y : x == y, reflip)
     elif self.type == '<':
-      val = binary_op_evaluate(lambda x, y : x < y)
+      val = self.binary_op_evaluate(lambda x, y : x < y, reflip)
     elif self.type == '>':
-      val = binary_op_evaluate(lambda x, y : x > y)
+      val = self.binary_op_evaluate(lambda x, y : x > y, reflip)
     elif self.type == '<=':
-      val = binary_op_evaluate(lambda x, y : x <= y)
+      val = self.binary_op_evaluate(lambda x, y : x <= y, reflip)
     elif self.type == '>=':
-      val = binary_op_evaluate(lambda x, y : x >= y)
+      val = self.binary_op_evaluate(lambda x, y : x >= y, reflip)
     elif self.type == '&':
-      val = list_op_evaluate(lambda x, y : x & y)
+      val = self.list_op_evaluate(lambda x, y : x & y, reflip)
     elif self.type == '^':
-      val = list_op_evaluate(lambda x, y : x ^ y)
+      val = self.list_op_evaluate(lambda x, y : x ^ y, reflip)
     elif self.type == '|':
-      val = list_op_evaluate(lambda x, y : x | y)
+      val = self.list_op_evaluate(lambda x, y : x | y, reflip)
     elif self.type == '~':
-      negval = evaluate_recurse(expr.negation , self.env, 0).val
+      negval = self.evaluate_recurse(expr.negation , self.env, 0, reflip).val
       val = Value(not negval)
     elif self.type == 'add':
-      val = list_op_evaluate(lambda x, y : x + y)
+      val = self.list_op_evaluate(lambda x, y : x + y, reflip)
     elif self.type == 'subtract':
-      val1 = evaluate_recurse(expr.children[0] , self.env, 0).val
-      val2 = evaluate_recurse(expr.children[1] , self.env, 1).val
+      val1 = self.evaluate_recurse(expr.children[0] , self.env, 0, reflip).val
+      val2 = self.evaluate_recurse(expr.children[1] , self.env, 1, reflip).val
       val = Value(val1 - val2)
     elif self.type == 'multiply':
-      val = list_op_evaluate(lambda x, y : x * y)
+      val = self.list_op_evaluate(lambda x, y : x * y, reflip)
     else:
       raise Exception('Invalid expression type %s' % self.type)
 
@@ -716,26 +716,26 @@ class RandomDB:
     key = self.db.randomKey()
     return key
 
+  def evaluate_recurse(self, subexpr, env, reflip, stack, addition):
+    if type(addition) != list:
+      val = self.evaluate(subexpr, env, reflip, stack + [addition])
+    else:
+      val = self.evaluate(subexpr, env, reflip, stack + addition)
+    return val
+      
+  def binary_op_evaluate(self, expr, env, reflip, stack, op):
+    val1 = self.evaluate_recurse(expr.children[0], env, reflip, stack, 0).val
+    val2 = self.evaluate_recurse(expr.children[1], env, reflip, stack, 1).val
+    return Value(op(val1 , val2))
+  
+  def list_op_evaluate(self, expr, env, reflip, stack, op):
+    vals = [self.evaluate_recurse(expr.children[i], env, reflip, stack, i).val for i in range(len(expr.children))]
+    return Value(reduce(op, vals))
+
   # Draws a sample value (without re-sampling other values) given its parents, and sets it
   def evaluate(self, expr, env = None, reflip = False, stack = [], xrp_force_val = None):
     if env is None:
       env = self.env
-        
-    def evaluate_recurse(subexpr, env, reflip, stack, addition):
-      if type(addition) != list:
-        val = self.evaluate(subexpr, env, reflip, stack + [addition])
-      else:
-        val = self.evaluate(subexpr, env, reflip, stack + addition)
-      return val
-      
-    def binary_op_evaluate(expr, env, reflip, stack, op):
-      val1 = evaluate_recurse(expr.children[0], env, reflip, stack, 0).val
-      val2 = evaluate_recurse(expr.children[1], env, reflip, stack, 1).val
-      return Value(op(val1 , val2))
-  
-    def list_op_evaluate(expr, env, reflip, stack, op):
-      vals = [evaluate_recurse(expr.children[i], env, reflip, stack, i).val for i in xrange(len(expr.children))]
-      return Value(reduce(op, vals))
       
     if xrp_force_val != None: 
       assert expr.type == 'apply'
@@ -746,20 +746,20 @@ class RandomDB:
       var = expr.name
       (val, lookup_env) = env.lookup(var)
     elif expr.type == 'if':
-      cond = evaluate_recurse(expr.cond, env, reflip, stack , -1)
+      cond = self.evaluate_recurse(expr.cond, env, reflip, stack , -1)
       assert type(cond.val) in [bool]
       if cond.val: 
         self.unevaluate(stack + [0])
-        val = evaluate_recurse(expr.true, env, reflip, stack , 1)
+        val = self.evaluate_recurse(expr.true, env, reflip, stack , 1)
       else:
         self.unevaluate(stack + [1])
-        val = evaluate_recurse(expr.false, env, reflip, stack , 0)
+        val = self.evaluate_recurse(expr.false, env, reflip, stack , 0)
     elif expr.type == 'switch':
-      index = evaluate_recurse(expr.index, env, reflip, stack , -1)
+      index = self.evaluate_recurse(expr.index, env, reflip, stack , -1)
       assert type(index.val) in [int] 
       assert 0 <= index.val < expr.n
       # unevaluate?
-      val = evaluate_recurse(expr.children[index.val], env, reflip, stack, index.val)
+      val = self.evaluate_recurse(expr.children[index.val], env, reflip, stack, index.val)
     elif expr.type == 'let':
       # TODO:think more about the behavior with environments here...
       n = len(expr.vars)
@@ -768,17 +768,17 @@ class RandomDB:
       new_env = env
       for i in range(n): # Bind variables
         new_env = new_env.spawn_child()
-        val = evaluate_recurse(expr.expressions[i], new_env, reflip, stack, i)
+        val = self.evaluate_recurse(expr.expressions[i], new_env, reflip, stack, i)
         values.append(val)
         new_env.set(expr.vars[i], values[i])
         if val.type == 'procedure':
           val.env = new_env
       new_body = expr.body.replace(new_env)
-      val = evaluate_recurse(new_body, new_env, reflip, stack, -1)
+      val = self.evaluate_recurse(new_body, new_env, reflip, stack, -1)
     elif expr.type == 'apply':
       n = len(expr.children)
-      args = [evaluate_recurse(expr.children[i], env, reflip, stack, i) for i in range(n)]
-      op = evaluate_recurse(expr.op, env, reflip, stack , -2)
+      args = [self.evaluate_recurse(expr.children[i], env, reflip, stack, i) for i in range(n)]
+      op = self.evaluate_recurse(expr.op, env, reflip, stack , -2)
       if op.type == 'procedure':
         self.unevaluate(stack + [-1], tuple(hash(x) for x in args))
         if n != len(op.vars):
@@ -786,7 +786,7 @@ class RandomDB:
         new_env = op.env.spawn_child()
         for i in range(n):
           new_env.set(op.vars[i], args[i])
-        val = evaluate_recurse(op.body, new_env, reflip, stack, (-1, tuple(hash(x) for x in args)))
+        val = self.evaluate_recurse(op.body, new_env, reflip, stack, (-1, tuple(hash(x) for x in args)))
       elif op.type == 'xrp':
         self.unevaluate(stack + [-1], tuple(hash(x) for x in args))
   
@@ -826,32 +826,32 @@ class RandomDB:
       procedure_body = expr.body.replace(new_env, bound)
       val = Value((expr.vars, procedure_body), env)
     elif expr.type == '=':
-      val = binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x == y)
+      val = self.binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x == y)
     elif expr.type == '<':
-      val = binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x < y)
+      val = self.binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x < y)
     elif expr.type == '>':
-      val = binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x > y)
+      val = self.binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x > y)
     elif expr.type == '<=':
-      val = binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x <= y)
+      val = self.binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x <= y)
     elif expr.type == '>=':
-      val = binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x >= y)
+      val = self.binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x >= y)
     elif expr.type == '&':
-      val = list_op_evaluate(expr, env, reflip, stack, lambda x, y : x & y)
+      val = self.list_op_evaluate(expr, env, reflip, stack, lambda x, y : x & y)
     elif expr.type == '^':
-      val = list_op_evaluate(expr, env, reflip, stack, lambda x, y : x ^ y)
+      val = self.list_op_evaluate(expr, env, reflip, stack, lambda x, y : x ^ y)
     elif expr.type == '|':
-      val = list_op_evaluate(expr, env, reflip, stack, lambda x, y : x | y)
+      val = self.list_op_evaluate(expr, env, reflip, stack, lambda x, y : x | y)
     elif expr.type == '~':
-      negval = evaluate_recurse(expr.negation, env, reflip, stack, 0).val
+      negval = self.evaluate_recurse(expr.negation, env, reflip, stack, 0).val
       val = Value(not negval)
     elif expr.type == 'add':
-      val = list_op_evaluate(expr, env, reflip, stack, lambda x, y : x + y)
+      val = self.list_op_evaluate(expr, env, reflip, stack, lambda x, y : x + y)
     elif expr.type == 'subtract':
-      val1 = evaluate_recurse(expr.children[0], env, reflip, stack , 0).val
-      val2 = evaluate_recurse(expr.children[1], env, reflip, stack , 1).val
+      val1 = self.evaluate_recurse(expr.children[0], env, reflip, stack , 0).val
+      val2 = self.evaluate_recurse(expr.children[1], env, reflip, stack , 1).val
       val = Value(val1 - val2)
     elif expr.type == 'multiply':
-      val = list_op_evaluate(expr, env, reflip, stack, lambda x, y : x * y)
+      val = self.list_op_evaluate(expr, env, reflip, stack, lambda x, y : x * y)
     else:
       raise Exception('Invalid expression type %s' % expr.type)
     return val
@@ -861,9 +861,16 @@ class RandomDB:
     if args is not None:
       args = tuple(args)
 
+    to_unevaluate = []
+
+    for tuple_stack in self.db:
+      to_unevaluate.append(tuple_stack)
+    for tuple_stack in self.db_noise:
+      to_unevaluate.append(tuple_stack)
+
     to_delete = []
 
-    def unevaluate_helper(tuple_stack):
+    for tuple_stack in to_unevaluate:
       stack = list(tuple_stack) 
       if len(stack) >= len(uneval_stack) and stack[:len(uneval_stack)] == uneval_stack:
         if args is None:
@@ -872,11 +879,6 @@ class RandomDB:
           assert len(stack) > len(uneval_stack)
           if stack[len(uneval_stack)] != args:
             to_delete.append(tuple_stack)
-
-    for tuple_stack in self.db:
-      unevaluate_helper(tuple_stack)
-    for tuple_stack in self.db_noise:
-      unevaluate_helper(tuple_stack)
 
     for tuple_stack in to_delete:
       self.remove(tuple_stack)
@@ -967,7 +969,7 @@ class RandomDB:
 # The global environment. Has assignments of names to expressions, and parent pointer 
 env = Environment()
 
-use_traces = False
+use_traces = True
 
 # The traces datastructure. 
 # DAG of two interlinked trees: 
