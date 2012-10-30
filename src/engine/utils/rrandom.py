@@ -3,9 +3,9 @@
 # modified from:
 # https://bitbucket.org/pypy/pypy/src/default/pypy/rlib/rrandom.py
 
-from pypy.rlib.rarithmetic import r_uint
-#def r_uint(x):
-#  return x
+#from pypy.rlib.rarithmetic import r_uint
+def r_uint(x):
+  return x
 
 N = 624
 M = 397

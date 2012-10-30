@@ -11,8 +11,7 @@ class mem_proc_XRP(XRP):
     self.state = {}
     self.hash = rrandom.random.randint()
   def apply(self, args = None, help = None):
-    # help is call_stack for db
-    assert len(args) == self.n and all([args[i].__class__.__name__ == 'Value' for i in xrange(self.n)])
+    assert len(args) == self.n
     args = tuple(args)
     if globals.use_traces:
       if args not in self.state:
@@ -25,14 +24,15 @@ class mem_proc_XRP(XRP):
       val = evalnode.evaluate(False)
       return val
     else:
-      assert type(help) == list 
+      # help is call_stack for db
       if args in self.state:
         (val, count) = self.state[args]
       else:
-        val = globals.db.evaluate(apply(Expression(('value', self.procedure)), [Expression(('value', arg)) for arg in args]), stack = help + [-1, 'mem', hash(self.procedure), args]) 
+        val = globals.db.evaluate(apply(Expression(('value', self.procedure)), [Expression(('value', arg)) for arg in args]), stack = help + [-1, 'mem', self.procedure.hash, ','.join([str(x) for x in args])]) 
     return val
   def incorporate(self, val, args = None, help = None):
     if globals.use_traces:
+      # help is evalnode
       assert help.__class__.__name__ == 'EvalNode' 
       args = tuple(args)
       assert args in self.state

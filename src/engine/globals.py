@@ -188,12 +188,12 @@ class EvalNode:
     elif self.type == 'apply':
       n = len(expr.children)
       for i in range(n):
-        self.get_child(i, self.env, expr.children[i]).unevaluate()
-      self.get_child(-2, self.env, expr.op).unevaluate()
+        self.get_child('arg' + str(i), self.env, expr.children[i]).unevaluate()
+      self.get_child('operator', self.env, expr.op).unevaluate()
       if self.procedure_apply: 
-        assert (-1, tuple(hash(x) for x in self.args)) in self.applychildren
-        self.applychildren[(-1, tuple(hash(x) for x in self.args))].unevaluate()
-        #self.get_child((-1, tuple(hash(x) for x in self.args)), self.env, op.body).unevaluate()
+        addition = ','.join([str(x) for x in self.args])
+        assert addition in self.applychildren
+        self.applychildren[addition].unevaluate()
       else:
         assert self.xrp_apply
         self.remove_xrp()
@@ -238,12 +238,12 @@ class EvalNode:
     return val
   
   def binary_op_evaluate(self, op, reflip):
-    val1 = self.evaluate_recurse(self.expression.children[0], self.env, 0, reflip).val
-    val2 = self.evaluate_recurse(self.expression.children[1], self.env, 1, reflip).val
+    val1 = self.evaluate_recurse(self.expression.children[0], self.env, 'operand0', reflip).val
+    val2 = self.evaluate_recurse(self.expression.children[1], self.env, 'operand1', reflip).val
     return Value(op(val1 , val2))
 
   def list_op_evaluate(self, op, reflip):
-    vals = [self.evaluate_recurse(self.expression.children[i], self.env, i, reflip).val for i in range(len(self.expression.children))]
+    vals = [self.evaluate_recurse(self.expression.children[i], self.env, 'child' + str(i), reflip).val for i in range(len(self.expression.children))]
     return Value(reduce(op, vals))
   
   # reflip = 1 # reflip all
@@ -268,20 +268,20 @@ class EvalNode:
       (val, lookup_env) = self.env.lookup(expr.name)
       self.setlookup(lookup_env)
     elif self.type == 'if':
-      cond = self.evaluate_recurse(expr.cond, self.env, -1, reflip)
+      cond = self.evaluate_recurse(expr.cond, self.env, 'cond', reflip)
       if cond.val:
-        self.get_child(0, self.env, expr.false).unevaluate()
-        val = self.evaluate_recurse(expr.true, self.env, 1, reflip)
+        self.get_child('false', self.env, expr.false).unevaluate()
+        val = self.evaluate_recurse(expr.true, self.env, 'true', reflip)
       else:
-        self.get_child(1, self.env, expr.true).unevaluate()
-        val = self.evaluate_recurse(expr.false, self.env, 0, reflip)
+        self.get_child('true', self.env, expr.true).unevaluate()
+        val = self.evaluate_recurse(expr.false, self.env, 'false', reflip)
     elif self.type == 'switch':
-      index = self.evaluate_recurse(expr.index, self.env, -1, reflip)
+      index = self.evaluate_recurse(expr.index, self.env, 'index', reflip)
       assert 0 <= index.val < expr.n
       for i in range(expr.n):
         if i != index.val:
-          self.get_child(i, self.env, expr.children[i]).unevaluate()
-      val = self.evaluate_recurse(self.children[index.val] , self.env, index.val, reflip)
+          self.get_child('child' + str(i), self.env, expr.children[i]).unevaluate()
+      val = self.evaluate_recurse(self.children[index.val] , self.env, 'child' + str(index.val), reflip)
     elif self.type == 'let':
       # TODO: this really is a let*
       
@@ -291,18 +291,18 @@ class EvalNode:
       new_env = self.env
       for i in range(n): # Bind variables
         new_env = new_env.spawn_child()
-        val = self.evaluate_recurse(expr.expressions[i], new_env, i, reflip)
+        val = self.evaluate_recurse(expr.expressions[i], new_env, 'let' + str(i), reflip)
         values.append(val)
         new_env.set(expr.vars[i], values[i])
         if val.type == 'procedure':
           val.env = new_env
       new_body = expr.body.replace(new_env)
-      val = self.evaluate_recurse(new_body, new_env, -1, reflip)
+      val = self.evaluate_recurse(new_body, new_env, 'letbody', reflip)
 
     elif self.type == 'apply':
       n = len(expr.children)
-      args = [self.evaluate_recurse(expr.children[i], self.env, i, reflip) for i in range(n)]
-      op = self.evaluate_recurse(expr.op, self.env, -2, reflip)
+      args = [self.evaluate_recurse(expr.children[i], self.env, 'arg' + str(i), reflip) for i in range(n)]
+      op = self.evaluate_recurse(expr.op, self.env, 'operator', reflip)
       if op.type == 'procedure':
         self.procedure_apply = True
         for x in self.applychildren:
@@ -313,7 +313,8 @@ class EvalNode:
         new_env = op.env.spawn_child()
         for i in range(n):
           new_env.set(op.vars[i], args[i])
-        val = self.evaluate_recurse(op.body, new_env, (-1, tuple(hash(x) for x in args)), reflip, True)
+        addition = ','.join([str(x) for x in args])
+        val = self.evaluate_recurse(op.body, new_env, addition, reflip, True)
       elif op.type == 'xrp':
         self.xrp_apply = True
         xrp = op.val
@@ -387,13 +388,13 @@ class EvalNode:
     elif self.type == '|':
       val = self.list_op_evaluate(lambda x, y : x | y, reflip)
     elif self.type == '~':
-      negval = self.evaluate_recurse(expr.negation , self.env, 0, reflip).val
+      negval = self.evaluate_recurse(expr.negation , self.env, 'neg', reflip).val
       val = Value(not negval)
     elif self.type == 'add':
       val = self.list_op_evaluate(lambda x, y : x + y, reflip)
     elif self.type == 'subtract':
-      val1 = self.evaluate_recurse(expr.children[0] , self.env, 0, reflip).val
-      val2 = self.evaluate_recurse(expr.children[1] , self.env, 1, reflip).val
+      val1 = self.evaluate_recurse(expr.children[0] , self.env, 'sub0', reflip).val
+      val2 = self.evaluate_recurse(expr.children[1] , self.env, 'sub1', reflip).val
       val = Value(val1 - val2)
     elif self.type == 'multiply':
       val = self.list_op_evaluate(lambda x, y : x * y, reflip)
@@ -511,9 +512,9 @@ class Traces:
     new_to_old_q -= math.log(len(self.db))
     old_to_new_q += reflip_node.p
 
-    assert -2 in reflip_node.children
-    assert reflip_node.children[-2].val.type == 'xrp'
-    xrp = reflip_node.children[-2].val.val
+    assert 'operator' in reflip_node.children
+    assert reflip_node.children['operator'].val.type == 'xrp'
+    xrp = reflip_node.children['operator'].val.val
 
     if debug:
       print "\n-----------------------------------------\n"
@@ -715,12 +716,12 @@ class RandomDB:
     return val
       
   def binary_op_evaluate(self, expr, env, reflip, stack, op):
-    val1 = self.evaluate_recurse(expr.children[0], env, reflip, stack, 0).val
-    val2 = self.evaluate_recurse(expr.children[1], env, reflip, stack, 1).val
+    val1 = self.evaluate_recurse(expr.children[0], env, reflip, stack, 'operand0').val
+    val2 = self.evaluate_recurse(expr.children[1], env, reflip, stack, 'operand1').val
     return Value(op(val1 , val2))
   
   def list_op_evaluate(self, expr, env, reflip, stack, op):
-    vals = [self.evaluate_recurse(expr.children[i], env, reflip, stack, i).val for i in range(len(expr.children))]
+    vals = [self.evaluate_recurse(expr.children[i], env, reflip, stack, 'child' + str(i)).val for i in range(len(expr.children))]
     return Value(reduce(op, vals))
 
   # Draws a sample value (without re-sampling other values) given its parents, and sets it
@@ -737,18 +738,20 @@ class RandomDB:
       var = expr.name
       (val, lookup_env) = env.lookup(var)
     elif expr.type == 'if':
-      cond = self.evaluate_recurse(expr.cond, env, reflip, stack , -1)
+      cond = self.evaluate_recurse(expr.cond, env, reflip, stack , 'cond')
       if cond.val: 
-        self.unevaluate(stack + [0])
-        val = self.evaluate_recurse(expr.true, env, reflip, stack , 1)
+        self.unevaluate(stack + ['false'])
+        val = self.evaluate_recurse(expr.true, env, reflip, stack , 'true')
       else:
-        self.unevaluate(stack + [1])
-        val = self.evaluate_recurse(expr.false, env, reflip, stack , 0)
+        self.unevaluate(stack + ['true'])
+        val = self.evaluate_recurse(expr.false, env, reflip, stack , 'false')
     elif expr.type == 'switch':
-      index = self.evaluate_recurse(expr.index, env, reflip, stack , -1)
+      index = self.evaluate_recurse(expr.index, env, reflip, stack , 'index')
       assert 0 <= index.val < expr.n
-      # unevaluate?
-      val = self.evaluate_recurse(expr.children[index.val], env, reflip, stack, index.val)
+      for i in range(expr.n):
+        if i != index.val:
+          self.unevaluate(stack + ['child' + str(i)])
+      val = self.evaluate_recurse(expr.children[index.val], env, reflip, stack, 'child' + str(index.val))
     elif expr.type == 'let':
       # TODO: this really is a let*
 
@@ -758,27 +761,29 @@ class RandomDB:
       new_env = env
       for i in range(n): # Bind variables
         new_env = new_env.spawn_child()
-        val = self.evaluate_recurse(expr.expressions[i], new_env, reflip, stack, i)
+        val = self.evaluate_recurse(expr.expressions[i], new_env, reflip, stack, 'let' + str(i))
         values.append(val)
         new_env.set(expr.vars[i], values[i])
         if val.type == 'procedure':
           val.env = new_env
       new_body = expr.body.replace(new_env)
-      val = self.evaluate_recurse(new_body, new_env, reflip, stack, -1)
+      val = self.evaluate_recurse(new_body, new_env, reflip, stack, 'body')
     elif expr.type == 'apply':
       n = len(expr.children)
-      args = [self.evaluate_recurse(expr.children[i], env, reflip, stack, i) for i in range(n)]
-      op = self.evaluate_recurse(expr.op, env, reflip, stack , -2)
+      args = [self.evaluate_recurse(expr.children[i], env, reflip, stack, 'arg' + str(i)) for i in range(n)]
+      op = self.evaluate_recurse(expr.op, env, reflip, stack , 'operator')
+
+      addition = ','.join([str(x) for x in args])
       if op.type == 'procedure':
-        self.unevaluate(stack + [-1], tuple(hash(x) for x in args))
+        self.unevaluate(stack + ['apply'], addition)
         if n != len(op.vars):
           raise Exception('Procedure should have %d arguments.  \nVars were \n%s\n, but children were \n%s.' % (n, op.vars, expr.children))
         new_env = op.env.spawn_child()
         for i in range(n):
           new_env.set(op.vars[i], args[i])
-        val = self.evaluate_recurse(op.body, new_env, reflip, stack, (-1, tuple(hash(x) for x in args)))
+        val = self.evaluate_recurse(op.body, new_env, reflip, stack, ('apply', addition))
       elif op.type == 'xrp':
-        self.unevaluate(stack + [-1], tuple(hash(x) for x in args))
+        self.unevaluate(stack + ['apply'], addition)
   
         if xrp_force_val != None:
           assert not reflip
@@ -787,7 +792,7 @@ class RandomDB:
           self.insert(stack, op.val, xrp_force_val, args, True)
           val = xrp_force_val
         else:
-          substack = stack + [-1, tuple(hash(x) for x in args)]
+          substack = stack + ['apply', addition]
           if not self.has(substack):
             if op.val.__class__.__name__ == 'mem_proc_XRP':
               val = op.val.apply(args, stack)
@@ -832,13 +837,13 @@ class RandomDB:
     elif expr.type == '|':
       val = self.list_op_evaluate(expr, env, reflip, stack, lambda x, y : x | y)
     elif expr.type == '~':
-      negval = self.evaluate_recurse(expr.negation, env, reflip, stack, 0).val
+      negval = self.evaluate_recurse(expr.negation, env, reflip, stack, 'neg').val
       val = Value(not negval)
     elif expr.type == 'add':
       val = self.list_op_evaluate(expr, env, reflip, stack, lambda x, y : x + y)
     elif expr.type == 'subtract':
-      val1 = self.evaluate_recurse(expr.children[0], env, reflip, stack , 0).val
-      val2 = self.evaluate_recurse(expr.children[1], env, reflip, stack , 1).val
+      val1 = self.evaluate_recurse(expr.children[0], env, reflip, stack , 'sub0').val
+      val2 = self.evaluate_recurse(expr.children[1], env, reflip, stack , 'sub1').val
       val = Value(val1 - val2)
     elif expr.type == 'multiply':
       val = self.list_op_evaluate(expr, env, reflip, stack, lambda x, y : x * y)
@@ -959,7 +964,7 @@ class RandomDB:
 # The global environment. Has assignments of names to expressions, and parent pointer 
 env = Environment()
 
-use_traces = True
+use_traces = False
 
 # The traces datastructure. 
 # DAG of two interlinked trees: 
