@@ -237,14 +237,13 @@ class EvalNode:
     val = child.evaluate(reflip == True)
     return val
   
-  def binary_op_evaluate(self, op, reflip):
-    val1 = self.evaluate_recurse(self.expression.children[0], self.env, 'operand0', reflip).val
-    val2 = self.evaluate_recurse(self.expression.children[1], self.env, 'operand1', reflip).val
-    return Value(op(val1 , val2))
+  def binary_op_evaluate(self, reflip):
+    val1 = self.evaluate_recurse(self.expression.children[0], self.env, 'operand0', reflip)
+    val2 = self.evaluate_recurse(self.expression.children[1], self.env, 'operand1', reflip)
+    return (val1 , val2)
 
-  def list_op_evaluate(self, op, reflip):
-    vals = [self.evaluate_recurse(self.expression.children[i], self.env, 'child' + str(i), reflip).val for i in range(len(self.expression.children))]
-    return Value(reduce(op, vals))
+  def children_evaluate(self, reflip):
+    return [self.evaluate_recurse(self.expression.children[i], self.env, 'child' + str(i), reflip) for i in range(len(self.expression.children))]
   
   # reflip = 1 # reflip all
   #          0.5 # reflip current, but don't recurse
@@ -372,32 +371,48 @@ class EvalNode:
       val = Value((expr.vars, procedure_body), self.env)
       #TODO: SET SOME RELATIONSHIP HERE?  If body contains reference to changed var...
     elif self.type == '=':
-      val = self.binary_op_evaluate(lambda x, y : x == y, reflip)
+      (val1, val2) = self.binary_op_evaluate(reflip)
+      val = Value(val1.val == val2.val)
     elif self.type == '<':
-      val = self.binary_op_evaluate(lambda x, y : x < y, reflip)
+      (val1, val2) = self.binary_op_evaluate(reflip)
+      val = Value(val1.val < val2.val)
     elif self.type == '>':
-      val = self.binary_op_evaluate(lambda x, y : x > y, reflip)
+      (val1, val2) = self.binary_op_evaluate(reflip)
+      val = Value(val1.val > val2.val)
     elif self.type == '<=':
-      val = self.binary_op_evaluate(lambda x, y : x <= y, reflip)
+      (val1, val2) = self.binary_op_evaluate(reflip)
+      val = Value(val1.val <= val2.val)
     elif self.type == '>=':
-      val = self.binary_op_evaluate(lambda x, y : x >= y, reflip)
+      (val1, val2) = self.binary_op_evaluate(reflip)
+      val = Value(val1.val >= val2.val)
     elif self.type == '&':
-      val = self.list_op_evaluate(lambda x, y : x & y, reflip)
+      vals = self.children_evaluate(reflip)
+      val = Value(all([x.val for x in vals]))
     elif self.type == '^':
-      val = self.list_op_evaluate(lambda x, y : x ^ y, reflip)
+      vals = self.children_evaluate(reflip)
+      xor = True
+      for x in vals:
+        xor = xor ^ x.val
+      val = Value(xor)
     elif self.type == '|':
-      val = self.list_op_evaluate(lambda x, y : x | y, reflip)
+      vals = self.children_evaluate(reflip)
+      val = Value(any([x.val for x in vals]))
     elif self.type == '~':
       negval = self.evaluate_recurse(expr.negation , self.env, 'neg', reflip).val
       val = Value(not negval)
     elif self.type == 'add':
-      val = self.list_op_evaluate(lambda x, y : x + y, reflip)
+      vals = self.children_evaluate(reflip)
+      val = Value(sum([x.val for x in vals]))
     elif self.type == 'subtract':
       val1 = self.evaluate_recurse(expr.children[0] , self.env, 'sub0', reflip).val
       val2 = self.evaluate_recurse(expr.children[1] , self.env, 'sub1', reflip).val
       val = Value(val1 - val2)
     elif self.type == 'multiply':
-      val = self.list_op_evaluate(lambda x, y : x * y, reflip)
+      vals = self.children_evaluate(reflip)
+      prod = 1
+      for x in vals:
+        prod = prod * x.val
+      val = Value(prod)
     else:
       raise Exception('Invalid expression type %s' % self.type)
 
@@ -715,14 +730,13 @@ class RandomDB:
       val = self.evaluate(subexpr, env, reflip, stack + addition)
     return val
       
-  def binary_op_evaluate(self, expr, env, reflip, stack, op):
-    val1 = self.evaluate_recurse(expr.children[0], env, reflip, stack, 'operand0').val
-    val2 = self.evaluate_recurse(expr.children[1], env, reflip, stack, 'operand1').val
-    return Value(op(val1 , val2))
+  def binary_op_evaluate(self, expr, env, reflip, stack):
+    val1 = self.evaluate_recurse(expr.children[0], env, reflip, stack, 'operand0')
+    val2 = self.evaluate_recurse(expr.children[1], env, reflip, stack, 'operand1')
+    return (val1 , val2)
   
-  def list_op_evaluate(self, expr, env, reflip, stack, op):
-    vals = [self.evaluate_recurse(expr.children[i], env, reflip, stack, 'child' + str(i)).val for i in range(len(expr.children))]
-    return Value(reduce(op, vals))
+  def children_evaluate(self, expr, env, reflip, stack):
+    return [self.evaluate_recurse(expr.children[i], env, reflip, stack, 'child' + str(i)) for i in range(len(expr.children))]
 
   # Draws a sample value (without re-sampling other values) given its parents, and sets it
   def evaluate(self, expr, env = None, reflip = False, stack = [], xrp_force_val = None):
@@ -821,32 +835,48 @@ class RandomDB:
       procedure_body = expr.body.replace(new_env, bound)
       val = Value((expr.vars, procedure_body), env)
     elif expr.type == '=':
-      val = self.binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x == y)
+      (val1, val2) = self.binary_op_evaluate(expr, env, reflip, stack)
+      val = Value(val1.val == val2.val)
     elif expr.type == '<':
-      val = self.binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x < y)
+      (val1, val2) = self.binary_op_evaluate(expr, env, reflip, stack)
+      val = Value(val1.val < val2.val)
     elif expr.type == '>':
-      val = self.binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x > y)
+      (val1, val2) = self.binary_op_evaluate(expr, env, reflip, stack)
+      val = Value(val1.val > val2.val)
     elif expr.type == '<=':
-      val = self.binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x <= y)
+      (val1, val2) = self.binary_op_evaluate(expr, env, reflip, stack)
+      val = Value(val1.val <= val2.val)
     elif expr.type == '>=':
-      val = self.binary_op_evaluate(expr, env, reflip, stack, lambda x, y : x >= y)
+      (val1, val2) = self.binary_op_evaluate(expr, env, reflip, stack)
+      val = Value(val1.val >= val2.val)
     elif expr.type == '&':
-      val = self.list_op_evaluate(expr, env, reflip, stack, lambda x, y : x & y)
+      vals = self.children_evaluate(expr, env, reflip, stack)
+      val = Value(all([x.val for x in vals]))
     elif expr.type == '^':
-      val = self.list_op_evaluate(expr, env, reflip, stack, lambda x, y : x ^ y)
+      vals = self.children_evaluate(expr, env, reflip, stack)
+      xor = True
+      for x in vals:
+        xor = xor ^ x.val
+      val = Value(xor)
     elif expr.type == '|':
-      val = self.list_op_evaluate(expr, env, reflip, stack, lambda x, y : x | y)
+      vals = self.children_evaluate(expr, env, reflip, stack)
+      val = Value(any([x.val for x in vals]))
     elif expr.type == '~':
       negval = self.evaluate_recurse(expr.negation, env, reflip, stack, 'neg').val
       val = Value(not negval)
     elif expr.type == 'add':
-      val = self.list_op_evaluate(expr, env, reflip, stack, lambda x, y : x + y)
+      vals = self.children_evaluate(expr, env, reflip, stack)
+      val = Value(sum([x.val for x in vals]))
     elif expr.type == 'subtract':
       val1 = self.evaluate_recurse(expr.children[0], env, reflip, stack , 'sub0').val
       val2 = self.evaluate_recurse(expr.children[1], env, reflip, stack , 'sub1').val
       val = Value(val1 - val2)
     elif expr.type == 'multiply':
-      val = self.list_op_evaluate(expr, env, reflip, stack, lambda x, y : x * y)
+      vals = self.children_evaluate(expr, env, reflip, stack)
+      prod = 1
+      for x in vals:
+        prod = prod * x.val
+      val = Value(prod)
     else:
       raise Exception('Invalid expression type %s' % expr.type)
     return val
