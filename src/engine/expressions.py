@@ -10,7 +10,6 @@ class Expression:
     self.val = None
     self.children = []
     self.parents = []
-    self.dbstack = []
 
     self.type = tup[0]
     if self.type in ['value', 'constant', 'const', 'c', 'val', 'procedure', 'xrp']:
