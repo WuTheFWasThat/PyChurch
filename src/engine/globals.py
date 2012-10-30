@@ -967,7 +967,7 @@ class RandomDB:
 # The global environment. Has assignments of names to expressions, and parent pointer 
 env = Environment()
 
-use_traces = True
+use_traces = False
 
 # The traces datastructure. 
 # DAG of two interlinked trees: 
