@@ -52,10 +52,7 @@ class Expression:
       self.type = '~'
 
     if self.type == 'value':
-      if tup[1].__class__.__name__ == 'Value': 
-        self.val = tup[1]
-      else:
-        self.val = Value(tup[1])
+      self.val = tup[1]
     elif self.type == 'variable':
       self.name = tup[1]
     elif self.type == 'if':
@@ -217,9 +214,6 @@ class Expression:
   def __invert__(self):
     return Expression(('not', self))
 
-def constant(c):
-  return Expression(('value', Value(c))) 
-
 def var(v):
   return Expression(('variable', v)) 
 
@@ -247,33 +241,39 @@ def disjunction(exprs):
 def conjunction(exprs):
   return Expression(('or', exprs)) 
 
-### XRP ###
+### Values ###
+
+def constant(c):
+  return Expression(('value', NumValue(c))) 
+
+def boolean(b):
+  return Expression(('value', BoolValue(b))) 
 
 def xrp(xrp):
-  return Expression(('xrp', Value(xrp))) 
+  return Expression(('xrp', XRPValue(xrp))) 
 
 ### DISTRIBUTIONS ### 
 
-bernoulli_args_xrp = Expression(('xrp', Value(bernoulli_args_XRP())))
+bernoulli_args_xrp = Expression(('xrp', XRPValue(bernoulli_args_XRP())))
 def bernoulli(p):
   return Expression(('apply', bernoulli_args_xrp, [p])) 
 
-beta_args_xrp = Expression(('xrp', Value(beta_args_XRP())))
+beta_args_xrp = Expression(('xrp', XRPValue(beta_args_XRP())))
 def beta(a, b): 
   return Expression(('apply', beta_args_xrp, [a, b]))
 
-gamma_args_xrp = Expression(('xrp', Value(gamma_args_XRP())))
+gamma_args_xrp = Expression(('xrp', XRPValue(gamma_args_XRP())))
 def gamma(a, b): 
   return Expression(('apply', gamma_args_xrp, [a, b]))
 
-uniform_args_xrp = Expression(('xrp', Value(uniform_args_XRP())))
+uniform_args_xrp = Expression(('xrp', XRPValue(uniform_args_XRP())))
 def uniform(n = None):
   if n is None:
     return beta(constant(1), constant(1))
   else:
     return Expression(('apply', uniform_args_xrp, [n]))
 
-gaussian_args_xrp = Expression(('xrp', Value(gaussian_args_XRP())))
+gaussian_args_xrp = Expression(('xrp', XRPValue(gaussian_args_XRP())))
 def gaussian(mu, sigma):
   return Expression(('apply', gaussian_args_xrp, [mu, sigma]))
 

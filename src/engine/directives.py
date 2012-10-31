@@ -17,7 +17,7 @@ def assume(varname, expr):
 def observe(expr, obs_val):
   assert expr.type == 'apply' and expr.op.type == 'value' 
   assert expr.op.val.type == 'xrp'
-  assert not expr.op.val.val.deterministic
+  assert not expr.op.val.xrp.deterministic
 
   if globals.use_traces:
     return globals.traces.observe(expr, obs_val)

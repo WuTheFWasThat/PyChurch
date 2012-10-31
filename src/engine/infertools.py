@@ -51,7 +51,7 @@ def reject_infer():
     for obs_hash in globals.db.observes:
       (obs_expr, obs_val) = globals.db.observes[obs_hash] 
       val = resample(obs_expr)
-      if val.val != obs_val:
+      if val != obs_val:
         flag = False
         break
 
@@ -69,10 +69,10 @@ def reject_infer_many(name, niter = 1000):
     reject_infer()
     ans = globals.db.evaluate(expr, None, False, [name]) 
 
-    if ans.val in dict:
-      dict[ans.val] += 1
+    if ans in dict:
+      dict[ans] += 1
     else:
-      dict[ans.val] = 1 
+      dict[ans] = 1 
 
   z = sum([dict[val] for val in dict])
   for val in dict:
@@ -132,7 +132,7 @@ def follow_prior(names, niter = 1000, burnin = 100, timer = True, printiters = 0
       else:
         val = globals.db.env.lookup(name)[0] #(Expression(('var', name)), reflip = False, stack = [name])
       if val.type != 'procedure' and val.type != 'xrp': 
-        dict[name].append(val.val)
+        dict[name].append(val)
     t = time.time() - t
     if timer:
       dict['TIME'].append(t)
@@ -162,7 +162,7 @@ def sample_prior(names, niter = 1000, timer = True, printiters = 0):
       else:
         val = globals.db.evaluate(Expression(('var', name)), None, reflip = True, stack = [name])
       if val.type != 'procedure' and val.type != 'xrp': 
-        dict[name].append(val.val)
+        dict[name].append(val)
     t = time.time() - t
     if timer:
       dict['TIME'].append(t)

@@ -79,29 +79,30 @@ class mem_XRP(XRP):
   def apply(self, args = None):
     assert len(args) == 1
     procedure = args[0]
-    assert procedure.__class__.__name__ == 'Value' and procedure.type == 'procedure'
+    assert procedure.type == 'procedure'
     mem_proc = mem_proc_XRP(procedure)
-    return Value(mem_proc)
+    return XRPValue(mem_proc)
   def incorporate(self, val, args = None):
     assert val.type == 'xrp'
-    assert val.val not in self.state
-    self.state[val.val] = args[0]
+    assert val.xrp not in self.state
+    self.state[val.xrp] = args[0]
     return self.state
   def remove(self, val, args = None):
-    assert val.val in self.state
+    assert val.type == 'xrp'
+    assert val.xrp in self.state
     # unevaluate val's evalnodes
     if globals.use_traces:
-      for args in val.val.state:
-        evalnode = val.val.state[args]
+      for args in val.xrp.state:
+        evalnode = val.xrp.state[args]
         evalnode.unevaluate()
-    del self.state[val.val]
+    del self.state[val.xrp]
     return self.state
   def prob(self, val, args = None):
     return 0 # correct since other flips will be added to db? 
   def __str__(self):
     return 'Memoization XRP'
 
-mem_xrp = Expression(('value', Value(mem_XRP())))
+mem_xrp = Expression(('value', XRPValue(mem_XRP())))
 def mem(function):
   return Expression(('apply', mem_xrp, [function]))
 
@@ -121,7 +122,7 @@ class CRP_XRP(XRP):
       x -= self.state[id]
       if x <= 0:
         return id
-    return Value(rrandom.random.randint())
+    return NumValue(rrandom.random.randint())
   def incorporate(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
@@ -159,9 +160,9 @@ class gen_CRP_XRP(XRP):
     self.state = None
     return
   def apply(self, args = None):
-    alpha = args[0].val
+    alpha = args[0].num
     check_pos(alpha)
-    return Value(CRP_XRP(alpha)) 
+    return XRPValue(CRP_XRP(alpha)) 
   def incorporate(self, val, args = None):
     return None
   def remove(self, val, args = None):
@@ -171,7 +172,7 @@ class gen_CRP_XRP(XRP):
   def __str__(self):
     return 'CRP_XRP'
 
-crp_xrp = Expression(('value', Value(gen_CRP_XRP())))
+crp_xrp = Expression(('value', XRPValue(gen_CRP_XRP())))
 def CRP(alpha):
   return Expression(('apply', crp_xrp, alpha))
 
