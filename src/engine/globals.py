@@ -356,7 +356,7 @@ class EvalNode:
         self.xrp = xrp
         assert val is not None
       else:
-        raise Exception('Must apply either a procedure or xrp')
+        raise Exception('Must apply either a procedure or xrp.  Instead got expression %s' % str(op))
 
       self.args = args
     elif self.type == 'function':
@@ -397,16 +397,16 @@ class EvalNode:
       vals = self.children_evaluate(reflip)
       val = BoolValue(any([x.bool for x in vals]))
     elif self.type == '~':
-      negval = self.evaluate_recurse(expr.negation , self.env, 'neg', reflip).bool
+      negval = self.evaluate_recurse(expr.children[0] , self.env, 'neg', reflip).bool
       val = BoolValue(not negval)
-    elif self.type == 'add':
+    elif self.type == '+':
       vals = self.children_evaluate(reflip)
       val = NumValue(sum([x.num for x in vals]))
-    elif self.type == 'subtract':
+    elif self.type == '-':
       val1 = self.evaluate_recurse(expr.children[0] , self.env, 'sub0', reflip).num
       val2 = self.evaluate_recurse(expr.children[1] , self.env, 'sub1', reflip).num
       val = NumValue(val1 - val2)
-    elif self.type == 'multiply':
+    elif self.type == '*':
       vals = self.children_evaluate(reflip)
       prod = 1
       for x in vals:
@@ -823,7 +823,7 @@ class RandomDB:
               (xrp, val, dbargs, is_obs_noise) = self.get(substack)
               assert not is_obs_noise
       else:
-        raise Exception('Must apply either a procedure or xrp')
+        raise Exception('Must apply either a procedure or xrp.  Instead got expression %s' % str(op))
     elif expr.type == 'function':
       n = len(expr.vars)
       new_env = env.spawn_child()
@@ -860,16 +860,16 @@ class RandomDB:
       vals = self.children_evaluate(expr, env, reflip, stack)
       val = BoolValue(any([x.bool for x in vals]))
     elif expr.type == '~':
-      negval = self.evaluate_recurse(expr.negation, env, reflip, stack, 'neg').bool
+      negval = self.evaluate_recurse(expr.children[0], env, reflip, stack, 'neg').bool
       val = BoolValue(not negval)
-    elif expr.type == 'add':
+    elif expr.type == '+':
       vals = self.children_evaluate(expr, env, reflip, stack)
       val = NumValue(sum([x.num for x in vals]))
-    elif expr.type == 'subtract':
+    elif expr.type == '-':
       val1 = self.evaluate_recurse(expr.children[0], env, reflip, stack , 'sub0').num
       val2 = self.evaluate_recurse(expr.children[1], env, reflip, stack , 'sub1').num
       val = NumValue(val1 - val2)
-    elif expr.type == 'multiply':
+    elif expr.type == '*':
       vals = self.children_evaluate(expr, env, reflip, stack)
       prod = 1
       for x in vals:

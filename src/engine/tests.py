@@ -199,11 +199,11 @@ class TestDirectives(unittest.TestCase):
     
     noise_level = .01
     sprinkler_ob = observe(noisy(var('sprinkler'), noise_level), BoolValue(True))
-    #d = infer_many('cloudy', niters, burnin)
-    #print d
+    d = infer_many('cloudy', niters, burnin)
+    print d
     #self.assertTrue(  abs(d['cloudy'][False] / (niters + 0.0) - 5 / 6.0) < 0.1)
     #self.assertTrue(test_prior_bool(d, 'sprinkler') < 0.1)
-    #print 'Should be .833 False, .166 True'
+    print 'Should be .833 False, .166 True'
     #print infer_many('sprinkler', niters, burnin)
     #print 'Should be 0 False, 1 True'
     
@@ -239,8 +239,8 @@ class TestDirectives(unittest.TestCase):
     #print 'Should be .5 False, .5 True'
     
     observe(noisy(var('beach'), noise_level), BoolValue(True))
-    print infer_many('sunny', niters, burnin)
-    print 'Should be .357142857 False, .642857143 True'
+    #print infer_many('sunny', niters, burnin)
+    #print 'Should be .357142857 False, .642857143 True'
     return
 
     #print "\n TESTING BURGLARY NET\n" # An example from AIMA
@@ -643,19 +643,19 @@ def run_HMM(t, s, niters = 1000, burnin = 100, countup = True):
     rrandom.random.seed(s)
     n = 5
     assume('dirichlet', xrp(dirichlet_no_args_XRP([1]*n)))
-    assume('get-column', mem(function(['i'], apply('dirichlet'))))
+    assume('get-column', mem(function(['i'], apply(var('dirichlet'), []))))
     assume('get-next-state', function(['i'],
                              let([('loop', \
-                                  function([['v'], 'j'], \
-                                           let([('w', apply(apply('get-column', 'i'), 'j'))],
-                                            ifelse(var('v') < 'w', 'j', apply('loop', [var('v') -'w', var('j') + 1]))))) \
+                                  function(['v', 'j'], \
+                                           let([('w', apply(apply(var('get-column'), [var('i')]), [var('j')]))],
+                                            ifelse(var('v') < var('w'), var('j'), apply(var('loop'), [var('v') -var('w'), var('j') + constant(1)]))))) \
                                  ], \
-                                 apply('loop', [uniform(), 0]))))
+                                 apply(var('loop'), [uniform(), constant(0)]))))
     assume('state', mem(function(['i'],
-                                 ifelse(var('i') == 0, 0, apply('get-next-state', apply('state', var('i') - 1))))))
+                                 ifelse(var('i') == constant(0), constant(0), apply(var('get-next-state'), [apply(var('state'), [var('i') - constant(1)])])))))
   
-    assume('start-state', apply('state', 0))
-    assume('last-state', apply('state', t))
+    assume('start-state', apply(var('state'), [constant(0)]))
+    assume('last-state', apply(var('state'), [constant(t)]))
     a = test_prior(niters, burnin, countup)
     return a
 
@@ -709,30 +709,30 @@ def run_mixture_uncollapsed(n, s):
     """DEFINITION OF DP"""
     assume('DP', \
            function(['concentration', 'basemeasure'], \
-                    let([('sticks', mem(function(['j'], beta(1, 'concentration')))),
-                         ('atoms',  mem(function(['j'], apply('basemeasure')))),
+                    let([('sticks', mem(function(['j'], beta(constant(1), var('concentration'))))),
+                         ('atoms',  mem(function(['j'], apply(var('basemeasure'), [])))),
                          ('loop', \
                           function(['j'], \
-                                   ifelse(bernoulli(apply('sticks', 'j')), \
-                                          apply('atoms', 'j'), \
-                                          apply('loop', var('j')+1)))) \
+                                   ifelse(bernoulli(apply(var('sticks'), [var('j')])), \
+                                          apply(var('atoms'), [var('j')]), \
+                                          apply(var('loop'), [var('j')+constant(1)])))) \
                         ], \
-                        function([], apply('loop', 1))))) 
+                        function([], apply(var('loop'), [constant(1)]))))) 
 
     """DEFINITION OF ONE ARGUMENT DPMEM"""
     assume('DPmem', \
            function(['concentration', 'proc'], \
                     let([('restaurants', \
-                          mem( function(['args'], apply('DP', ['concentration', function([], apply('proc', 'args'))]))))], \
-                        function(['args'], apply('restaurants', 'args'))))) 
+                          mem( function(['args'], apply(var('DP'), [var('concentration'), function([], apply(var('proc'), [var('args')]))]))))], \
+                        function(['args'], apply(var('restaurants'), [var('args')]))))) 
 
     print "\n TESTING GAUSSIAN MIXTURE MODEL\n"
-    assume('expected-mean', gaussian(0, 5)) 
-    assume('expected-variance', gamma(1, 2)) 
-    assume('alpha', gamma(0.1, 10)) 
-    assume('gen-cluster-mean', apply('DPmem', ['alpha', function(['x'], gaussian('expected-mean', 'expected-variance'))]))
-    assume('get-datapoint', mem(function(['id'], gaussian(apply(apply('gen-cluster-mean', 222)), 0.1))))
-    assume('noise-variance', gamma(0.01, 1))
+    assume('expected-mean', gaussian(constant(0), constant(5))) 
+    assume('expected-variance', gamma(constant(1), constant(2))) 
+    assume('alpha', gamma(constant(0.1), constant(10)))
+    assume('gen-cluster-mean', apply(var('DPmem'), [var('alpha'), function(['x'], gaussian(var('expected-mean'), [var('expected-variance')]))]))
+    assume('get-datapoint', mem(function(['id'], gaussian(apply(apply(var('gen-cluster-mean'), [constant(222)]), []), constant(0.1)))))
+    assume('noise-variance', gamma(constant(0.01), constant(1)))
 
     for i in range(n):
       assume('point' + str(i), apply('get-datapoint', i))
@@ -756,10 +756,10 @@ def run_bayes_net(k, s, niters = 1000, burnin = 100, countup = True):
 
 if __name__ == '__main__':
   t = time()
-  running_main = True
+  running_main = False
   if not running_main:
-    a = run_topic_model(5, 222222, 100)
-    #a = run_HMM(5, 222222)
+    #a = run_topic_model(5, 222222, 100)
+    a = run_HMM(5, 222222)
     #a = run_mixture(15, 222222)
     #a = run_bayes_net(20, 222222)
     sampletimes = a[0]['TIME']

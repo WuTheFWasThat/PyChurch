@@ -15,7 +15,7 @@ class mem_proc_XRP(XRP):
     args = tuple(args)
     if globals.use_traces:
       if args not in self.state:
-        evalnode = EvalNode(globals.traces, globals.traces.env, apply(Expression(('value', self.procedure)), [Expression(('value', arg)) for arg in args]))
+        evalnode = EvalNode(globals.traces, globals.traces.env, ApplyExpression(ConstExpression(self.procedure), [ConstExpression(arg) for arg in args]))
         evalnode.mem = True
         globals.traces.add_node(evalnode)
         self.state[args] = evalnode
@@ -28,7 +28,7 @@ class mem_proc_XRP(XRP):
       if args in self.state:
         (val, count) = self.state[args]
       else:
-        val = globals.db.evaluate(apply(Expression(('value', self.procedure)), [Expression(('value', arg)) for arg in args]), stack = help + [-1, 'mem', self.procedure.hash, ','.join([str(x) for x in args])]) 
+        val = globals.db.evaluate(ApplyEpxression(ConstExpression(self.procedure), [ConstExpression(arg) for arg in args]), stack = help + [-1, 'mem', self.procedure.hash, ','.join([str(x) for x in args])]) 
     return val
   def incorporate(self, val, args = None, help = None):
     if globals.use_traces:
@@ -102,9 +102,9 @@ class mem_XRP(XRP):
   def __str__(self):
     return 'Memoization XRP'
 
-mem_xrp = Expression(('value', XRPValue(mem_XRP())))
+mem_xrp = ConstExpression(XRPValue(mem_XRP()))
 def mem(function):
-  return Expression(('apply', mem_xrp, [function]))
+  return ApplyExpression(mem_xrp, [function])
 
 class CRP_XRP(XRP):
   def __init__(self, alpha):
@@ -172,7 +172,7 @@ class gen_CRP_XRP(XRP):
   def __str__(self):
     return 'CRP_XRP'
 
-crp_xrp = Expression(('value', XRPValue(gen_CRP_XRP())))
+crp_xrp = ConstExpression(XRPValue(gen_CRP_XRP()))
 def CRP(alpha):
-  return Expression(('apply', crp_xrp, alpha))
+  return ApplyExpression(crp_xrp, alpha)
 
