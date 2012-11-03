@@ -756,7 +756,7 @@ def run_bayes_net(k, s, niters = 1000, burnin = 100, countup = True):
 
 if __name__ == '__main__':
   t = time()
-  running_main = False
+  running_main = True
   if not running_main:
     #a = run_topic_model(5, 222222, 100)
     a = run_HMM(5, 222222)

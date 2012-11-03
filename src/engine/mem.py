@@ -12,63 +12,63 @@ class mem_proc_XRP(XRP):
     self.hash = rrandom.random.randint()
   def apply(self, args = None, help = None):
     assert len(args) == self.n
-    args = tuple(args)
+    addition = ','.join([x.str_hash for x in args])
     if globals.use_traces:
-      if args not in self.state:
+      if addition not in self.state:
         evalnode = EvalNode(globals.traces, globals.traces.env, ApplyExpression(ConstExpression(self.procedure), [ConstExpression(arg) for arg in args]))
         evalnode.mem = True
         globals.traces.add_node(evalnode)
-        self.state[args] = evalnode
+        self.state[addition] = evalnode
       else:
-        evalnode = self.state[args]
+        evalnode = self.state[addition]
       val = evalnode.evaluate(False)
       return val
     else:
       # help is call_stack for db
-      if args in self.state:
-        (val, count) = self.state[args]
+      if addition in self.state:
+        (val, count) = self.state[addition]
       else:
-        val = globals.db.evaluate(ApplyEpxression(ConstExpression(self.procedure), [ConstExpression(arg) for arg in args]), stack = help + [-1, 'mem', self.procedure.hash, ','.join([str(x) for x in args])]) 
+        val = globals.db.evaluate(ApplyEpxression(ConstExpression(self.procedure), [ConstExpression(arg) for arg in args]), stack = help + [-1, 'mem', self.procedure.hash, addition]) 
     return val
   def incorporate(self, val, args = None, help = None):
+    addition = ','.join([x.str_hash for x in args])
     if globals.use_traces:
       # help is evalnode
       assert help.__class__.__name__ == 'EvalNode' 
-      args = tuple(args)
-      assert args in self.state
-      evalnode = self.state[args]
+      assert addition in self.state
+      evalnode = self.state[addition]
       assert help not in evalnode.mem_calls
       evalnode.mem_calls[help] = True
     else:
-      args = tuple(args)
-      if args not in self.state:
-        self.state[args] = (val, 1)
+      if addition not in self.state:
+        self.state[addition] = (val, 1)
       else:
-        (oldval, oldcount) = self.state[args]
+        (oldval, oldcount) = self.state[addition]
         assert oldval == val
-        self.state[args] = (oldval, oldcount + 1)
+        self.state[addition] = (oldval, oldcount + 1)
     return self.state
   def remove(self, val, args = None, help = None):
-    args = tuple(args)
-
-    assert args in self.state
+    addition = ','.join([x.str_hash for x in args])
+    assert addition in self.state
     if globals.use_traces:
       assert help is not None
-      evalnode = self.state[args]
+      evalnode = self.state[addition]
       assert help in evalnode.mem_calls
       del evalnode.mem_calls[help]
       if len(evalnode.mem_calls) == 0:
         evalnode.unevaluate()
     else:
-      (oldval, oldcount) = self.state[args]
+      (oldval, oldcount) = self.state[addition]
       assert oldval == val
       if oldcount == 1:
-        del self.state[args]
+        del self.state[addition]
       else:
-        self.state[args] = (oldval, oldcount - 1)
+        self.state[addition] = (oldval, oldcount - 1)
     return self.state
   def prob(self, val, args = None):
     return 0 
+  def is_mem(self):
+    return True
   def __str__(self):
     return 'Memoization of %s XRP' % str(self.procedure)
 

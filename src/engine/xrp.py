@@ -17,6 +17,8 @@ class XRP:
   # SHOULD RETURN THE LOG PROBABILITY
   def prob(self, val, args = None):
     pass
+  def is_mem(self):
+    return False
   def __str__(self):
     return 'XRP'
 
@@ -43,6 +45,14 @@ def check_nonneg(val):
     print "Value %s is negative" % str(val)
     assert False
   return
+
+# MORE HELPERS
+
+def sum(array):
+  ans = 0
+  for x in array:
+    ans += x
+  return ans
 
 # SPECIFIC XRPs
 

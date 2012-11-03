@@ -190,7 +190,7 @@ class EvalNode:
         self.get_child('arg' + str(i), self.env, expr.children[i]).unevaluate()
       self.get_child('operator', self.env, expr.op).unevaluate()
       if self.procedure_apply: 
-        addition = ','.join([str(x) for x in self.args])
+        addition = ','.join([x.str_hash for x in self.args])
         assert addition in self.applychildren
         self.applychildren[addition].unevaluate()
       else:
@@ -203,33 +203,34 @@ class EvalNode:
     self.active = False
     return
 
-  def remove_xrp(self, keep = False):
+  def remove_xrp(self):
     assert self.active
     xrp = self.xrp
     args = self.args
-    if xrp.__class__.__name__ == 'mem_proc_XRP':
+    if xrp.is_mem():
       xrp.remove(self.val, args, self)
     else:
       xrp.remove(self.val, args)
     prob = xrp.prob(self.val, self.args)
     self.traces.uneval_p += prob
     self.traces.p -= prob
-    if ((not xrp.deterministic) and (not xrp.__class__.__name__ == 'mem_proc_XRP')):
+    if ((not xrp.deterministic) and (not xrp.is_mem())):
       self.traces.remove_xrp(self)
 
-  def add_xrp(self, xrp, val, args, keep = False):
-    prob = xrp.prob(val, args)
-    self.p = prob
-    self.traces.eval_p += prob
-    self.traces.p += prob
-    if xrp.__class__.__name__ == 'mem_proc_XRP':
-      xrp.incorporate(val, args, self)
-    else:
-      xrp.incorporate(val, args)
+  def add_xrp(self, xrp, val, args):
+    pass
+    #prob = xrp.prob(val, args)
+    #self.p = prob
+    #self.traces.eval_p += prob
+    #self.traces.p += prob
+    #if xrp.is_mem():
+    #  xrp.incorporate(val, args, self)
+    #else:
+    #  xrp.incorporate(val, args)
 
-    if ((not xrp.deterministic) and (not xrp.__class__.__name__ == 'mem_proc_XRP')):
-      self.random_xrp_apply = True
-      self.traces.add_xrp(args, self)
+    #if ((not xrp.deterministic) and (not xrp.is_mem())):
+    #  self.random_xrp_apply = True
+    #  self.traces.add_xrp(args, self)
 
   def evaluate_recurse(self, subexpr, env, addition, reflip, is_apply = False):
     child = self.get_child(addition, env, subexpr, is_apply)
@@ -311,7 +312,7 @@ class EvalNode:
         new_env = op.env.spawn_child()
         for i in range(n):
           new_env.set(op.vars[i], args[i])
-        addition = ','.join([str(x) for x in args])
+        addition = ','.join([x.str_hash for x in args])
         val = self.evaluate_recurse(op.body, new_env, addition, reflip, True)
       elif op.type == 'xrp':
         self.xrp_apply = True
@@ -322,7 +323,7 @@ class EvalNode:
           self.add_xrp(self.xrp, self.val, self.args)
         elif xrp_force_val is not None:
           assert reflip != True
-          assert not xrp.__class__.__name__ == 'mem_proc_XRP'
+          assert not xrp.is_mem()
           assert not xrp.deterministic
           val = xrp_force_val
           if self.active:
@@ -331,7 +332,7 @@ class EvalNode:
           self.add_xrp(xrp, val, args)
         elif self.observed:
           val = self.observe_val
-          assert not xrp.__class__.__name__ == 'mem_proc_XRP'
+          assert not xrp.is_mem()
           assert not xrp.deterministic
           if self.active:
             self.remove_xrp()
@@ -386,32 +387,45 @@ class EvalNode:
       val = BoolValue(val1 >= val2)
     elif self.type == '&':
       vals = self.children_evaluate(reflip)
-      val = BoolValue(all([x.bool for x in vals]))
+      and_val = True
+      for x in vals:
+        if not x.bool:
+          and_val = False
+          break
+      val = BoolValue(and_val)
     elif self.type == '^':
       vals = self.children_evaluate(reflip)
-      xor = True
+      xor_val = True
       for x in vals:
-        xor = xor ^ x.bool
-      val = BoolValue(xor)
+        xor_val = xor_val ^ x.bool
+      val = BoolValue(xor_val)
     elif self.type == '|':
       vals = self.children_evaluate(reflip)
-      val = BoolValue(any([x.bool for x in vals]))
+      or_val = False
+      for x in vals:
+        if x.bool:
+          or_val = True
+          break
+      val = BoolValue(or_val)
     elif self.type == '~':
       negval = self.evaluate_recurse(expr.children[0] , self.env, 'neg', reflip).bool
       val = BoolValue(not negval)
     elif self.type == '+':
       vals = self.children_evaluate(reflip)
-      val = NumValue(sum([x.num for x in vals]))
+      sum_val = 0
+      for x in vals:
+        sum_val = sum_val + x.num
+      val = NumValue(sum_val)
     elif self.type == '-':
       val1 = self.evaluate_recurse(expr.children[0] , self.env, 'sub0', reflip).num
       val2 = self.evaluate_recurse(expr.children[1] , self.env, 'sub1', reflip).num
       val = NumValue(val1 - val2)
     elif self.type == '*':
       vals = self.children_evaluate(reflip)
-      prod = 1
+      prod_val = 1
       for x in vals:
-        prod = prod * x.num
-      val = NumValue(prod)
+        prod_val = prod_val * x.num
+      val = NumValue(prod_val)
     else:
       raise Exception('Invalid expression type %s' % self.type)
 
@@ -785,7 +799,7 @@ class RandomDB:
       args = [self.evaluate_recurse(expr.children[i], env, reflip, stack, 'arg' + str(i)) for i in range(n)]
       op = self.evaluate_recurse(expr.op, env, reflip, stack , 'operator')
 
-      addition = ','.join([str(x) for x in args])
+      addition = ','.join([x.str_hash for x in args])
       if op.type == 'procedure':
         self.unevaluate(stack + ['apply'], addition)
         if n != len(op.vars):
@@ -806,7 +820,7 @@ class RandomDB:
         else:
           substack = stack + ['apply', addition]
           if not self.has(substack):
-            if op.xrp.__class__.__name__ == 'mem_proc_XRP':
+            if op.xrp.is_mem():
               val = op.xrp.apply(args, stack)
             else:
               val = op.xrp.apply(args)
@@ -814,7 +828,7 @@ class RandomDB:
           else:
             if reflip:
               self.remove(substack)
-              if op.xrp.__class__.__name__ == 'mem_proc_XRP':
+              if op.xrp.is_mem():
                 val = op.xrp.apply(args, stack)
               else:
                 val = op.xrp.apply(args)
@@ -934,7 +948,7 @@ class RandomDB:
     self.save()
   
     self.remove(stack)
-    if xrp.__class__.__name__ == 'mem_proc_XRP':
+    if xrp.is_mem():
       new_val = xrp.apply(args, list(stack))
     else:
       new_val = xrp.apply(args)

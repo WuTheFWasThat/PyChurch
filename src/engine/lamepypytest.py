@@ -11,6 +11,8 @@ class StrValue(Value):
 
   def __str__(self):
     return self.type + str(self.str)
+  def __hash__(self):
+    return 124123
 
 class IntValue(Value):
   def __init__(self, intv, secondint = None):
@@ -20,6 +22,8 @@ class IntValue(Value):
       self.secondint = intv
     else:
       self.secondint = secondint
+  def __hash__(self):
+    return self.int
 
   def __str__(self):
     return self.type + str(self.int) + str(self.secondint)
@@ -31,6 +35,8 @@ class BoolValue(Value):
 
   def __str__(self):
     return self.type + str(self.bool)
+  def __hash__(self):
+    return int(self.bool)
 
 def act(val):
   print val.__str__()
@@ -62,6 +68,9 @@ def entry_point(argv):
     act(c)
     d = StrValue('fish')
     act(d)
+
+    x=  [a, b, c]
+    y = ','.join([str(z.__hash__()) for z in x])
     return 0
 
 def target(*args):

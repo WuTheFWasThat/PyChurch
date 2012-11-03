@@ -12,6 +12,12 @@ def count_up(list):
       d[x] = 1
   return d
 
+def sum(list):
+  ans = 0
+  for x in list:
+    ans += x
+  return ans
+
 def average(list):
   return sum(list) / (0.0 + len(list))
 
@@ -39,7 +45,7 @@ def merge_counts(d1, d2):
 
 """ Inference routines """
 
-# OUTDATED
+# TODO: OUTDATED
 def reject_infer():
   assert not globals.use_traces
   flag = False
