@@ -9,7 +9,7 @@ class Procedure(Value):
     self.vars = vars
     self.body = body
     self.env = env 
-    self.hash = rrandom.random.randint()
+    self.hash = rrandom.random.randbelow()
     self.str_hash = str(self.hash)
   def __str__(self):
     return 'procedure%s : %s' % (str(tuple(self.vars)), str(self.body))
@@ -24,7 +24,7 @@ class XRPValue(Value):
   def __init__(self, xrp):
     self.type = 'xrp'
     self.xrp = xrp 
-    self.hash = rrandom.random.randint()
+    self.hash = rrandom.random.randbelow()
     self.str_hash = str(self.hash)
   def __str__(self):
     return 'xrp %s' % (str(self.xrp)) 

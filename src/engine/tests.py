@@ -747,7 +747,7 @@ def run_bayes_net(k, s, niters = 1000, burnin = 100, countup = True):
     for i in xrange(n):
       assume('disease' + str(i), bernoulli(constant(0.2)))
     for j in xrange(n):
-      causes = ['disease' + str(random.randint(0,n-1)) for i in xrange(k)]
+      causes = ['disease' + str(random.randbelow(0,n-1)) for i in xrange(k)]
       symptom_expression = bernoulli(ifelse(disjunction(causes), .8, .2))
       assume('symptom' + str(j), symptom_expression)
 

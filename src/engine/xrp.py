@@ -1,4 +1,3 @@
-import random
 from values import *
 import math
 
@@ -57,7 +56,7 @@ def sum(array):
 # SPECIFIC XRPs
 
 def dirichlet(params):
-  sample = [random.gammavariate(a,1) for a in params]
+  sample = [rrandom.random.gammavariate(a,1) for a in params]
   z = sum(sample) + 0.0
   return [v/z for v in sample]
 
@@ -69,7 +68,7 @@ class gaussian_args_XRP(XRP):
   def apply(self, args = None):
     (mu, sigma) = (args[0].num, args[1].num)
     check_pos(sigma)
-    return NumValue(random.normalvariate(mu, sigma))
+    return NumValue(rrandom.random.normalvariate(mu, sigma))
   def prob(self, val, args = None):
     (mu , sigma) = (args[0].num, args[1].num + 0.0)
     check_pos(sigma)
@@ -89,7 +88,7 @@ class gaussian_no_args_XRP(XRP):
   def apply(self, args = None):
     if args != None and len(args) != 0:
       raise Exception('Warning: gaussian_no_args_XRP has no need to take in arguments %s' % str(args))
-    return NumValue(random.normalvariate(self.mu, self.sigma))
+    return NumValue(rrandom.random.normalvariate(self.mu, self.sigma))
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       raise Exception('Warning: gaussian_no_args_XRP has no need to take in arguments %s' % str(args))
@@ -208,7 +207,7 @@ class beta_args_XRP(XRP):
     (a,b) = (args[0].num, args[1].num)
     check_pos(a)
     check_pos(b)
-    return NumValue(random.betavariate(a, b))
+    return NumValue(rrandom.random.betavariate(a, b))
   def prob(self, val, args = None):
     (a , b) = (args[0].num, args[1].num)
     check_pos(a)
@@ -231,7 +230,7 @@ class beta_no_args_XRP(XRP):
   def apply(self, args = None):
     if args != None and len(args) != 0:
       raise Exception('Warning: beta_no_args_XRP has no need to take in arguments %s' % str(args))
-    return NumValue(random.betavariate(self.a, self.b))
+    return NumValue(rrandom.random.betavariate(self.a, self.b))
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       raise Exception('Warning: beta_no_args_XRP has no need to take in arguments %s' % str(args))
@@ -262,7 +261,7 @@ class gamma_args_XRP(XRP):
     (a,b) = (args[0].num, args[1].num)
     check_pos(a)
     check_pos(b)
-    return NumValue(random.gammavariate(a, b))
+    return NumValue(rrandom.random.gammavariate(a, b))
   def prob(self, val, args = None):
     (a , b) = (args[0].num, args[1].num)
     check_pos(a)
@@ -287,7 +286,7 @@ class gamma_no_args_XRP(XRP):
   def apply(self, args = None):
     if args != None and len(args) != 0:
       raise Exception('Warning: gamma_no_args_XRP has no need to take in arguments %s' % str(args))
-    return NumValue(random.gammavariate(self.a, self.b))
+    return NumValue(rrandom.random.gammavariate(self.a, self.b))
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       raise Exception('Warning: gamma_no_args_XRP has no need to take in arguments %s' % str(args))
@@ -372,7 +371,7 @@ class uniform_args_XRP(XRP):
   def apply(self, args = None):
     n = args[0].num
     check_nonneg(n)
-    return NumValue(rrandom.random.randint(n-1))
+    return NumValue(rrandom.random.randbelow(n-1))
   def prob(self, val, args = None):
     n = args[0].num
     check_nonneg(n)
@@ -391,7 +390,7 @@ class uniform_no_args_XRP(XRP):
   def apply(self, args = None):
     if args != None and len(args) != 0:
       raise Exception('Warning: uniform_no_args_XRP has no need to take in arguments %s' % str(args))
-    return NumValue(rrandom.random.randint(self.n-1))
+    return NumValue(rrandom.random.randbelow(self.n-1))
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       raise Exception('Warning: uniform_no_args_XRP has no need to take in arguments %s' % str(args))
@@ -416,7 +415,7 @@ class beta_bernoulli_1(XRP):
   def __init__(self, start_state = (1, 1)):
     self.deterministic = False
     (a, b) = start_state
-    self.state = random.betavariate(a, b)
+    self.state = rrandom.random.betavariate(a, b)
     p = check_prob(self.state)
   def apply(self, args = None):
     return BoolValue((rrandom.random.random() < self.state))

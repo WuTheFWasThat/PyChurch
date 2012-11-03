@@ -37,7 +37,7 @@ class Expression:
 
 class ConstExpression(Expression):
   def __init__(self, value):
-    self.hashval = rrandom.random.randint()
+    self.hashval = rrandom.random.randbelow()
     self.val = value
     self.type = 'value'
 
@@ -49,7 +49,7 @@ class ConstExpression(Expression):
 
 class VarExpression(Expression):
   def __init__(self, name):
-    self.hashval = rrandom.random.randint()
+    self.hashval = rrandom.random.randbelow()
     self.type = 'variable'
     self.name = name
 
@@ -67,7 +67,7 @@ class VarExpression(Expression):
 
 class ApplyExpression(Expression):
   def __init__(self, op, children):
-    self.hashval = rrandom.random.randint()
+    self.hashval = rrandom.random.randbelow()
     self.type = 'apply'
     self.op = op
     self.children = children
@@ -84,7 +84,7 @@ class ApplyExpression(Expression):
 
 class FunctionExpression(Expression):
   def __init__(self, vars, body):
-    self.hashval = rrandom.random.randint()
+    self.hashval = rrandom.random.randbelow()
     self.type = 'function'
     self.vars = vars
     self.body = body 
@@ -100,7 +100,7 @@ class FunctionExpression(Expression):
 
 class IfExpression(Expression):
   def __init__(self, cond, true, false):
-    self.hashval = rrandom.random.randint()
+    self.hashval = rrandom.random.randbelow()
     self.type = 'if'
     self.cond = cond
     self.true = true
@@ -117,7 +117,7 @@ class IfExpression(Expression):
 
 class LetExpression(Expression):
   def __init__(self, bindings, body):
-    self.hashval = rrandom.random.randint()
+    self.hashval = rrandom.random.randbelow()
     self.type = 'let'
     self.vars = []
     self.expressions = []
@@ -138,7 +138,7 @@ class LetExpression(Expression):
 
 class OpExpression(Expression):
   def __init__(self, op, children):
-    self.hashval = rrandom.random.randint()
+    self.hashval = rrandom.random.randbelow()
     self.type = op
     self.children = children 
 

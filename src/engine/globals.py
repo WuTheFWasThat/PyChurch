@@ -218,19 +218,18 @@ class EvalNode:
       self.traces.remove_xrp(self)
 
   def add_xrp(self, xrp, val, args):
-    pass
-    #prob = xrp.prob(val, args)
-    #self.p = prob
-    #self.traces.eval_p += prob
-    #self.traces.p += prob
-    #if xrp.is_mem():
-    #  xrp.incorporate(val, args, self)
-    #else:
-    #  xrp.incorporate(val, args)
+    prob = xrp.prob(val, args)
+    self.p = prob
+    self.traces.eval_p += prob
+    self.traces.p += prob
+    if xrp.is_mem():
+      xrp.incorporate(val, args, self)
+    else:
+      xrp.incorporate(val, args)
 
-    #if ((not xrp.deterministic) and (not xrp.is_mem())):
-    #  self.random_xrp_apply = True
-    #  self.traces.add_xrp(args, self)
+    if ((not xrp.deterministic) and (not xrp.is_mem())):
+      self.random_xrp_apply = True
+      self.traces.add_xrp(args, self)
 
   def evaluate_recurse(self, subexpr, env, addition, reflip, is_apply = False):
     child = self.get_child(addition, env, subexpr, is_apply)
@@ -283,7 +282,6 @@ class EvalNode:
       val = self.evaluate_recurse(self.children[index.num] , self.env, 'child' + str(index.num), reflip)
     elif self.type == 'let':
       # TODO: this really is a let*
-      
       n = len(expr.vars)
       assert len(expr.expressions) == n
       values = []

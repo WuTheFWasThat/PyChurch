@@ -35,7 +35,7 @@ class RandomChoiceDict():
         self.keyToId[lastKey] = delId 
 
   def randomKey(self): 
-      index =  rrandom.random.randint(len(self.idToKey))
+      index =  rrandom.random.randbelow(len(self.idToKey))
       return self.idToKey[index]
       # return self.idToKey[random.randrange(len(self.idToKey))]
 

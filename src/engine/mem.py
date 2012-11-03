@@ -9,7 +9,7 @@ class mem_proc_XRP(XRP):
     self.procedure = procedure
     self.n = len(procedure.vars)
     self.state = {}
-    self.hash = rrandom.random.randint()
+    self.hash = rrandom.random.randbelow()
   def apply(self, args = None, help = None):
     assert len(args) == self.n
     addition = ','.join([x.str_hash for x in args])
@@ -122,7 +122,7 @@ class CRP_XRP(XRP):
       x -= self.state[id]
       if x <= 0:
         return id
-    return NumValue(rrandom.random.randint())
+    return NumValue(rrandom.random.randbelow())
   def incorporate(self, val, args = None):
     if args != None and len(args) != 0:
       warnings.warn('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
