@@ -1,5 +1,4 @@
 import rrandom
-# import random
 
 # A dictionary which also supports fetching a random key in O(1)
 # See http://stackoverflow.com/questions/10840901/python-get-random-key-in-a-dictionary-in-o1
@@ -35,10 +34,11 @@ class RandomChoiceDict():
         self.keyToId[lastKey] = delId 
 
   def randomKey(self): 
+      if len(self.idToKey) == 0:
+        raise Exception("No keys to get")
       index =  rrandom.random.randbelow(len(self.idToKey))
       return self.idToKey[index]
       # return self.idToKey[random.randrange(len(self.idToKey))]
-
 
   def __str__(self):
       return self.dict.__str__()

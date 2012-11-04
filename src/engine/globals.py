@@ -90,7 +90,7 @@ class EvalNode:
     self.xrp_apply = False
     self.procedure_apply = False
     self.args = None
-    self.p = None
+    self.p = 0
 
     self.expression = expression
     self.type = expression.type
@@ -162,7 +162,10 @@ class EvalNode:
       if self.assume:
         assert self.parent is None
         # lookups can be affected *while* propogating up. 
-        for evalnode in list(self.env.get_lookups(self.assume_name, self)):
+        lookup_nodes = []
+        for evalnode in self.env.get_lookups(self.assume_name, self):
+          lookup_nodes.append(evalnode)
+        for evalnode in lookup_nodes:
           assert self.traces.has(evalnode)
           evalnode.propogate_up()
       elif self.parent is not None:
@@ -208,7 +211,7 @@ class EvalNode:
     xrp = self.xrp
     args = self.args
     if xrp.is_mem():
-      xrp.remove(self.val, args, self)
+      xrp.remove_mem(self.val, args, self)
     else:
       xrp.remove(self.val, args)
     prob = xrp.prob(self.val, self.args)
@@ -223,7 +226,7 @@ class EvalNode:
     self.traces.eval_p += prob
     self.traces.p += prob
     if xrp.is_mem():
-      xrp.incorporate(val, args, self)
+      xrp.incorporate_mem(val, args, self)
     else:
       xrp.incorporate(val, args)
 
@@ -273,13 +276,13 @@ class EvalNode:
       else:
         self.get_child('true', self.env, expr.true).unevaluate()
         val = self.evaluate_recurse(expr.false, self.env, 'false', reflip)
-    elif self.type == 'switch':
-      index = self.evaluate_recurse(expr.index, self.env, 'index', reflip)
-      assert 0 <= index.num < expr.n
-      for i in range(expr.n):
-        if i != index.num:
-          self.get_child('child' + str(i), self.env, expr.children[i]).unevaluate()
-      val = self.evaluate_recurse(self.children[index.num] , self.env, 'child' + str(index.num), reflip)
+    #elif self.type == 'switch':
+    #  index = self.evaluate_recurse(expr.index, self.env, 'index', reflip)
+    #  assert 0 <= index.num < expr.n
+    #  for i in range(expr.n):
+    #    if i != index.num:
+    #      self.get_child('child' + str(i), self.env, expr.children[i]).unevaluate()
+    #  val = self.evaluate_recurse(self.children[index.num] , self.env, 'child' + str(index.num), reflip)
     elif self.type == 'let':
       # TODO: this really is a let*
       n = len(expr.vars)
@@ -306,7 +309,7 @@ class EvalNode:
           self.applychildren[x].unevaluate()
 
         if n != len(op.vars):
-          raise Exception('Procedure should have %d arguments.  \nVars were \n%s\n, but children were \n%s.' % (n, op.vars, self.chidlren))
+          raise Exception('Procedure should have %d arguments.  \nVars were \n%s\n, but had %d children.' % (n, op.vars, len(self.children)))
         new_env = op.env.spawn_child()
         for i in range(n):
           new_env.set(op.vars[i], args[i])
@@ -373,16 +376,16 @@ class EvalNode:
       val = BoolValue(val1 == val2)
     elif self.type == '<':
       (val1, val2) = self.binary_op_evaluate(reflip)
-      val = BoolValue(val1 < val2)
+      val = BoolValue(val1.lt(val2))
     elif self.type == '>':
       (val1, val2) = self.binary_op_evaluate(reflip)
-      val = BoolValue(val1 > val2)
+      val = BoolValue(val1.gt(val2))
     elif self.type == '<=':
       (val1, val2) = self.binary_op_evaluate(reflip)
-      val = BoolValue(val1 <= val2)
+      val = BoolValue(val1.le(val2))
     elif self.type == '>=':
       (val1, val2) = self.binary_op_evaluate(reflip)
-      val = BoolValue(val1 >= val2)
+      val = BoolValue(val1.ge(val2))
     elif self.type == '&':
       vals = self.children_evaluate(reflip)
       and_val = True
@@ -406,8 +409,8 @@ class EvalNode:
           break
       val = BoolValue(or_val)
     elif self.type == '~':
-      negval = self.evaluate_recurse(expr.children[0] , self.env, 'neg', reflip).bool
-      val = BoolValue(not negval)
+      negval = self.evaluate_recurse(expr.children[0] , self.env, 'neg', reflip)
+      val = BoolValue(not negval.bool)
     elif self.type == '+':
       vals = self.children_evaluate(reflip)
       sum_val = 0
@@ -473,7 +476,12 @@ class Traces:
     self.assumes = []
     self.observes = {} # just a set
 
-    self.db = RandomChoiceDict() 
+    # WITH RANDOM CHOICE DICT
+    # self.db = RandomChoiceDict() 
+
+    self.db = {}  
+    self.idToKey = []
+    self.keyToId = {}
 
     env.reset()
     self.env = env
@@ -606,15 +614,48 @@ class Traces:
     assert evalnodecheck in self.evalnodes
     evalnodecheck.setargs(args)
     assert evalnodecheck not in self.db
+
+    # WITH RANDOM CHOICE DICT
+    # self.db[evalnode] = True
+
+    self.keyToId[evalnodecheck] = len(self.idToKey) 
+    self.idToKey.append(evalnodecheck)
     self.db[evalnodecheck] = True
+
 
   def remove_xrp(self, evalnode):
     assert self.has(evalnode)
     assert evalnode in self.db
-    del self.db[evalnode] 
+
+    # WITH RANDOM CHOICE DICT
+    # del self.db[evalnode]
+
+    if evalnode not in self.db:
+      raise Exception("evalnode not in db")
+
+    del self.db[evalnode]
+    delId = self.keyToId.pop(evalnode)
+    lastKey = self.idToKey.pop()
+
+    if delId < len(self.idToKey):
+      self.idToKey[delId] = lastKey
+      self.keyToId[lastKey] = delId 
+
+  def infer(self):
+    try:
+      # WITH RANDOM CHOICE DICT
+      # evalnode = self.db.randomKey()
+
+      if len(self.idToKey) == 0:
+        raise Exception("No keys to get")
+      index =  rrandom.random.randbelow(len(self.idToKey))
+      evalnode = self.idToKey[index]
+    except:
+      return
+    self.reflip(evalnode)
 
   def random_node(self):
-    evalnode = self.db.randomKey()
+
     return evalnode
 
   def reset(self):
@@ -729,6 +770,13 @@ class RandomDB:
     else:
       raise Exception('Failed to get stack %s' % str(stack))
 
+  def infer(self):
+    try:
+      stack = self.random_stack()
+    except:
+      return
+    self.reflip(stack)
+
   def random_stack(self):
     key = self.db.randomKey()
     return key
@@ -769,13 +817,13 @@ class RandomDB:
       else:
         self.unevaluate(stack + ['true'])
         val = self.evaluate_recurse(expr.false, env, reflip, stack , 'false')
-    elif expr.type == 'switch':
-      index = self.evaluate_recurse(expr.index, env, reflip, stack , 'index')
-      assert 0 <= index.num < expr.n
-      for i in range(expr.n):
-        if i != index.num:
-          self.unevaluate(stack + ['child' + str(i)])
-      val = self.evaluate_recurse(expr.children[index.num], env, reflip, stack, 'child' + str(index.num))
+    #elif expr.type == 'switch':
+    #  index = self.evaluate_recurse(expr.index, env, reflip, stack , 'index')
+    #  assert 0 <= index.num < expr.n
+    #  for i in range(expr.n):
+    #    if i != index.num:
+    #      self.unevaluate(stack + ['child' + str(i)])
+    #  val = self.evaluate_recurse(expr.children[index.num], env, reflip, stack, 'child' + str(index.num))
     elif expr.type == 'let':
       # TODO: this really is a let*
 
@@ -819,7 +867,7 @@ class RandomDB:
           substack = stack + ['apply', addition]
           if not self.has(substack):
             if op.xrp.is_mem():
-              val = op.xrp.apply(args, stack)
+              val = op.xrp.apply_mem(args, stack)
             else:
               val = op.xrp.apply(args)
             self.insert(substack, op.xrp, val, args)
@@ -827,7 +875,7 @@ class RandomDB:
             if reflip:
               self.remove(substack)
               if op.xrp.is_mem():
-                val = op.xrp.apply(args, stack)
+                val = op.xrp.apply_mem(args, stack)
               else:
                 val = op.xrp.apply(args)
               self.insert(substack, op.xrp, val, args)

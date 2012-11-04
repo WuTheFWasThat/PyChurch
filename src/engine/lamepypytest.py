@@ -1,7 +1,16 @@
 import os
 import sys
+import math
 
 class Value:
+  def stringify(self, extrarg):
+    return 'Value' + extrarg
+  def __str__(self):
+    return 'Value'
+  def __le__(self, other):
+    return True
+  def __ge__(self, other):
+    return False
   pass
 
 class StrValue(Value):
@@ -9,10 +18,16 @@ class StrValue(Value):
     self.type = 'str'
     self.str = strv 
 
+  def stringify(self, extrarg):
+    return 'StrValue' + extrarg
   def __str__(self):
     return self.type + str(self.str)
   def __hash__(self):
     return 124123
+  def __le__(self, other):
+    return True
+  def __ge__(self, other):
+    return False
 
 class IntValue(Value):
   def __init__(self, intv, secondint = None):
@@ -22,6 +37,8 @@ class IntValue(Value):
       self.secondint = intv
     else:
       self.secondint = secondint
+  def stringify(self, extrarg):
+    return 'IntValue' + extrarg
   def __hash__(self):
     return self.int
 
@@ -33,22 +50,26 @@ class BoolValue(Value):
     self.type = 'bool'
     self.bool = boolv
 
+  def stringify(self, extrarg):
+    return 'BoolValue' + extrarg
   def __str__(self):
     return self.type + str(self.bool)
   def __hash__(self):
     return int(self.bool)
+  def __le__(self, other):
+    return True
+  def __ge__(self, other):
+    return False
 
 def act(val):
-  print val.__str__()
   if val.type == 'str':
     c = StrValue('Wheee')
-    print val.int
+    print val.str[0]
   elif val.type == 'int':
-    print val.int
     c = IntValue(3333, 3)
   else:
     c = BoolValue(True)
-  print c
+  return c > val
 
 def a(blah):
   if len(blah) == 1:
@@ -70,7 +91,9 @@ def entry_point(argv):
     act(d)
 
     x=  [a, b, c]
-    y = ','.join([str(z.__hash__()) for z in x])
+    y = ','.join([yy.__str__() for yy in x])
+    z = ','.join([zz.stringify('cat') for zz in x])
+
     return 0
 
 def target(*args):

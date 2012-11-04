@@ -105,7 +105,7 @@ def infer_many(name, niter = 1000, burnin = 100, printiters = 0):
     if globals.use_traces:
       val = globals.env.assumes[name].evaluate(False)
     else:
-      val = globals.db.evaluate(Expression(('var', name)), reflip = False, stack = [name])
+      val = globals.db.evaluate(var(name), reflip = False, stack = [name])
     if val in dict:
       dict[val] += 1
     else:

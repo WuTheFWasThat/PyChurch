@@ -648,15 +648,16 @@ def run_HMM(t, s, niters = 1000, burnin = 100, countup = True):
                              let([('loop', \
                                   function(['v', 'j'], \
                                            let([('w', apply(apply(var('get-column'), [var('i')]), [var('j')]))],
-                                            ifelse(var('v') < var('w'), var('j'), apply(var('loop'), [var('v') -var('w'), var('j') + constant(1)]))))) \
+                                            ifelse(op('<', [var('v'), var('w')]), var('j'), apply(var('loop'), [op('-', [var('v'), var('w')]), op('+', [var('j'), constant(1)])]))))) \
                                  ], \
                                  apply(var('loop'), [uniform(), constant(0)]))))
-    assume('state', mem(function(['i'],
-                                 ifelse(var('i') == constant(0), constant(0), apply(var('get-next-state'), [apply(var('state'), [var('i') - constant(1)])])))))
+    #assume('state', mem(function(['i'],
+    #                             ifelse(var('i') == constant(0), constant(0), apply(var('get-next-state'), [apply(var('state'), [var('i') - constant(1)])])))))
   
-    assume('start-state', apply(var('state'), [constant(0)]))
-    assume('last-state', apply(var('state'), [constant(t)]))
-    a = test_prior(niters, burnin, countup)
+    #assume('start-state', apply(var('state'), [constant(0)]))
+    #assume('last-state', apply(var('state'), [constant(t)]))
+    a = infer_many('get-column', burnin, countup)
+    #a = test_prior(niters, burnin, countup)
     return a
 
 def run_topic_model(docsize, s, niters = 1000, burnin = 100, countup = True):
@@ -756,19 +757,21 @@ def run_bayes_net(k, s, niters = 1000, burnin = 100, countup = True):
 
 if __name__ == '__main__':
   t = time()
-  running_main = True
+  running_main = False
   if not running_main:
     #a = run_topic_model(5, 222222, 100)
-    a = run_HMM(5, 222222)
+    a = run_HMM(5, 2222)
+    print a
     #a = run_mixture(15, 222222)
     #a = run_bayes_net(20, 222222)
-    sampletimes = a[0]['TIME']
-    print average(sampletimes)
-    print standard_deviation(sampletimes)
-    
-    followtimes = a[1]['TIME']
-    print average(followtimes)
-    print standard_deviation(followtimes)
-    print time() - t
+
+    #sampletimes = a[0]['TIME']
+    #print average(sampletimes)
+    #print standard_deviation(sampletimes)
+    #
+    #followtimes = a[1]['TIME']
+    #print average(followtimes)
+    #print standard_deviation(followtimes)
+    #print time() - t
   else:
     unittest.main()

@@ -3,9 +3,11 @@
 # modified from:
 # https://bitbucket.org/pypy/pypy/src/default/pypy/rlib/rrandom.py
 
-from pypy.rlib.rarithmetic import r_uint
-#def r_uint(x):
-#  return x
+try:
+    from pypy.rlib.rarithmetic import r_uint
+except:
+    def r_uint(x):
+      return x
 
 N = 624
 M = 397
@@ -20,13 +22,12 @@ MAGIC_CONSTANT_B = r_uint(19650218)
 MAGIC_CONSTANT_C = r_uint(1664525)
 MAGIC_CONSTANT_D = r_uint(1566083941)
 
-from math import log as _log, exp as _exp, pi as _pi, e as _e, ceil as _ceil
-from math import sqrt as _sqrt, acos as _acos, cos as _cos, sin as _sin
+import math
 
-NV_MAGICCONST = 4 * _exp(-0.5)/_sqrt(2.0)
-TWOPI = 2.0*_pi
-LOG4 = _log(4.0)
-SG_MAGICCONST = 1.0 + _log(4.5)
+NV_MAGICCONST = 4 * math.exp(-0.5)/math.sqrt(2.0)
+TWOPI = 2.0*math.pi
+LOG4 = math.log(4.0)
+SG_MAGICCONST = 1.0 + math.log(4.5)
 BPF = 53        # Number of bits in a float
 RECIP_BPF = 2**-BPF
 
@@ -111,14 +112,6 @@ class Random(object):
         a = self.genrand32() >> 5
         b = self.genrand32() >> 6
         return (a * 67108864.0 + b) * (1.0 / 9007199254740992.0)
-
-    def randbelow(self, max = 0):
-        a = self.genrand32() >> 5
-        b = self.genrand32() >> 6
-        if max == 0:
-          return (a * 67108864 + b)  
-        else:
-          return (a * 67108864 + b) % max
 
     def randbelow(self, max = 0):
         a = self.genrand32() >> 5
@@ -233,7 +226,7 @@ class Random(object):
             u = 1.0 - u
             c = 1.0 - c
             low, high = high, low
-        return low + (high - low) * (u * c) ** 0.5
+        return low + (high - low) * math.pow(u * c, 0.5)
 
 ## -------------------- normal distribution --------------------
 
@@ -255,7 +248,7 @@ class Random(object):
             u2 = 1.0 - self.random()
             z = NV_MAGICCONST*(u1-0.5)/u2
             zz = z*z/4.0
-            if zz <= -_log(u2):
+            if zz <= -math.log(u2):
                 break
         return mu + z*sigma
 
@@ -269,7 +262,7 @@ class Random(object):
         mu can have any value, and sigma must be greater than zero.
 
         """
-        return _exp(self.normalvariate(mu, sigma))
+        return math.exp(self.normalvariate(mu, sigma))
 
 ## -------------------- exponential distribution --------------------
 
@@ -289,7 +282,7 @@ class Random(object):
         u = self.random()
         while u <= 1e-7:
             u = self.random()
-        return -_log(u)/(lambd + 0.0)
+        return -math.log(u)/(lambd)
 
 
 ## -------------------- von Mises distribution --------------------
@@ -317,27 +310,27 @@ class Random(object):
         if kappa <= 1e-6:
             return TWOPI * self.random()
 
-        a = 1.0 + _sqrt(1.0 + 4.0 * kappa * kappa)
-        b = (a - _sqrt(2.0 * a))/(2.0 * kappa)
+        a = 1.0 + math.sqrt(1.0 + 4.0 * kappa * kappa)
+        b = (a - math.sqrt(2.0 * a))/(2.0 * kappa)
         r = (1.0 + b * b)/(2.0 * b)
 
         while 1:
             u1 = self.random()
 
-            z = _cos(_pi * u1)
-            f = (1.0 + r * z)/(r + z + 0.0)
+            z = math.cos(math.pi * u1)
+            f = (1.0 + r * z)/(r + z)
             c = kappa * (r - f)
 
             u2 = self.random()
 
-            if u2 < c * (2.0 - c) or u2 <= c * _exp(1.0 - c):
+            if u2 < c * (2.0 - c) or u2 <= c * math.exp(1.0 - c):
                 break
 
         u3 = self.random()
         if u3 > 0.5:
-            theta = (mu % TWOPI) + _acos(f)
+            theta = (mu % TWOPI) + math.acos(f)
         else:
-            theta = (mu % TWOPI) - _acos(f)
+            theta = (mu % TWOPI) - math.acos(f)
 
         return theta
 
@@ -345,6 +338,7 @@ class Random(object):
 ## -------------------- gamma distribution --------------------
 
     def gammavariate(self, alpha, beta):
+        
         """Gamma distribution.  Not the gamma function!
 
         Conditions on the parameters are alpha > 0 and beta > 0.
@@ -364,7 +358,7 @@ class Random(object):
             # variables with non-integral shape parameters",
             # Applied Statistics, (1977), 26, No. 1, p71-74
 
-            ainv = _sqrt(2.0 * alpha - 1.0)
+            ainv = math.sqrt(2.0 * alpha - 1.0)
             bbb = alpha - LOG4
             ccc = alpha + ainv
 
@@ -373,11 +367,11 @@ class Random(object):
                 if not 1e-7 < u1 < .9999999:
                     continue
                 u2 = 1.0 - self.random()
-                v = _log(u1/(1.0-u1))/(ainv+0.0)
-                x = alpha*_exp(v)
+                v = math.log(u1/(1.0-u1))/(ainv)
+                x = alpha*math.exp(v)
                 z = u1*u1*u2
                 r = bbb+ccc*v-x
-                if r + SG_MAGICCONST - 4.5*z >= 0.0 or r >= _log(z):
+                if r + SG_MAGICCONST - 4.5*z >= 0.0 or r >= math.log(z):
                     return x * beta
 
         elif alpha == 1.0:
@@ -385,7 +379,7 @@ class Random(object):
             u = self.random()
             while u <= 1e-7:
                 u = self.random()
-            return -_log(u) * beta
+            return -math.log(u) * beta
 
         else:   # alpha is between 0 and 1 (exclusive)
 
@@ -393,17 +387,17 @@ class Random(object):
 
             while 1:
                 u = self.random()
-                b = (_e + alpha)/_e
+                b = (math.e + alpha)/math.e
                 p = b*u
                 if p <= 1.0:
-                    x = p ** (1.0/alpha)
+                    x = math.pow(p, (1.0/alpha))
                 else:
-                    x = -_log((b-p)/(alph + 0.0))
+                    x = -math.log((b-p)/(alpha))
                 u1 = self.random()
                 if p > 1.0:
-                    if u1 <= x ** (alpha - 1.0):
+                    if u1 <= math.pow(x, alpha - 1.0):
                         break
-                elif u1 <= _exp(-x):
+                elif u1 <= math.exp(-x):
                     break
             return x * beta
 
@@ -441,9 +435,9 @@ class Random(object):
         self.gauss_next = None
         if z is None:
             x2pi = self.random() * TWOPI
-            g2rad = _sqrt(-2.0 * _log(1.0 - self.random()))
-            z = _cos(x2pi) * g2rad
-            self.gauss_next = _sin(x2pi) * g2rad
+            g2rad = math.sqrt(-2.0 * math.log(1.0 - self.random()))
+            z = math.cos(x2pi) * g2rad
+            self.gauss_next = math.sin(x2pi) * g2rad
 
         return mu + z*sigma
 
@@ -484,7 +478,7 @@ class Random(object):
         # Jain, pg. 495
 
         u = 1.0 - self.random()
-        return 1.0 / u ** (1.0/alpha)
+        return 1.0 / math.pow(u, (1.0/alpha))
 
 ## -------------------- Weibull --------------------
 
@@ -497,7 +491,7 @@ class Random(object):
         # Jain, pg. 499; bug fix courtesy Bill Arms
 
         u = 1.0 - self.random()
-        return alpha * (-_log(u)) ** (1.0/beta)
+        return alpha * math.pow(-math.log(u), (1.0/beta))
 
 
 random = Random()

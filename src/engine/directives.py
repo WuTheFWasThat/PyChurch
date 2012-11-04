@@ -56,10 +56,8 @@ def rerun(reflip):
 
 def infer():
   if globals.use_traces:
-    node = globals.traces.random_node() 
-    globals.traces.reflip(node)
+    globals.traces.infer()
     return
   else:
-    stack = globals.db.random_stack() 
-    globals.db.reflip(stack)
+    globals.db.infer()
 

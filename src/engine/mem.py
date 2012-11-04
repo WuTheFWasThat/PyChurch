@@ -8,63 +8,66 @@ class mem_proc_XRP(XRP):
     self.deterministic = False
     self.procedure = procedure
     self.n = len(procedure.vars)
-    self.state = {}
+    self.argsdict = {}
     self.hash = rrandom.random.randbelow()
-  def apply(self, args = None, help = None):
+  def apply(self, args = None):
+    return self.apply_mem(args)
+  def apply_mem(self, args = None, help = None):
     assert len(args) == self.n
     addition = ','.join([x.str_hash for x in args])
     if globals.use_traces:
-      if addition not in self.state:
+      if addition not in self.argsdict:
         evalnode = EvalNode(globals.traces, globals.traces.env, ApplyExpression(ConstExpression(self.procedure), [ConstExpression(arg) for arg in args]))
         evalnode.mem = True
         globals.traces.add_node(evalnode)
-        self.state[addition] = evalnode
+        self.argsdict[addition] = evalnode
       else:
-        evalnode = self.state[addition]
+        evalnode = self.argsdict[addition]
       val = evalnode.evaluate(False)
       return val
     else:
       # help is call_stack for db
-      if addition in self.state:
-        (val, count) = self.state[addition]
+      if addition in self.argsdict:
+        (val, count) = self.argsdict[addition]
       else:
         val = globals.db.evaluate(ApplyEpxression(ConstExpression(self.procedure), [ConstExpression(arg) for arg in args]), stack = help + [-1, 'mem', self.procedure.hash, addition]) 
     return val
-  def incorporate(self, val, args = None, help = None):
+  def incorporate(self, val, args = None):
+    return self.incorporate_mem(val, args)
+  def incorporate_mem(self, val, args = None, help = None):
     addition = ','.join([x.str_hash for x in args])
     if globals.use_traces:
       # help is evalnode
-      assert help.__class__.__name__ == 'EvalNode' 
-      assert addition in self.state
-      evalnode = self.state[addition]
+      assert addition in self.argsdict
+      evalnode = self.argsdict[addition]
       assert help not in evalnode.mem_calls
       evalnode.mem_calls[help] = True
     else:
-      if addition not in self.state:
-        self.state[addition] = (val, 1)
+      if addition not in self.argsdict:
+        self.argsdict[addition] = (val, 1)
       else:
-        (oldval, oldcount) = self.state[addition]
+        (oldval, oldcount) = self.argsdict[addition]
         assert oldval == val
-        self.state[addition] = (oldval, oldcount + 1)
-    return self.state
-  def remove(self, val, args = None, help = None):
+        self.argsdict[addition] = (oldval, oldcount + 1)
+  def remove(self, val, args = None):
+    return self.remove_mem(val, args)
+  def remove_mem(self, val, args = None, help = None):
     addition = ','.join([x.str_hash for x in args])
-    assert addition in self.state
+    assert addition in self.argsdict
     if globals.use_traces:
       assert help is not None
-      evalnode = self.state[addition]
+      evalnode = self.argsdict[addition]
       assert help in evalnode.mem_calls
       del evalnode.mem_calls[help]
       if len(evalnode.mem_calls) == 0:
         evalnode.unevaluate()
     else:
-      (oldval, oldcount) = self.state[addition]
+      (oldval, oldcount) = self.argsdict[addition]
       assert oldval == val
       if oldcount == 1:
-        del self.state[addition]
+        del self.argsdict[addition]
       else:
-        self.state[addition] = (oldval, oldcount - 1)
-    return self.state
+        self.argsdict[addition] = (oldval, oldcount - 1)
   def prob(self, val, args = None):
     return 0 
   def is_mem(self):
@@ -75,7 +78,7 @@ class mem_proc_XRP(XRP):
 class mem_XRP(XRP):
   def __init__(self):
     self.deterministic = True
-    self.state = {}
+    self.procmem = {}
   def apply(self, args = None):
     assert len(args) == 1
     procedure = args[0]
@@ -84,19 +87,17 @@ class mem_XRP(XRP):
     return XRPValue(mem_proc)
   def incorporate(self, val, args = None):
     assert val.type == 'xrp'
-    assert val.xrp not in self.state
-    self.state[val.xrp] = args[0]
-    return self.state
+    assert val.xrp not in self.procmem
+    self.procmem[val.xrp] = args[0]
   def remove(self, val, args = None):
     assert val.type == 'xrp'
-    assert val.xrp in self.state
+    assert val.xrp in self.procmem
     # unevaluate val's evalnodes
     if globals.use_traces:
-      for args in val.xrp.state:
-        evalnode = val.xrp.state[args]
+      for args in val.xrp.argsdict:
+        evalnode = val.xrp.argsdict[args]
         evalnode.unevaluate()
-    del self.state[val.xrp]
-    return self.state
+    del self.procmem[val.xrp]
   def prob(self, val, args = None):
     return 0 # correct since other flips will be added to db? 
   def __str__(self):
@@ -109,47 +110,45 @@ def mem(function):
 class CRP_XRP(XRP):
   def __init__(self, alpha):
     self.deterministic = False
-    self.state = {}
+    self.tables = {}
     check_pos(alpha)
     self.alpha = alpha
     self.weight = alpha
     return
   def apply(self, args = None):
     if args != None and len(args) != 0:
-      warnings.warn('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
+      raise Exception('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
     x = rrandom.random.random() * self.weight
-    for id in self.state:
-      x -= self.state[id]
+    for id in self.tables:
+      x -= self.tables[id]
       if x <= 0:
         return id
     return NumValue(rrandom.random.randbelow())
   def incorporate(self, val, args = None):
     if args != None and len(args) != 0:
-      warnings.warn('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
+      raise Exception('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
     self.weight += 1
-    if val in self.state:
-      self.state[val] += 1
+    if val in self.tables:
+      self.tables[val] += 1
     else:
-      self.state[val] = 1
-    return self.state
+      self.tables[val] = 1
   def remove(self, val, args = None):
     if args != None and len(args) != 0:
-      warnings.warn('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
-    if val in self.state:
-      if self.state[val] == 1:
-        del self.state[val]
+      raise Exception('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
+    if val in self.tables:
+      if self.tables[val] == 1:
+        del self.tables[val]
       else:
-        assert self.state[val] > 1
-        self.state[val] -= 1
+        assert self.tables[val] > 1
+        self.tables[val] -= 1
         self.weight -= 1
     else:
-      warnings.warn('Warning: CRP_XRP cannot remove the value %d, as it has state %s' % (str(val), str(self.state)))
-    return self.state
+      raise Exception('Warning: CRP_XRP cannot remove the value %d, as it has state %s' % (str(val), str(self.tables)))
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
-      warnings.warn('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
-    if val in self.state:
-      return math.log(self.state[val]) - math.log(self.weight)
+      raise Exception('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
+    if val in self.tables:
+      return math.log(self.tables[val]) - math.log(self.weight)
     else:
       return math.log(self.alpha) - math.log(self.weight)
   def __str__(self):
@@ -157,16 +156,11 @@ class CRP_XRP(XRP):
 
 class gen_CRP_XRP(XRP):
   def __init__(self):
-    self.state = None
     return
   def apply(self, args = None):
     alpha = args[0].num
     check_pos(alpha)
     return XRPValue(CRP_XRP(alpha)) 
-  def incorporate(self, val, args = None):
-    return None
-  def remove(self, val, args = None):
-    return None
   def prob(self, val, args = None):
     return 0
   def __str__(self):
