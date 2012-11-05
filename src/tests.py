@@ -36,31 +36,31 @@ class TestDirectives(unittest.TestCase):
     f = function(['x','y','z'], ifelse(var('x'), var('y'), var('z')))
     self.assertTrue(sample(f).type == 'procedure')
     
-    g = function(['x', 'z'], apply(f, [var('x'), constant(0), var('z')] ))
+    g = function(['x', 'z'], apply(f, [var('x'), num_expr(0), var('z')] ))
     self.assertTrue(sample(g).type == 'procedure')
     
-    a = bernoulli(constant(0.5)) 
+    a = bernoulli(num_expr(0.5)) 
     #d = count_up([resample(a).num for i in xrange(1000)])
     #self.assertTrue(d[True] + d[False] == 1000)
     #self.assertTrue(450 < d[True] < 550)
     
-    x = apply(g, [a, uniform(constant(22))])
-    b = ifelse(bernoulli(constant(0.2)), beta(constant(3),constant(4)), beta(constant(4),constant(3)))
-    c = (~bernoulli(constant(0.3)) & bernoulli(constant(0.4))) | bernoulli(b)
+    x = apply(g, [a, uniform(num_expr(22))])
+    b = ifelse(bernoulli(num_expr(0.2)), beta(num_expr(3),num_expr(4)), beta(num_expr(4),num_expr(3)))
+    c = (~bernoulli(num_expr(0.3)) & bernoulli(num_expr(0.4))) | bernoulli(b)
     d = function(['x'], ('apply', f, [a,c,var('x')]))
     e = apply( d, [b])
   
     # Testing closure
     f = function(['x', 'y'], apply(var('x'), [var('y')]))
-    g = function(['x'], var('x') + constant(1))
-    self.assertTrue(sample(apply(f, [g, constant(21)])) == NumValue(22))
+    g = function(['x'], var('x') + num_expr(1))
+    self.assertTrue(sample(apply(f, [g, num_expr(21)])) == NumValue(22))
 
     assume('f', f)
     assume('g', g)
-    a = let([('b', constant(1))], var('b') + constant(3))
+    a = let([('b', num_expr(1))], var('b') + num_expr(3))
     self.assertTrue(sample(a) == NumValue(4))
 
-    b = let([('c', constant(21)), ('d', var('f'))], apply(var('d'), [var('g'), var('c')]))
+    b = let([('c', num_expr(21)), ('d', var('f'))], apply(var('d'), [var('g'), var('c')]))
     self.assertTrue(sample(b) == NumValue(22))
 
 
@@ -68,14 +68,14 @@ class TestDirectives(unittest.TestCase):
   def test_tricky(self):
     noise_level = .01
   
-    assume('make-coin', function([], apply(function(['weight'], function([], bernoulli(var('weight')))), beta(constant(1), constant(1)))))
+    assume('make-coin', function([], apply(function(['weight'], function([], bernoulli(var('weight')))), beta(num_expr(1), num_expr(1)))))
   
     assume('tricky-coin', apply(var('make-coin')))
     assume('tricky-coin2', apply(var('make-coin')))
   
-    assume('fair-coin', function([], bernoulli(constant(0.5))))
+    assume('fair-coin', function([], bernoulli(num_expr(0.5))))
   
-    assume('is-fair', bernoulli(constant(0.5)))
+    assume('is-fair', bernoulli(num_expr(0.5)))
     assume('coin', ifelse(var('is-fair'), var('fair-coin'), var('tricky-coin'))) 
 
     d = test_prior(1000, 10)
@@ -129,7 +129,7 @@ class TestDirectives(unittest.TestCase):
     #plot_pdf(points, -50, 50, 0.1, name = 'graphs/crpmixturesample.png')
   
     assume('x', apply('get-datapoint', 0))
-    observe(gaussian('x', let([('x', gaussian(constant(0), var('outer-noise')))], var('x') * var('x'))), NumValue(2.3))
+    observe(gaussian('x', let([('x', gaussian(num_expr(0), var('outer-noise')))], var('x') * var('x'))), NumValue(2.3))
     observe(gaussian(apply('get-datapoint', 1), let([('y', gaussian(0, 'outer-noise'))], var('y') * var('y'))), NumValue(2.2))
     observe(gaussian(apply('get-datapoint', 2), let([('y', gaussian(0, 'outer-noise'))], var('y') * var('y'))), NumValue(1.9))
     observe(gaussian(apply('get-datapoint', 3), let([('y', gaussian(0, 'outer-noise'))], var('y') * var('y'))), NumValue(2.0))
@@ -166,14 +166,14 @@ class TestDirectives(unittest.TestCase):
                              let([('loop', \
                                   function(['v', 'j'], \
                                            let([('w', apply(apply(var('get-column'), [var('i')]), [var('j')]))],
-                                            ifelse(var('v') < var('w'), var('j'), apply(var('loop'), [var('v') - var('w'), var('j') + constant(1)]))))) \
+                                            ifelse(var('v') < var('w'), var('j'), apply(var('loop'), [var('v') - var('w'), var('j') + num_expr(1)]))))) \
                                  ], \
-                                 apply(var('loop'), [uniform(), constant(0)])))) 
+                                 apply(var('loop'), [uniform(), num_expr(0)])))) 
     assume('state', mem(function(['i'],
-                                 ifelse(var('i') == constant(0), constant(0), apply(var('get-next-state'), [apply(var('state'), [var('i') - constant(1)])])))))
+                                 ifelse(var('i') == num_expr(0), num_expr(0), apply(var('get-next-state'), [apply(var('state'), [var('i') - num_expr(1)])])))))
   
-    assume('start-state', apply(var('state'), [constant(0)]))
-    assume('second-state', apply(var('state'), [constant(t)]))
+    assume('start-state', apply(var('state'), [num_expr(0)]))
+    assume('second-state', apply(var('state'), [num_expr(t)]))
 
     print sample(var('second-state'))
 
@@ -187,8 +187,8 @@ class TestDirectives(unittest.TestCase):
     niters, burnin = 1000, 100
     #niters, burnin = 10, 10
   
-    assume('cloudy', bernoulli(constant(0.5)))
-    assume('sprinkler', ifelse(var('cloudy'), bernoulli(constant(0.1)), bernoulli(constant(0.5))))
+    assume('cloudy', bernoulli(num_expr(0.5)))
+    assume('sprinkler', ifelse(var('cloudy'), bernoulli(num_expr(0.1)), bernoulli(num_expr(0.5))))
     #d = test_prior(niters, burnin)
     #self.assertTrue(test_prior_bool(d, 'cloudy') < 0.1)
     #self.assertTrue(test_prior_bool(d, 'sprinkler') < 0.1)
@@ -220,16 +220,16 @@ class TestDirectives(unittest.TestCase):
     #niters, burnin = 10, 5
   
     reset()
-    assume('sunny', bernoulli(constant(0.5)))
-    assume('weekend', bernoulli(constant(0.285714)))
+    assume('sunny', bernoulli(num_expr(0.5)))
+    assume('weekend', bernoulli(num_expr(0.285714)))
     #assume('beach', bernoulli(ifelse('weekend', ifelse('sunny', 0.9, 0.5), \
     #                                            ifelse('sunny', 0.3, 0.1))))
 
     #assume('beach', ifelse('weekend', bernoulli(ifelse('sunny', 0.9, 0.5)), \
     #                                  bernoulli(ifelse('sunny', 0.3, 0.1))))
 
-    assume('beach', ifelse(var('weekend'), ifelse(var('sunny'), bernoulli(constant(0.9)), bernoulli(constant(0.5))), \
-                                           ifelse(var('sunny'), bernoulli(constant(0.3)), bernoulli(constant(0.1)))))
+    assume('beach', ifelse(var('weekend'), ifelse(var('sunny'), bernoulli(num_expr(0.9)), bernoulli(num_expr(0.5))), \
+                                           ifelse(var('sunny'), bernoulli(num_expr(0.3)), bernoulli(num_expr(0.1)))))
     #  this mixes poorly sometimes because the inactive branch gets stuck
 
     #print test_prior(1000, 100)
@@ -292,13 +292,13 @@ class TestDirectives(unittest.TestCase):
     
     pJnB = pJgnB * (1 - pB)
     
-    assume('burglary', bernoulli(constant(pB)))
-    assume('earthquake', bernoulli(constant(pE)))
-    assume('alarm', ifelse(var('burglary'), ifelse(var('earthquake'), bernoulli(constant(pAgBE)), bernoulli(constant(pAgBnE))), \
-                                            ifelse(var('earthquake'), bernoulli(constant(pAgnBE)), bernoulli(constant(pAgnBnE)))))
+    assume('burglary', bernoulli(num_expr(pB)))
+    assume('earthquake', bernoulli(num_expr(pE)))
+    assume('alarm', ifelse(var('burglary'), ifelse(var('earthquake'), bernoulli(num_expr(pAgBE)), bernoulli(num_expr(pAgBnE))), \
+                                            ifelse(var('earthquake'), bernoulli(num_expr(pAgnBE)), bernoulli(num_expr(pAgnBnE)))))
   
-    assume('johnCalls', ifelse(var('alarm'),  bernoulli(constant(pJgA)), bernoulli(constant(pJgnA))))
-    assume('maryCalls', ifelse(var('alarm'),  bernoulli(constant(pMgA)), bernoulli(constant(pMgnA))))
+    assume('johnCalls', ifelse(var('alarm'),  bernoulli(num_expr(pJgA)), bernoulli(num_expr(pJgnA))))
+    assume('maryCalls', ifelse(var('alarm'),  bernoulli(num_expr(pMgA)), bernoulli(num_expr(pMgnA))))
     print test_prior(1000, 100, timer = False)
   
     print infer_many('alarm', niters, burnin)
@@ -321,8 +321,8 @@ class TestDirectives(unittest.TestCase):
     p = 0.6
     q = 0.4
     noise_level = .01
-    assume('a', bernoulli(constant(p))) 
-    assume('b', bernoulli(constant(q))) 
+    assume('a', bernoulli(num_expr(p))) 
+    assume('b', bernoulli(num_expr(q))) 
     assume('c', var('a') ^ var('b'))
 
     d = test_prior(1000, 100, timer = False)
@@ -340,40 +340,40 @@ class TestDirectives(unittest.TestCase):
   @unittest.skipIf(not test_recursion, "skipping test_recursion")
   def test_recursion(self):
     
-    factorial_expr = function(['x'], ifelse(var('x') == constant(0), constant(1), \
-                var('x') * apply(var('factorial'), [var('x') - constant(1)]))) 
+    factorial_expr = function(['x'], ifelse(var('x') == num_expr(0), num_expr(1), \
+                var('x') * apply(var('factorial'), [var('x') - num_expr(1)]))) 
     assume('factorial', factorial_expr) 
     
-    self.assertTrue(sample(apply(var('factorial'), [constant(5)])).num == 120)
-    self.assertTrue(sample(apply(var('factorial'), [constant(10)])).num == 3628800)
+    self.assertTrue(sample(apply(var('factorial'), [num_expr(5)])).num == 120)
+    self.assertTrue(sample(apply(var('factorial'), [num_expr(10)])).num == 3628800)
   
   @unittest.skipIf(not test_mem, "skipping test_mem")
   def test_mem(self):
-    fibonacci_expr = function(['x'], ifelse(var('x') <= constant(1), constant(1), \
-                  apply(var('fibonacci'), [var('x') - constant(1)]) + apply(var('fibonacci'), [var('x') - constant(2)]) )) 
+    fibonacci_expr = function(['x'], ifelse(var('x') <= num_expr(1), num_expr(1), \
+                  apply(var('fibonacci'), [var('x') - num_expr(1)]) + apply(var('fibonacci'), [var('x') - num_expr(2)]) )) 
     assume('fibonacci', fibonacci_expr) 
     
     t1 = time()
 
-    self.assertTrue(sample(apply(var('fibonacci'), [constant(20)])).num == 10946)
+    self.assertTrue(sample(apply(var('fibonacci'), [num_expr(20)])).num == 10946)
     t1 = time() - t1
 
     assume('bad_mem_fibonacci', mem(var('fibonacci'))) 
   
     t2 = time()
-    self.assertTrue(sample(apply(var('bad_mem_fibonacci'), [constant(20)])).num == 10946)
+    self.assertTrue(sample(apply(var('bad_mem_fibonacci'), [num_expr(20)])).num == 10946)
     t2 = time() - t2
 
     t3 = time()
-    self.assertTrue(sample(apply(var('bad_mem_fibonacci'), [constant(20)])).num == 10946)
+    self.assertTrue(sample(apply(var('bad_mem_fibonacci'), [num_expr(20)])).num == 10946)
     t3 = time() - t3
 
-    mem_fibonacci_expr = function(['x'], ifelse(var('x') <= constant(1), constant(1), \
-                  apply(var('mem_fibonacci'), [var('x') - constant(1)]) + apply(var('mem_fibonacci'), [var('x') - constant(2)]) )) 
+    mem_fibonacci_expr = function(['x'], ifelse(var('x') <= num_expr(1), num_expr(1), \
+                  apply(var('mem_fibonacci'), [var('x') - num_expr(1)]) + apply(var('mem_fibonacci'), [var('x') - num_expr(2)]) )) 
     assume('mem_fibonacci', mem(mem_fibonacci_expr)) 
   
     t4 = time()
-    self.assertTrue(sample(apply(var('mem_fibonacci'), [constant(20)])).num == 10946)
+    self.assertTrue(sample(apply(var('mem_fibonacci'), [num_expr(20)])).num == 10946)
     t4 = time() - t4
 
     print t1, t2, t3, t4
@@ -390,9 +390,9 @@ class TestDirectives(unittest.TestCase):
   
     niters, burnin = 1000, 100 
   
-    assume('decay', beta(constant(a), constant(b)))
-    assume('geometric', function(['x'], ifelse(bernoulli(var('decay')), var('x'), apply(var('geometric'), [var('x') + constant(1)]))))
-    assume('timetodecay', apply(var('geometric'), [constant(0)]))
+    assume('decay', beta(num_expr(a), num_expr(b)))
+    assume('geometric', function(['x'], ifelse(bernoulli(var('decay')), var('x'), apply(var('geometric'), [var('x') + num_expr(1)]))))
+    assume('timetodecay', apply(var('geometric'), [num_expr(0)]))
 
     d = test_prior(1000, 100, timer = False)
     print d
@@ -401,7 +401,7 @@ class TestDirectives(unittest.TestCase):
 
     # hmm... random walk systematically decays faster
   
-    observe(noisy(var('timetodecay') == constant(timetodecay), .001), BoolValue(True))
+    observe(noisy(var('timetodecay') == num_expr(timetodecay), .001), BoolValue(True))
     dist = infer_many('decay', niters, burnin)
     #print dist 
     #print 'pdf:', get_pdf(dist, 0, 1, .1)
@@ -508,18 +508,18 @@ class TestDirectives(unittest.TestCase):
   #      points[val] = 1
   #  plot_pdf(points, -50, 50, 0.1, name = 'graphs/mixturesample.png')
   
-    #assume('x', apply(var('get-datapoint'), constant(0)))
-    #observe(gaussian('x', let([('x', gaussian(constant(0), var('outer-noise')))], var('x') * var('x'))), NumValue(2.3))
-    #observe(gaussian(apply(var('get-datapoint'), constant(1)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), NumValue(2.2))
-    #observe(gaussian(apply(var('get-datapoint'), constant(2)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), NumValue(1.9))
-    #observe(gaussian(apply(var('get-datapoint'), constant(3)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), NumValue(2.0))
-    #observe(gaussian(apply(var('get-datapoint'), constant(4)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), NumValue(2.1))
+    #assume('x', apply(var('get-datapoint'), num_expr(0)))
+    #observe(gaussian('x', let([('x', gaussian(num_expr(0), var('outer-noise')))], var('x') * var('x'))), NumValue(2.3))
+    #observe(gaussian(apply(var('get-datapoint'), num_expr(1)), let([('y', gaussian(num_expr(0), var('outer-noise')))], var('y') * var('y'))), NumValue(2.2))
+    #observe(gaussian(apply(var('get-datapoint'), num_expr(2)), let([('y', gaussian(num_expr(0), var('outer-noise')))], var('y') * var('y'))), NumValue(1.9))
+    #observe(gaussian(apply(var('get-datapoint'), num_expr(3)), let([('y', gaussian(num_expr(0), var('outer-noise')))], var('y') * var('y'))), NumValue(2.0))
+    #observe(gaussian(apply(var('get-datapoint'), num_expr(4)), let([('y', gaussian(num_expr(0), var('outer-noise')))], var('y') * var('y'))), NumValue(2.1))
 
-    observe(gaussian(apply(var('get-datapoint'), constant(0)), var('noise-variance')), NumValue(2.3))
-    observe(gaussian(apply(var('get-datapoint'), constant(1)), var('noise-variance')), NumValue(2.2))
-    observe(gaussian(apply(var('get-datapoint'), constant(2)), var('noise-variance')), NumValue(1.9))
-    observe(gaussian(apply(var('get-datapoint'), constant(3)), var('noise-variance')), NumValue(2.0))
-    observe(gaussian(apply(var('get-datapoint'), constant(4)), var('noise-variance')), NumValue(2.1))
+    observe(gaussian(apply(var('get-datapoint'), num_expr(0)), var('noise-variance')), NumValue(2.3))
+    observe(gaussian(apply(var('get-datapoint'), num_expr(1)), var('noise-variance')), NumValue(2.2))
+    observe(gaussian(apply(var('get-datapoint'), num_expr(2)), var('noise-variance')), NumValue(1.9))
+    observe(gaussian(apply(var('get-datapoint'), num_expr(3)), var('noise-variance')), NumValue(2.0))
+    observe(gaussian(apply(var('get-datapoint'), num_expr(4)), var('noise-variance')), NumValue(2.1))
   
     #niters, burnin = 100, 100
   
@@ -556,12 +556,12 @@ class TestDirectives(unittest.TestCase):
       for (idx, p) in enumerate(points):
         observe(gaussian(apply('get-datapoint-2', idx), 0.1), NumValue(p))
   
-      #assume('x', apply(var('get-datapoint'), constant(0)))
-      #observe(gaussian(var('x'), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), NumValue(2.3))
-      #observe(gaussian(apply(var('get-datapoint'), constant(1)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), NumValue(2.2))
-      #observe(gaussian(apply(var('get-datapoint'), constant(2)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), NumValue(1.9))
-      #observe(gaussian(apply(var('get-datapoint'), constant(3)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), NumValue(2.0))
-      #observe(gaussian(apply(var('get-datapoint'), constant(4)), let([('y', gaussian(constant(0), var('outer-noise')))], var('y') * var('y'))), NumValue(2.1))
+      #assume('x', apply(var('get-datapoint'), num_expr(0)))
+      #observe(gaussian(var('x'), let([('y', gaussian(num_expr(0), var('outer-noise')))], var('y') * var('y'))), NumValue(2.3))
+      #observe(gaussian(apply(var('get-datapoint'), num_expr(1)), let([('y', gaussian(num_expr(0), var('outer-noise')))], var('y') * var('y'))), NumValue(2.2))
+      #observe(gaussian(apply(var('get-datapoint'), num_expr(2)), let([('y', gaussian(num_expr(0), var('outer-noise')))], var('y') * var('y'))), NumValue(1.9))
+      #observe(gaussian(apply(var('get-datapoint'), num_expr(3)), let([('y', gaussian(num_expr(0), var('outer-noise')))], var('y') * var('y'))), NumValue(2.0))
+      #observe(gaussian(apply(var('get-datapoint'), num_expr(4)), let([('y', gaussian(num_expr(0), var('outer-noise')))], var('y') * var('y'))), NumValue(2.1))
   
       avg_logpdf = 0
       num_repeats = 10
@@ -648,14 +648,14 @@ def run_HMM(t, s, niters = 1000, burnin = 100, countup = True):
                              let([('loop', \
                                   function(['v', 'j'], \
                                            let([('w', apply(apply(var('get-column'), [var('i')]), [var('j')]))],
-                                            ifelse(op('<', [var('v'), var('w')]), var('j'), apply(var('loop'), [op('-', [var('v'), var('w')]), op('+', [var('j'), constant(1)])]))))) \
+                                            ifelse(op('<', [var('v'), var('w')]), var('j'), apply(var('loop'), [op('-', [var('v'), var('w')]), op('+', [var('j'), num_expr(1)])]))))) \
                                  ], \
-                                 apply(var('loop'), [uniform(), constant(0)]))))
+                                 apply(var('loop'), [uniform(), num_expr(0)]))))
     #assume('state', mem(function(['i'],
-    #                             ifelse(var('i') == constant(0), constant(0), apply(var('get-next-state'), [apply(var('state'), [var('i') - constant(1)])])))))
+    #                             ifelse(var('i') == num_expr(0), num_expr(0), apply(var('get-next-state'), [apply(var('state'), [var('i') - num_expr(1)])])))))
   
-    #assume('start-state', apply(var('state'), [constant(0)]))
-    #assume('last-state', apply(var('state'), [constant(t)]))
+    #assume('start-state', apply(var('state'), [num_expr(0)]))
+    #assume('last-state', apply(var('state'), [num_expr(t)]))
     a = infer_many('get-column', burnin, countup)
     #a = test_prior(niters, burnin, countup)
     return a
@@ -710,15 +710,15 @@ def run_mixture_uncollapsed(n, s):
     """DEFINITION OF DP"""
     assume('DP', \
            function(['concentration', 'basemeasure'], \
-                    let([('sticks', mem(function(['j'], beta(constant(1), var('concentration'))))),
+                    let([('sticks', mem(function(['j'], beta(num_expr(1), var('concentration'))))),
                          ('atoms',  mem(function(['j'], apply(var('basemeasure'), [])))),
                          ('loop', \
                           function(['j'], \
                                    ifelse(bernoulli(apply(var('sticks'), [var('j')])), \
                                           apply(var('atoms'), [var('j')]), \
-                                          apply(var('loop'), [var('j')+constant(1)])))) \
+                                          apply(var('loop'), [var('j')+num_expr(1)])))) \
                         ], \
-                        function([], apply(var('loop'), [constant(1)]))))) 
+                        function([], apply(var('loop'), [num_expr(1)]))))) 
 
     """DEFINITION OF ONE ARGUMENT DPMEM"""
     assume('DPmem', \
@@ -728,12 +728,12 @@ def run_mixture_uncollapsed(n, s):
                         function(['args'], apply(var('restaurants'), [var('args')]))))) 
 
     print "\n TESTING GAUSSIAN MIXTURE MODEL\n"
-    assume('expected-mean', gaussian(constant(0), constant(5))) 
-    assume('expected-variance', gamma(constant(1), constant(2))) 
-    assume('alpha', gamma(constant(0.1), constant(10)))
+    assume('expected-mean', gaussian(num_expr(0), num_expr(5))) 
+    assume('expected-variance', gamma(num_expr(1), num_expr(2))) 
+    assume('alpha', gamma(num_expr(0.1), num_expr(10)))
     assume('gen-cluster-mean', apply(var('DPmem'), [var('alpha'), function(['x'], gaussian(var('expected-mean'), [var('expected-variance')]))]))
-    assume('get-datapoint', mem(function(['id'], gaussian(apply(apply(var('gen-cluster-mean'), [constant(222)]), []), constant(0.1)))))
-    assume('noise-variance', gamma(constant(0.01), constant(1)))
+    assume('get-datapoint', mem(function(['id'], gaussian(apply(apply(var('gen-cluster-mean'), [num_expr(222)]), []), num_expr(0.1)))))
+    assume('noise-variance', gamma(num_expr(0.01), num_expr(1)))
 
     for i in range(n):
       assume('point' + str(i), apply('get-datapoint', i))
@@ -746,7 +746,7 @@ def run_bayes_net(k, s, niters = 1000, burnin = 100, countup = True):
     n = 50
 
     for i in xrange(n):
-      assume('disease' + str(i), bernoulli(constant(0.2)))
+      assume('disease' + str(i), bernoulli(num_expr(0.2)))
     for j in xrange(n):
       causes = ['disease' + str(random.randbelow(0,n-1)) for i in xrange(k)]
       symptom_expression = bernoulli(ifelse(disjunction(causes), .8, .2))

@@ -32,6 +32,9 @@ class Environment:
         return self.parent.lookup(name)
 
   def add_assume(self, name, evalnode):
+    if name in self.assumes:
+      raise Exception("Already assumed something with this name")
+      # TODO just make it unevaluate / overwrite instead?
     self.assumes[name] = evalnode
     evalnode.add_assume(name, self)
 
@@ -427,6 +430,10 @@ class EvalNode:
       for x in vals:
         prod_val = prod_val * x.num
       val = NumValue(prod_val)
+    elif self.type == '/':
+      val1 = self.evaluate_recurse(expr.children[0] , self.env, 'div0', reflip).num
+      val2 = self.evaluate_recurse(expr.children[1] , self.env, 'div1', reflip).num
+      val = NumValue(val1 / val2)
     else:
       raise Exception('Invalid expression type %s' % self.type)
 
@@ -935,6 +942,10 @@ class RandomDB:
       for x in vals:
         prod = prod * x.num
       val = NumValue(prod)
+    elif expr.type == '/':
+      val1 = self.evaluate_recurse(expr.children[0], env, reflip, stack , 'div0').num
+      val2 = self.evaluate_recurse(expr.children[1], env, reflip, stack , 'div1').num
+      val = NumValue(val1 / val2)
     else:
       raise Exception('Invalid expression type %s' % expr.type)
     return val

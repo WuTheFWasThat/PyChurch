@@ -43,6 +43,8 @@ class Expression:
     return OpExpression('-', [self, other])
   def __mul__(self, other):
     return OpExpression('*', [self, other])
+  def __div__(self, other):
+    return OpExpression('/', [self, other])
   def __and__(self, other):
     return OpExpression('&', [self, other])
   def __or__(self, other):
@@ -119,7 +121,7 @@ class FunctionExpression(Expression):
     return FunctionExpression(self.vars, body) 
     
   def __str__(self):
-    return 'lambda%s : (%s)' % (str(tuple(self.vars)), str(self.body))
+    return 'lambda%s : (%s)' % (str(self.vars), str(self.body))
 
 class IfExpression(Expression):
   def __init__(self, cond, true, false):
@@ -205,8 +207,11 @@ def conjunction(exprs):
 
 ### Values ###
 
-def constant(c):
+def num_expr(c):
   return ConstExpression(NumValue(c))
+
+def int_expr(c):
+  return ConstExpression(IntValue(c))
 
 # separate for this?
 # def boolean(b):
@@ -232,7 +237,7 @@ def gamma(a, b):
 uniform_args_xrp = ConstExpression(XRPValue(uniform_args_XRP()))
 def uniform(n = None):
   if n is None:
-    return beta(constant(1), constant(1))
+    return beta(int_expr(1), int_expr(1))
   else:
     return ApplyExpression(uniform_args_xrp, [n])
 

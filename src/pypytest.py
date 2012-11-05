@@ -6,12 +6,26 @@ Based on the PyPy tutorial by Andrew Brown
 import os
 import sys
 import utils.rrandom as rrandom
+import utils.expr_parser as parser
 
 from tests import *
 
-from pypy.rlib import rsocket
+#from pypy.rlib import rsocket
+import utils.lispparser as lispparser
  
 # copied from http://www.smipple.net/snippet/Shibukawa%20Yoshi/RPython%20echo%20server
+
+# From here: http://norvig.com/lispy.html
+            
+def parse_stuff():
+    s = '((bernoulli 0.5) (beta (bernoulli 0.5) (bernoulli 1)) (bernoulli 1) 0.03)'
+    s = '(lambda (x) (if (bernoulli x) 3.14 3))'
+    s = '(if (xor (bernoulli 1)) (+ 0 (- 5 3)) (/ 6 3))'
+    s = '(let ((x 2) (y 3) (z 4)) (* x y z))'
+    #tokens = lispparser.tokenize(s)
+    index = 0
+    (expression, index) = parser.parse_expression(s, index)
+    print expression.__str__()
 
 def open_socket():
     hostip = rsocket.gethostbyname('localhost')
@@ -58,8 +72,10 @@ def read(fp):
     return program
 
 def run(fp, niters, burnin):
+    parse_stuff()
 
-    open_socket() 
+    #open_socket() 
+
     #reset()
     #
     #a = run_HMM(20, 222222, niters, burnin, True)

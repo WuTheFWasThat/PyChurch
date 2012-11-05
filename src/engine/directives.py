@@ -8,6 +8,14 @@ def reset():
   else:
     globals.db.reset()
 
+  assume('bernoulli', xrp(bernoulli_args_XRP()))
+  assume('flip', var('bernoulli'))
+  assume('beta', xrp(beta_args_XRP()))
+  assume('gamma', xrp(gamma_args_XRP()))
+  assume('gaussian', xrp(gaussian_args_XRP()))
+  assume('uniform', xrp(uniform_args_XRP()))
+  assume('rand', function([], apply(var('beta'), [num_expr(1), num_expr(1)])))
+
 def assume(varname, expr):
   if globals.use_traces:
     return globals.traces.assume(varname, expr)
