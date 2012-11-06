@@ -1,4 +1,3 @@
-from engine.mem import *
 from engine.infertools import * 
 from time import *
 
@@ -40,7 +39,7 @@ class TestDirectives(unittest.TestCase):
     self.assertTrue(sample(g).type == 'procedure')
     
     a = bernoulli(num_expr(0.5)) 
-    #d = count_up([resample(a).num for i in xrange(1000)])
+    #d = count_up([resample(a).num for i in range(1000)])
     #self.assertTrue(d[True] + d[False] == 1000)
     #self.assertTrue(450 < d[True] < 550)
     
@@ -89,7 +88,7 @@ class TestDirectives(unittest.TestCase):
   
     print infer_many('is-fair', niters, burnin)
     
-    for i in xrange(nheads):
+    for i in range(nheads):
       print '\nsaw', i+1, 'heads'
       observe(noisy(apply(var('coin')), noise_level), BoolValue(True))
       print infer_many('is-fair', niters, burnin)
@@ -100,11 +99,11 @@ class TestDirectives(unittest.TestCase):
     
     print "CRP(1)"
     assume('crp1', CRP(1))
-    print [sample(apply('crp1')) for i in xrange(10)]
+    print [sample(apply('crp1')) for i in range(10)]
     
     print "CRP(10)"
     assume('crp2', CRP(10))
-    print [sample(apply('crp2')) for i in xrange(10)]
+    print [sample(apply('crp2')) for i in range(10)]
   
     assume('alpha', gamma(0.1, 20))
     assume('cluster-crp', CRP('alpha'))
@@ -118,9 +117,9 @@ class TestDirectives(unittest.TestCase):
     print test_prior(1000, 100)
   
     #points = {} 
-    #for i in xrange(100):
+    #for i in range(100):
     #  print sample(apply('get-cluster', i)) , " : ", sample(apply('get-datapoint', i))
-    #for i in xrange(1000):
+    #for i in range(1000):
     #  val = sample(apply('get-datapoint', i))
     #  if val in points:
     #    points[val] += 1
@@ -461,7 +460,7 @@ class TestDirectives(unittest.TestCase):
     print "TEST VERSION"
     assume('DPgaussian', apply('DP', [concentration, measure]))
     print 'DPGaussian = ', sample('DPgaussian')
-    ls = [sample(apply('DPgaussian')) for i in xrange(10)]
+    ls = [sample(apply('DPgaussian')) for i in range(10)]
     print ls
     print count_distinct(ls)
   
@@ -469,11 +468,11 @@ class TestDirectives(unittest.TestCase):
     if simpletests:
       concentration = .1 # when close to 0, lots of repeat.  when close to infinity, many new sample 
       assume('DPgaussian', apply('DP', [concentration, function([], gaussian(0, 1))]))
-      print [sample(apply('DPgaussian')) for i in xrange(10)]
+      print [sample(apply('DPgaussian')) for i in range(10)]
   
       concentration = 10 # when close to 0, lots of repeat.  when close to infinity, many new sample 
       assume('DPgaussian', apply('DP', [concentration, function([], gaussian(0, 1))]))
-      print [sample(apply('DPgaussian')) for i in xrange(10)]
+      print [sample(apply('DPgaussian')) for i in range(10)]
   
     print " \n TESTING DPMem\n"
   
@@ -498,9 +497,9 @@ class TestDirectives(unittest.TestCase):
     assume('noise-variance', gamma(0.01, 1))
   
   #  points = {} 
-  #  for i in xrange(100):
+  #  for i in range(100):
   #    print sample(apply('get-datapoint', i))
-  #  for i in xrange(1000):
+  #  for i in range(1000):
   #    val = sample(apply('get-datapoint', i))
   #    if val in points:
   #      points[val] += 1
@@ -590,7 +589,7 @@ class TestDirectives(unittest.TestCase):
       y.append(avg_logpdf) # log pdf at point
       x.append(i)
     plot(x, y, name = 'graphs/mixture1component.png')
-    #print [sample('x') for i in xrange(10)]
+    #print [sample('x') for i in range(10)]
   
     reset()
   
@@ -612,7 +611,7 @@ class TestDirectives(unittest.TestCase):
   
     #a = infer_many('x', 10, 1000)
     #print a
-    #print [sample('x') for i in xrange(10)]
+    #print [sample('x') for i in range(10)]
 
   @unittest.skipIf(True, "Always skip")
   def test():
@@ -620,7 +619,7 @@ class TestDirectives(unittest.TestCase):
     
     #print "description"
     #expr = beta_bernoulli_1()
-    #print [sample(apply(coin_1)) for i in xrange(10)]
+    #print [sample(apply(coin_1)) for i in range(10)]
     
     print "description"
     assume('f', mem(let(('x', CRP(1)), function(['id'], apply('x')))))
@@ -636,7 +635,7 @@ class TestDirectives(unittest.TestCase):
     print sample(apply('f', 0))
     print sample(apply('f', 0))
     print sample(apply('f', 0))
-    #print [sample('x') for i in xrange(10)]
+    #print [sample('x') for i in range(10)]
 
 def run_HMM(t, s, niters = 1000, burnin = 100, countup = True):
     reset()
@@ -745,10 +744,10 @@ def run_bayes_net(k, s, niters = 1000, burnin = 100, countup = True):
     rrandom.random.seed(s)
     n = 50
 
-    for i in xrange(n):
+    for i in range(n):
       assume('disease' + str(i), bernoulli(num_expr(0.2)))
-    for j in xrange(n):
-      causes = ['disease' + str(random.randbelow(0,n-1)) for i in xrange(k)]
+    for j in range(n):
+      causes = ['disease' + str(random.randbelow(n)) for i in range(k)]
       symptom_expression = bernoulli(ifelse(disjunction(causes), .8, .2))
       assume('symptom' + str(j), symptom_expression)
 

@@ -1,4 +1,4 @@
-from engine.expressions import *
+from engine.directives import *
 
 def parse_token(s, i = 0):
     delim = ['(', ')', '[', ']', ',']
@@ -11,10 +11,11 @@ def parse_token(s, i = 0):
       return (c, i + 1)
     else:
       j = i + 1
-      d = s[j]
-      while (d not in delim) and (d != ' '):
-        j += 1
+      while (j < len(s)):
         d = s[j]
+        if (d in delim) or (d == ' '):
+          break
+        j += 1
       return (s[i:j], j)
 
 ##def parse_expression_list(s, i):
@@ -90,8 +91,29 @@ def parse_op(s, i, operator):
       operator = '~'
     (children, i) = parse_expr_list(s, i)
     return (op(operator, children), i)
+
+def parse_value_token(token):
+  try:
+    intval = int(token)
+    if intval > 0:
+      val = NonnegIntValue(intval)
+    else:
+      val = IntValue(intval)
+  except:
+    try:
+      floatval = float(token)
+      val = NumValue(floatval)
+    except:
+      if token == 'False':
+        val = BoolValue(False)
+      elif token == 'True':
+        val = BoolValue(True)
+      else:
+        raise Exception("Invalid value (Note:  Procedures and XRPs not parseable)")
+  return val
+
   
-def parse_expression(s, i = 0):
+def parse_expression(s, i):
     (token, i) = parse_token(s, i)
     if len(token) < 0:
       raise Exception("No token")
@@ -114,12 +136,32 @@ def parse_expression(s, i = 0):
       assert token == ')'
     else:
       try:
-        intval = int(token)
-        expr = int_expr(intval)
+        val = parse_value_token(token)
+        expr = constant(val)
       except:
-        try:
-          floatval = float(token)
-          expr = num_expr(floatval)
-        except:
-          expr = var(token)
+        expr = var(token)
     return (expr, i)
+
+def parse_value(s, i):
+  (token, i) = parse_token(s, i)
+  return (parse_value_token(token), i)
+
+def parse_directive(s):
+  (token, i) = parse_token(s, 0)
+  if token == 'assume':
+    (var, i) = parse_token(s, i)
+    (expr, i) = parse_expression(s, i)
+    assume(var, expr)
+  elif token == 'observe':
+    (expr, i) = parse_expression(s, i)
+    (val, i) = parse_value(s, i)
+    observe(expr, val)
+  elif token == 'predict':
+    (expr, i) = parse_expression(s, i)
+    sample(expr)
+  elif token == 'infer':
+    infer()
+  elif token == 'clear':
+    reset()
+  else:
+    raise Exception("Invalid directive")

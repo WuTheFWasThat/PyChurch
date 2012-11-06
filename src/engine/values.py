@@ -1,16 +1,5 @@
 import utils.rrandom as rrandom 
-
-class Value:
-  def initialize(self):
-    # dummy values to prevent RPython typer from complaining
-    self.bool = False
-    self.num = 0.0
-    self.int = 0
-  def __hash__(self):
-    return self.str_hash.__hash__()
-  def __repr__(self):
-    return self.__str__()
-  pass 
+from declarations import  Value
 
 class Procedure(Value):
   def __init__(self, vars, body, env):
@@ -84,6 +73,15 @@ class IntValue(NumValue):
   def __init__(self, num):
     self.initialize()
     self.type = 'num'
+    self.int = num
+    self.num = num
+    self.str_hash = str(self.int)
+
+class NonnegIntValue(IntValue):
+  def __init__(self, num):
+    self.initialize()
+    self.type = 'num'
+    self.nonnegint = num
     self.int = num
     self.num = num
     self.str_hash = str(self.int)

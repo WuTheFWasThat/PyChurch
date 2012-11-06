@@ -1,5 +1,6 @@
 from values import *
 import math
+from declarations import XRP
 
 # HELPERS
 
@@ -43,32 +44,12 @@ def sum(array):
     ans += x
   return ans
 
-# GENERAL XRP DEFINITION
-
-class XRP:
-  def __init__(self):
-    self.deterministic = False
-    return
-  #def apply(self, args = None):
-  #  pass
-  def incorporate(self, val, args = None):
-    pass
-  def remove(self, val, args = None):
-    pass
-  ## SHOULD RETURN THE LOG PROBABILITY
-  def prob(self, val, args = None):
-    return 0
-  def is_mem(self):
-    return False
-  def __str__(self):
-    return 'XRP'
-
-# SPECIFIC XRPs
-
 def dirichlet(params):
   sample = [rrandom.random.gammavariate(a,1) for a in params]
   z = sum(sample) + 0.0
   return [v/z for v in sample]
+
+# SPECIFIC XRPs
 
 class gaussian_args_XRP(XRP):
   def __init__(self):
@@ -269,7 +250,6 @@ class gamma_args_XRP(XRP):
     check_pos(b)
     check_pos(val.num)
     if val.num == 0:
-      warnings.warn('gamma(%f, %f) returning %f' % (a, b, val.num))
       val.num = .0000000000000001
     return (a-1) * math.log(val.num) - ((val.num + 0.0) / b) - math.log(math_gamma(a)) - a * math.log(b)
   def __str__(self):
@@ -292,7 +272,6 @@ class gamma_no_args_XRP(XRP):
       raise Exception('Warning: gamma_no_args_XRP has no need to take in arguments %s' % str(args))
     check_pos(val.num)
     if val.num == 0:
-      warnings.warn('gamma(%f, %f) returning %f' % (a, b, val.num))
       val.num = .0000000000000001
     return self.prob_help + (self.a - 1) * math.log(val.num) - ((val.num + 0.0) / self.b)
   def __str__(self):
@@ -364,13 +343,11 @@ class uniform_args_XRP(XRP):
     self.deterministic = False
     return
   def apply(self, args = None):
-    n = args[0].num
-    check_nonneg(n)
-    return IntValue(rrandom.random.randbelow(n-1))
+    n = args[0].nonnegint
+    return NonnegIntValue(rrandom.random.randbelow(n))
   def prob(self, val, args = None):
-    n = args[0].num
-    check_nonneg(n)
-    assert 0 <= val.num < n
+    n = args[0].nonnegint
+    assert 0 <= val.nonnegint < n
     return -math.log(n)
   def __str__(self):
     return 'uniform'
@@ -378,17 +355,16 @@ class uniform_args_XRP(XRP):
 class uniform_no_args_XRP(XRP):
   def __init__(self, n):
     self.deterministic = False
-    check_nonneg(n)
     self.n = n
     return
   def apply(self, args = None):
     if args is not None and len(args) != 0:
       raise Exception('Warning: uniform_no_args_XRP has no need to take in arguments %s' % str(args))
-    return IntValue(rrandom.random.randbelow(self.n-1))
+    return NonnegIntValue(rrandom.random.randbelow(self.n))
   def prob(self, val, args = None):
     if args is not None and len(args) != 0:
       raise Exception('Warning: uniform_no_args_XRP has no need to take in arguments %s' % str(args))
-    assert 0 <= val.num < self.n
+    assert 0 <= val.nonnegint < self.n
     return -math.log(self.n)
   def __str__(self):
     return 'uniform(%d)' % self.n
@@ -398,8 +374,7 @@ class gen_uniform_XRP(XRP):
     self.deterministic = True
     return
   def apply(self, args = None):
-    n = args[0].num
-    check_nonneg(n)
+    n = args[0].nonnegint
     return XRPValue(uniform_no_args_XRP(n)) 
   def __str__(self):
     return 'uniform_XRP'

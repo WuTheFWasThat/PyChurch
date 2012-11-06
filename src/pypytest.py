@@ -8,48 +8,59 @@ import sys
 import utils.rrandom as rrandom
 import utils.expr_parser as parser
 
-from tests import *
+# from tests import *
 
-#from pypy.rlib import rsocket
-import utils.lispparser as lispparser
+from engine.directives import *
+
+try:
+  from pypy.rlib import rsocket
+  use_pypy = True
+except:
+  import socket as rsocket
+  use_pypy = False
  
 # copied from http://www.smipple.net/snippet/Shibukawa%20Yoshi/RPython%20echo%20server
 
-# From here: http://norvig.com/lispy.html
-            
 def parse_stuff():
     s = '((bernoulli 0.5) (beta (bernoulli 0.5) (bernoulli 1)) (bernoulli 1) 0.03)'
     s = '(lambda (x) (if (bernoulli x) 3.14 3))'
     s = '(if (xor (bernoulli 1)) (+ 0 (- 5 3)) (/ 6 3))'
     s = '(let ((x 2) (y 3) (z 4)) (* x y z))'
-    #tokens = lispparser.tokenize(s)
     index = 0
-    (expression, index) = parser.parse_expression(s, index)
+    (expression, index) = parser.parse_expression(s, 0)
     print expression.__str__()
 
 def open_socket():
+    reset()
+
     hostip = rsocket.gethostbyname('localhost')
-    host = rsocket.INETAddress(hostip.get_host(), 5000)
+    if use_pypy:
+      host = rsocket.INETAddress(hostip.get_host(), 5000)
+      socket = rsocket.RSocket(rsocket.AF_INET, rsocket.SOCK_STREAM)
+    else:
+      host = (hostip, 5000)
+      socket = rsocket.socket(rsocket.AF_INET, rsocket.SOCK_STREAM)
     
-    socket = rsocket.RSocket(rsocket.AF_INET, rsocket.SOCK_STREAM)
     socket.bind(host)
     socket.listen(1)
    
     while True:
-        print 'waiting for connection...'
-        (client_sock_fd, client_addr) = socket.accept()
-    
-        client_sock = rsocket.fromfd(client_sock_fd, rsocket.AF_INET, rsocket.SOCK_STREAM)
-        client_sock.send("server : connection start \n\n")
-        print 'connection start'
-        for i in range(1000000000):
+        if use_pypy:
+          (client_sock_fd, client_addr) = socket.accept()
+          client_sock = rsocket.fromfd(client_sock_fd, rsocket.AF_INET, rsocket.SOCK_STREAM)
+        else:
+          (client_sock, client_addr) = socket.accept()
+        client_sock.send("Server ready!\n")
+        print 'Client contacted'
+        while True:
             msg = client_sock.recv(1024)
             msg = msg.rstrip("\n")
             print "rcv: '%s'" % msg
-            if msg == "":
+            if msg == "exit":
                 client_sock.close()
                 break;
-            client_sock.send(msg)
+            ret_msg = parser.parse_directive(msg)
+            client_sock.send(ret_msg)
         return 1
 
 def mainloop(program, bracket_map):
@@ -72,9 +83,8 @@ def read(fp):
     return program
 
 def run(fp, niters, burnin):
-    parse_stuff()
 
-    #open_socket() 
+    open_socket() 
 
     #reset()
     #

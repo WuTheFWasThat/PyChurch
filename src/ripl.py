@@ -12,7 +12,7 @@
 # FIXME: Better document exceptions here
 
 import sys
-from engine.globals import Environment, Traces, RandomDB, Directives_Memory
+from engine.globals import Environment, Traces, RandomDB
 #from engine.globals import *
 #from engine.directives import *
 
@@ -267,7 +267,7 @@ class LocalRIPL(RIPL):
 ##        self.directives_lock.release()
 ##        return out
 
-class LocalRIPL2(RIPL):
+class LocalRIPL(RIPL):
     """
     Builds a RIPL locally, based on the given config.
 

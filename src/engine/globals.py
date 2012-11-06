@@ -36,7 +36,6 @@ class Environment:
       raise Exception("Already assumed something with this name")
       # TODO just make it unevaluate / overwrite instead?
     self.assumes[name] = evalnode
-    evalnode.add_assume(name, self)
 
   def add_lookup(self, name, evalnode):
     assert evalnode.traces.has(evalnode)
@@ -68,6 +67,14 @@ class Environment:
   def __str__(self):
     return self.assignments.__str__()
 
+class Engine:
+  def assume(self, varname, expr):
+    raise Exception("Not implemented")
+  def observe(self, expr, obs_val):
+    raise Exception("Not implemented")
+  def infer(self):
+    raise Exception("Not implemented")
+
 class EvalNode:
   def __init__(self, traces, env, expression):
     self.traces = traces
@@ -89,8 +96,9 @@ class EvalNode:
     self.observed = False
     self.observe_val = None 
 
-    self.random_xrp_apply = False
+    self.xrp = XRP()
     self.xrp_apply = False
+    self.random_xrp_apply = False
     self.procedure_apply = False
     self.args = None
     self.p = 0
@@ -475,7 +483,7 @@ class EvalNode:
     else:
       return ("EvalNode %s" % (self.assume_name))
 
-class Traces:
+class Traces(Engine):
   def __init__(self, env):
     self.evalnodes = {} # just a set
 
@@ -505,6 +513,7 @@ class Traces:
     self.assumes.append(evalnode)
     val = evalnode.evaluate()
     self.env.add_assume(name, evalnode)
+    evalnode.add_assume(name, self.env)
     self.env.set(name, val)
     return val
 
@@ -675,7 +684,7 @@ class Traces:
     return string
 
 # Class representing random db
-class RandomDB:
+class RandomDB(Engine):
   def __init__(self, env):
     #self.db = {} 
     self.db = RandomChoiceDict() 

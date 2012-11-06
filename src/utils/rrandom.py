@@ -4,9 +4,11 @@
 # https://bitbucket.org/pypy/pypy/src/default/pypy/rlib/rrandom.py
 
 try:
-    from pypy.rlib.rarithmetic import r_uint
+    from pypy.rlib.rarithmetic import r_uint, intmask
 except:
     def r_uint(x):
+      return x
+    def intmask(x):
       return x
 
 N = 624
@@ -106,20 +108,22 @@ class Random(object):
         y ^= (y << 7) & TEMPERING_MASK_A
         y ^= (y << 15) & TEMPERING_MASK_B
         y ^= (y >> 18)
-        return y
+        return intmask(y)
 
     def random(self):
         a = self.genrand32() >> 5
         b = self.genrand32() >> 6
-        return (a * 67108864.0 + b) * (1.0 / 9007199254740992.0)
+        r = (a * 67108864.0 + b) * (1.0 / 9007199254740992.0)
+        return r
 
     def randbelow(self, max = 0):
         a = self.genrand32() >> 5
         b = self.genrand32() >> 6
         if max == 0:
-          return (a * 67108864 + b)  
+          r = (a * 67108864 + b)
         else:
-          return (a * 67108864 + b) % max
+          r = (a * 67108864 + b) % max
+        return r
 
     def randrange(self, start, stop=None, step=1):
         """Choose a random item from range(start, stop[, step]).

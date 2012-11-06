@@ -1,6 +1,7 @@
 import globals
 from globals import Environment, RandomDB
 from expressions import *
+from mem import *
 
 def reset():
   if globals.use_traces:
@@ -14,13 +15,15 @@ def reset():
   assume('gamma', xrp(gamma_args_XRP()))
   assume('gaussian', xrp(gaussian_args_XRP()))
   assume('uniform', xrp(uniform_args_XRP()))
+  assume('mem', xrp(mem_XRP()))
   assume('rand', function([], apply(var('beta'), [num_expr(1), num_expr(1)])))
 
 def assume(varname, expr):
   if globals.use_traces:
-    return globals.traces.assume(varname, expr)
+    val =  globals.traces.assume(varname, expr)
   else:
-    return globals.db.assume(varname, expr)
+    val = globals.db.assume(varname, expr)
+  return val
 
 def observe(expr, obs_val):
   assert expr.type == 'apply' and expr.op.type == 'value' 
@@ -68,4 +71,3 @@ def infer():
     return
   else:
     globals.db.infer()
-
