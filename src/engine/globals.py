@@ -2,17 +2,10 @@ from expressions import *
 from utils.random_choice_dict import RandomChoiceDict
 import sys
 
-# Class representing environments
 class Environment:
   def __init__(self, parent = None):
     self.parent = parent # The parent environment
     self.assignments = {} # Dictionary from names to values
-    #self.children = set() 
-    #if parent is not None:
-    #  self.parent.children.add(self)
-
-    self.assumes = {}
-    self.lookups = {} # just a set
     return
 
   def reset(self):
@@ -30,6 +23,38 @@ class Environment:
         raise Exception('Variable %s undefined in env:\n%s' % (name, str(env)))
       else:
         return self.parent.lookup(name)
+
+  def spawn_child(self): 
+    return Environment(self)
+
+  def __setitem__(self, name, value):
+    self.set(name, value) 
+
+  def __getitem__(self, name):
+    return self.lookup(name) 
+
+  def __str__(self):
+    return self.assignments.__str__()
+
+class Engine:
+  def assume(self, varname, expr):
+    raise Exception("Not implemented")
+  def observe(self, expr, obs_val, id):
+    raise Exception("Not implemented")
+  def forget(self, id):
+    raise Exception("Not implemented")
+  def infer(self):
+    raise Exception("Not implemented")
+
+# Class representing environments
+class EnvironmentNode(Environment):
+  def __init__(self, parent = None):
+    self.parent = parent # The parent environment
+    self.assignments = {} # Dictionary from names to values
+
+    self.assumes = {}
+    self.lookups = {} # just a set
+    return
 
   def add_assume(self, name, evalnode):
     if name in self.assumes:
@@ -56,24 +81,7 @@ class Environment:
       return {}
 
   def spawn_child(self): 
-    return Environment(self)
-
-  def __setitem__(self, name, value):
-    self.set(name, value) 
-
-  def __getitem__(self, name):
-    return self.lookup(name) 
-
-  def __str__(self):
-    return self.assignments.__str__()
-
-class Engine:
-  def assume(self, varname, expr):
-    raise Exception("Not implemented")
-  def observe(self, expr, obs_val):
-    raise Exception("Not implemented")
-  def infer(self):
-    raise Exception("Not implemented")
+    return EnvironmentNode(self)
 
 class EvalNode:
   def __init__(self, traces, env, expression):
@@ -162,7 +170,6 @@ class EvalNode:
       assert self.random_xrp_apply
       val = self.evaluate(reflip = 0.5, xrp_force_val = self.observe_val)
       assert val == oldval
-      # TODO: might this be wrong initially? 
     else:
       if self.random_xrp_apply:
         val = self.evaluate(reflip = 0.5, xrp_force_val = self.val)
@@ -276,7 +283,6 @@ class EvalNode:
     if self.type == 'value':
       val = expr.val
     elif self.type == 'variable':
-      # TODO : is this right?
       (val, lookup_env) = self.env.lookup(expr.name)
       self.setlookup(lookup_env)
     elif self.type == 'if':
@@ -381,7 +387,6 @@ class EvalNode:
         bound[expr.vars[i]] = True
       procedure_body = expr.body.replace(new_env, bound)
       val = Procedure(expr.vars, procedure_body, self.env)
-      #TODO: SET SOME RELATIONSHIP HERE?  If body contains reference to changed var...
     elif self.type == '=':
       (val1, val2) = self.binary_op_evaluate(reflip)
       val = BoolValue(val1 == val2)
@@ -491,12 +496,7 @@ class Traces(Engine):
     self.assumes = []
     self.observes = {} # just a set
 
-    # WITH RANDOM CHOICE DICT
-    # self.db = RandomChoiceDict() 
-
-    self.db = {}  
-    self.idToKey = []
-    self.keyToId = {}
+    self.db = RandomChoiceDict() 
 
     env.reset()
     self.env = env
@@ -517,30 +517,43 @@ class Traces(Engine):
     self.env.set(name, val)
     return val
 
-  def observe(self, expr, obs_val):
+  def observe(self, expr, obs_val, id):
     evalnode = EvalNode(self, self.env, expr)
+
     self.add_node(evalnode)
+    assert id not in self.observes
+    self.observes[id] = evalnode
 
     evalnode.observe(obs_val)
-    self.observes[evalnode] = True
     evalnode.evaluate()
 
     return evalnode
 
-  def forget(self, evalnode):
+  def forget(self, id):
+    assert id in self.observes
+    evalnode = self.observes[id]
     evalnode.unevaluate()
     self.remove_node(evalnode)
-    del self.observes[evalnode]
+    del self.observes[id]
     return
 
   def rerun(self, reflip):
     for assume_node in self.assumes:
       assume_node.evaluate(reflip)
-    for observe_node in self.observes:
+    for observe_node in self.observes.values():
       observe_node.evaluate(reflip)
 
   def has(self, evalnode):
     return evalnode in self.evalnodes
+
+#from pypy.rlib.jit import JitDriver
+#jitdriver = JitDriver(greens = [], reds=['node'])
+#
+#def jitpolicy(driver):
+#  from pypy.jit.codewriter.policy import JitPolicy
+#  return JitPolicy()
+#
+#  jitdriver.jit_merge_point(node=node)
 
   def reflip(self, reflip_node):
     debug = False
@@ -557,9 +570,9 @@ class Traces(Engine):
     old_p = self.p
     old_val = reflip_node.val
     new_to_old_q = reflip_node.p
-    old_to_new_q = - math.log(len(self.db))
+    old_to_new_q = - math.log(self.db.__len__())
     new_val = reflip_node.reflip()
-    new_to_old_q -= math.log(len(self.db))
+    new_to_old_q -= math.log(self.db.__len__())
     old_to_new_q += reflip_node.p
 
     assert 'operator' in reflip_node.children
@@ -629,43 +642,18 @@ class Traces(Engine):
   def add_xrp(self, args, evalnodecheck = None):
     assert evalnodecheck in self.evalnodes
     evalnodecheck.setargs(args)
-    assert evalnodecheck not in self.db
-
-    # WITH RANDOM CHOICE DICT
-    # self.db[evalnode] = True
-
-    self.keyToId[evalnodecheck] = len(self.idToKey) 
-    self.idToKey.append(evalnodecheck)
-    self.db[evalnodecheck] = True
-
+    assert not self.db.__contains__(evalnodecheck)
+    self.db.__setitem__(evalnodecheck, True)
 
   def remove_xrp(self, evalnode):
     assert self.has(evalnode)
-    assert evalnode in self.db
-
-    # WITH RANDOM CHOICE DICT
-    # del self.db[evalnode]
-
-    if evalnode not in self.db:
-      raise Exception("evalnode not in db")
-
-    del self.db[evalnode]
-    delId = self.keyToId.pop(evalnode)
-    lastKey = self.idToKey.pop()
-
-    if delId < len(self.idToKey):
-      self.idToKey[delId] = lastKey
-      self.keyToId[lastKey] = delId 
+    assert self.db.__contains__(evalnode)
+    self.db.__delitem__(evalnode)
 
   def infer(self):
     try:
-      # WITH RANDOM CHOICE DICT
-      # evalnode = self.db.randomKey()
-
-      if len(self.idToKey) == 0:
-        raise Exception("No keys to get")
-      index =  rrandom.random.randbelow(len(self.idToKey))
-      evalnode = self.idToKey[index]
+      evalnode = self.db.randomKey()
+      #evalnode = self.idToKey[index]
     except:
       return
     self.reflip(evalnode)
@@ -689,9 +677,6 @@ class RandomDB(Engine):
     #self.db = {} 
     self.db = RandomChoiceDict() 
     self.db_noise = {}
-    # TODO: remove count
-    self.count = 0
-    assert self.count == len(self.db)
     self.log = []
     # ALWAYS WORKING WITH LOG PROBABILITIES
     self.uneval_p = 0
@@ -715,26 +700,26 @@ class RandomDB(Engine):
     self.env.set(varname, value)
     return value
 
-  def observe(self, expr, obs_val):
+  def observe(self, expr, obs_val, id):
     if expr.hashval in self.observes:
       raise Exception('Already observed %s' % str(expr))
-    self.observes[expr.hashval] = (expr, obs_val) 
+    self.observes[id] = (expr, obs_val) 
     # bit of a hack, here, to make it recognize same things as with noisy_expr
-    self.evaluate(expr, self.env, reflip = False, stack = ['obs', expr.hashval], xrp_force_val = obs_val)
+    self.evaluate(expr, self.env, reflip = False, stack = ['obs', id], xrp_force_val = obs_val)
     return expr.hashval
 
   def rerun(self, reflip):
     for (varname, expr) in self.assumes:
       value = self.evaluate(expr, self.env, reflip = reflip, stack = [varname])
       self.env.set(varname, value)
-    for hashval in self.observes:
-      (expr, obs_val) = self.observes[hashval]
-      self.evaluate(expr, self.env, reflip = False, stack = ['obs', expr.hashval], xrp_force_val = obs_val)
+    for id in self.observes:
+      (expr, obs_val) = self.observes[id]
+      self.evaluate(expr, self.env, reflip = False, stack = ['obs', id], xrp_force_val = obs_val)
 
-  def forget(self, hashval):
-    self.remove(['obs', hashval])
-    assert hashval in self.observes
-    del self.observes[hashval]
+  def forget(self, id):
+    self.remove(['obs', id])
+    assert id in self.observes
+    del self.observes[id]
     return
 
   def insert(self, stack, xrp, value, args, is_obs_noise = False, memorize = True):
@@ -749,9 +734,7 @@ class RandomDB(Engine):
     else:
       self.db[stack] = (xrp, value, args, False)
     if not is_obs_noise:
-      self.count += 1
       self.eval_p += prob # hmmm.. 
-      assert self.count == len(self.db)
     if memorize:
       self.log.append(('insert', stack, xrp, value, args, is_obs_noise))
 
@@ -766,10 +749,7 @@ class RandomDB(Engine):
       del self.db_noise[stack]
     else:
       del self.db[stack]
-      self.count -= 1
-      assert self.count >= 0
       self.uneval_p += prob # previously unindented...
-    assert self.count == len(self.db)
     if memorize:
       self.log.append(('remove', stack, xrp, value, args, is_obs_noise))
 
@@ -841,7 +821,7 @@ class RandomDB(Engine):
     #      self.unevaluate(stack + ['child' + str(i)])
     #  val = self.evaluate_recurse(expr.children[index.num], env, reflip, stack, 'child' + str(index.num))
     elif expr.type == 'let':
-      # TODO: this really is a let*
+      # NOTE: this really is a let*
 
       n = len(expr.vars)
       assert len(expr.expressions) == n
@@ -1007,7 +987,7 @@ class RandomDB(Engine):
     debug = False
   
     old_p = self.p
-    old_to_new_q = - math.log(self.count)
+    old_to_new_q = - math.log(len(self.db))
     if debug:
       print  "old_db", self 
   
@@ -1028,7 +1008,7 @@ class RandomDB(Engine):
   
     self.rerun(False)
     new_p = self.p
-    new_to_old_q = self.uneval_p - math.log(self.count)
+    new_to_old_q = self.uneval_p - math.log(len(self.db))
     old_to_new_q += self.eval_p
     if debug:
       print "new db", self, \
@@ -1069,19 +1049,21 @@ class RandomDB(Engine):
   def __getitem__(self, stack):
     return self.get(self, stack)
 
-# The global environment. Has assignments of names to expressions, and parent pointer 
-env = Environment()
-
 use_traces = True
 
-# The traces datastructure. 
-# DAG of two interlinked trees: 
-#   1. eval (with subcases: IF, symbollookup, combination, lambda) + apply
-#   2. environments
-# crosslinked by symbol lookup nodes and by the env argument to eval
+# The global environment. Has assignments of names to expressions, and parent pointer 
+
 if use_traces:
+  env = EnvironmentNode()
+  # The traces datastructure. 
+  # DAG of two interlinked trees: 
+  #   1. eval (with subcases: IF, symbollookup, combination, lambda) + apply
+  #   2. environments
+  # crosslinked by symbol lookup nodes and by the env argument to eval
   traces = Traces(env)
 else:
+  # The global environment. Has assignments of names to expressions, and parent pointer 
+  env = Environment()
   # Table storing a list of (xrp, value, probability) tuples
   db = RandomDB(env)
 

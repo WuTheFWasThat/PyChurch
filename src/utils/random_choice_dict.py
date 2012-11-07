@@ -11,10 +11,6 @@ class RandomChoiceDict():
   def __getitem__(self, key): 
       return self.dict[key]
 
-  #def __contains__(self, key):
-  def contains(self, key):
-      return key in self.dict
-
   def __setitem__(self, key, value): 
       if key not in self.dict:
           self.keyToId[key] = len(self.idToKey) 
@@ -47,7 +43,7 @@ class RandomChoiceDict():
       return self.dict.__iter__()
 
   def __contains__(self, x):
-      return self.dict.__contains__(x)
+      return (x in self.dict)
 
   def __len__(self):
       return len(self.dict)

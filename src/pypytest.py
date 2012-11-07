@@ -21,14 +21,14 @@ except:
  
 # copied from http://www.smipple.net/snippet/Shibukawa%20Yoshi/RPython%20echo%20server
 
-def parse_stuff():
-    s = '((bernoulli 0.5) (beta (bernoulli 0.5) (bernoulli 1)) (bernoulli 1) 0.03)'
-    s = '(lambda (x) (if (bernoulli x) 3.14 3))'
-    s = '(if (xor (bernoulli 1)) (+ 0 (- 5 3)) (/ 6 3))'
-    s = '(let ((x 2) (y 3) (z 4)) (* x y z))'
-    index = 0
-    (expression, index) = parser.parse_expression(s, 0)
-    print expression.__str__()
+#def parse_stuff():
+#    s = '((bernoulli 0.5) (beta (bernoulli 0.5) (bernoulli 1)) (bernoulli 1) 0.03)'
+#    s = '(lambda (x) (if (bernoulli x) 3.14 3))'
+#    s = '(if (xor (bernoulli 1)) (+ 0 (- 5 3)) (/ 6 3))'
+#    s = '(let ((x 2) (y 3) (z 4)) (* x y z))'
+#    index = 0
+#    (expression, index) = parser.parse_expression(s, 0)
+#    print expression.__str__()
 
 def open_socket():
     reset()
@@ -59,7 +59,10 @@ def open_socket():
             if msg == "exit":
                 client_sock.close()
                 break;
-            ret_msg = parser.parse_directive(msg)
+            try:
+              ret_msg = parser.parse_directive(msg)
+            except Exception as e:
+              ret_msg = e.message
             client_sock.send(ret_msg)
         return 1
 
@@ -69,9 +72,6 @@ def mainloop(program, bracket_map):
     
     while pc < len(program):
       print "im in a loop"
-
-def parse(line):
-  pass
 
 def read(fp):
     program = ""

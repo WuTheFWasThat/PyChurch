@@ -18,18 +18,6 @@ def parse_token(s, i = 0):
         j += 1
       return (s[i:j], j)
 
-##def parse_expression_list(s, i):
-##    expr_list = []
-##    (token, i) = parse_token(s, i)
-##    assert token == '['
-##    while token != ']':
-##        assert token == '[' or token == ','
-##        (expression, i) = parse_expression(s, i)
-##        expr_list.append(expression)
-##        (token, i) = parse_token(s, i)
-##    assert token == ']'
-##    return (expr_list, i)
-
 def parse_expr_list(s, i):
     (token, j) = parse_token(s, i)
     expr_list = []
@@ -112,7 +100,10 @@ def parse_value_token(token):
         raise Exception("Invalid value (Note:  Procedures and XRPs not parseable)")
   return val
 
-  
+def parse_value(s, i):
+  (token, i) = parse_token(s, i)
+  return (parse_value_token(token), i)
+
 def parse_expression(s, i):
     (token, i) = parse_token(s, i)
     if len(token) < 0:
@@ -142,26 +133,32 @@ def parse_expression(s, i):
         expr = var(token)
     return (expr, i)
 
-def parse_value(s, i):
-  (token, i) = parse_token(s, i)
-  return (parse_value_token(token), i)
 
 def parse_directive(s):
+  ret_str = 'done'
   (token, i) = parse_token(s, 0)
   if token == 'assume':
     (var, i) = parse_token(s, i)
     (expr, i) = parse_expression(s, i)
-    assume(var, expr)
+    (val, id) = assume(var, expr)
+    ret_str = 'value: ' + val.__str__() + '\nid: ' + str(id)
   elif token == 'observe':
     (expr, i) = parse_expression(s, i)
     (val, i) = parse_value(s, i)
-    observe(expr, val)
+    id = observe(expr, val)
+    ret_str = 'id: ' + str(id)
   elif token == 'predict':
     (expr, i) = parse_expression(s, i)
-    sample(expr)
+    val = sample(expr)
+    ret_str = 'value: ' + val.__str__()
+  elif token == 'forget':
+    (id, i) = parse_token(s, i)
+    forget(int(id))
   elif token == 'infer':
     infer()
   elif token == 'clear':
     reset()
   else:
     raise Exception("Invalid directive")
+  # return values?  directive ID?
+  return ret_str
