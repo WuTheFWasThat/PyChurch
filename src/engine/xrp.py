@@ -17,9 +17,11 @@ def check_pos(val):
   if not 0 < val:
     raise Exception("Value %s is not positive" % str(val))
 
-def check_nonneg(val):
-  if not 0 <= val:
-    raise Exception("Value %s is negative" % str(val))
+def sum(array):
+  ans = 0
+  for x in array:
+    ans += x
+  return ans
 
 # taken from Wikipedia's page on Lanczos approximation, but only works on real numbers
 def math_gamma(z):
@@ -37,12 +39,6 @@ def math_gamma(z):
           x += p[i]/(z+i)
       t = z + g + 0.5
       return math.sqrt(2*math.pi) * math.pow(t, (z+0.5)) * math.exp(-t) * x
-
-def sum(array):
-  ans = 0
-  for x in array:
-    ans += x
-  return ans
 
 def dirichlet(params):
   sample = [rrandom.random.gammavariate(a,1) for a in params]
@@ -413,10 +409,10 @@ class beta_bernoulli_2(XRP):
       self.t += 1
   def remove(self, val, args = None):
     if val.num:
-      check_nonneg(self.h)
+      assert self.h > 0
       self.h -= 1
     else:
-      check_nonneg(self.t)
+      assert self.t > 0
       self.t -= 1
   def prob(self, val, args = None):
     if (self.h | self.t) == 0:

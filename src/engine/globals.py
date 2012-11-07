@@ -2,6 +2,18 @@ from expressions import *
 from utils.random_choice_dict import RandomChoiceDict
 import sys
 
+try:
+  from pypy.rlib.jit import JitDriver
+  jitdriver = JitDriver(greens = [], reds=['node'])
+  
+  def jitpolicy(driver):
+    from pypy.jit.codewriter.policy import JitPolicy
+    return JitPolicy()
+
+  use_jit = True
+except:
+  use_jit = False
+
 class Environment:
   def __init__(self, parent = None):
     self.parent = parent # The parent environment
@@ -460,6 +472,8 @@ class EvalNode:
     return val
 
   def reflip(self, force_val = None):
+    #if use_jit:
+    #  jitdriver.jit_merge_point(node=node)
     self.evaluate(reflip = 0.5, xrp_force_val = force_val)
     self.propogate_up()
     return self.val
@@ -545,15 +559,6 @@ class Traces(Engine):
 
   def has(self, evalnode):
     return evalnode in self.evalnodes
-
-#from pypy.rlib.jit import JitDriver
-#jitdriver = JitDriver(greens = [], reds=['node'])
-#
-#def jitpolicy(driver):
-#  from pypy.jit.codewriter.policy import JitPolicy
-#  return JitPolicy()
-#
-#  jitdriver.jit_merge_point(node=node)
 
   def reflip(self, reflip_node):
     debug = False
