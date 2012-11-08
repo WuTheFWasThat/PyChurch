@@ -1,5 +1,68 @@
 import utils.rrandom as rrandom 
-from declarations import  Value
+
+class XRP:
+  def __init__(self):
+    self.deterministic = False
+    return
+  def apply(self, args = None):
+    raise Exception("Not implemented")
+  def incorporate(self, val, args = None):
+    pass
+  def remove(self, val, args = None):
+    pass
+  ## SHOULD RETURN THE LOG PROBABILITY
+  def prob(self, val, args = None):
+    return 0
+  def is_mem(self):
+    return False
+  def __str__(self):
+    return 'XRP'
+
+class Value:
+  def initialize(self):
+    # dummy values to prevent RPython typer from complaining
+    self.bool = False
+    self.num = 0.0 
+    self.int = 0 
+    self.nat = 0 
+    self.xrp = XRP()
+    self.vars = ['']
+    self.body = None
+    self.env = None
+  def __hash__(self):
+    return self.str_hash.__hash__()
+  def __repr__(self):
+    return self.__str__()
+  def __eq__(self, other):
+    return BoolValue(self is other)
+  def __gt__(self, other):
+    raise Exception("Invalid operation")
+  def __lt__(self, other):
+    raise Exception("Invalid operation")
+  def __ge__(self, other):
+    raise Exception("Invalid operation")
+  def __le__(self, other):
+    raise Exception("Invalid operation")
+  def __add__(self, other):
+    raise Exception("Invalid operation")
+  def __sub__(self, other):
+    raise Exception("Invalid operation")
+  def __mul__(self, other):
+    raise Exception("Invalid operation")
+  def __div__(self, other):
+    raise Exception("Invalid operation")
+  def __and__(self, other):
+    raise Exception("Invalid operation")
+  def __or__(self, other):
+    raise Exception("Invalid operation")
+  def __xor__(self, other):
+    raise Exception("Invalid operation")
+  def __inv__(self):
+    raise Exception("Invalid operation")
+  def __nonzero__(self):
+    return BoolValue((self.num > 0))
+  pass 
+
 
 class Procedure(Value):
   def __init__(self, vars, body, env):
@@ -15,7 +78,7 @@ class Procedure(Value):
   def __hash__(self):
     return self.hash
   def __eq__(self, other):
-    return (self.type == other.type) and (self.hash == other.hash)
+    return BoolValue((self.type == other.type) and (self.hash == other.hash))
 
 class XRPValue(Value):
   def __init__(self, xrp):
@@ -29,7 +92,7 @@ class XRPValue(Value):
   def __hash__(self):
     return self.hash
   def __eq__(self, other):
-    return (self.type == other.type) and (self.hash == other.hash)
+    return BoolValue((self.type == other.type) and (self.hash == other.hash))
 
 class BoolValue(Value):
   def __init__(self, bool):
@@ -42,7 +105,9 @@ class BoolValue(Value):
   def __hash__(self):
     return (1 if self.bool else 0)
   def __eq__(self, other):
-    return (self.type == other.type) and (self.bool == other.bool)
+    return BoolValue((self.type == other.type) and (self.bool == other.bool))
+  def __inv__(self):
+    return BoolValue(not self.bool)
   def __nonzero__(self):
     return self.bool
 
@@ -57,32 +122,75 @@ class NumValue(Value):
   def __hash__(self):
     return hash(self.num)
   def __eq__(self, other):
-    return (self.type == other.type) and (self.num == other.num)
-  def gt(self, other):
-    return (self.type == other.type) and (self.num > other.num)
-  def ge(self, other):
-    return (self.type == other.type) and (self.num >= other.num)
-  def lt(self, other):
-    return (self.type == other.type) and (self.num < other.num)
-  def le(self, other):
-    return (self.type == other.type) and (self.num <= other.num)
+    return BoolValue((self.type == other.type) and (self.num == other.num))
+  def __gt__(self, other):
+    return BoolValue((self.type == other.type) and (self.num > other.num))
+  def __ge__(self, other):
+    return BoolValue((self.type == other.type) and (self.num >= other.num))
+  def __lt__(self, other):
+    return BoolValue((self.type == other.type) and (self.num < other.num))
+  def __le__(self, other):
+    return BoolValue((self.type == other.type) and (self.num <= other.num))
+  def __add__(self, other):
+    return NumValue(self.num + other.num)
+  def __sub__(self, other):
+    return NumValue(self.num - other.num)
+  def __mul__(self, other):
+    return NumValue(self.num * other.num)
+  def __div__(self, other):
+    return NumValue(self.num / other.num)
+  def __inv__(self):
+    return NumValue(- self.num)
   def __nonzero__(self):
-    return (self.num > 0)
+    return BoolValue((self.num > 0))
 
 class IntValue(NumValue):
   def __init__(self, num):
     self.initialize()
-    self.type = 'num'
+    self.type = 'int'
     self.int = num
     self.num = num
     self.str_hash = str(self.int)
+  def __add__(self, other):
+    if other.type == 'int':
+      return IntValue(self.int + other.int)
+    else:
+      return NumValue(self.num + other.num)
+  def __sub__(self, other):
+    if other.type == 'int':
+      return IntValue(self.int - other.int)
+    else:
+      return NumValue(self.num - other.num)
+  def __mul__(self, other):
+    if other.type == 'int':
+      return IntValue(self.int * other.int)
+    else:
+      return NumValue(self.num * other.num)
+  def __inv__(self):
+    return IntValue(- self.int)
 
-class NonnegIntValue(IntValue):
+  
+class NatValue(IntValue):
   def __init__(self, num):
     self.initialize()
-    self.type = 'num'
-    self.nonnegint = num
+    self.type = 'nat'
+    self.nat = num
     self.int = num
     self.num = num
     self.str_hash = str(self.int)
+  def __add__(self, other):
+    if other.type == 'nat':
+      return NatValue(self.nat + other.nat)
+    elif other.type == 'int':
+      return IntValue(self.int + other.int)
+    else:
+      return NumValue(self.num + other.num)
+  def __mul__(self, other):
+    if other.type == 'nat':
+      return NatValue(self.nat * other.nat)
+    elif other.type == 'int':
+      return IntValue(self.int * other.int)
+    else:
+      return NumValue(self.num * other.num)
+ 
 

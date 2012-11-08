@@ -1,6 +1,65 @@
 from values import *
 from xrp import *
-from declarations import Expression
+
+#Class representing expressions 
+class Expression:
+  # Replaces variables with the values from the environment 
+  def __init__(self):
+    self.hashval = rrandom.random.randbelow()
+
+  def initialize(self):
+    # dummy values to prevent RPython typer from complaining 
+    self.cond = Expression()
+    self.true = Expression()
+    self.false = Expression()
+
+    self.op = Expression()
+    self.vars = ['']
+
+    self.body = Expression()
+
+    self.children = [Expression()]
+    self.expressions = [Expression()]
+
+    # initialize hash value
+    self.hashval = rrandom.random.randbelow()
+    pass
+
+  def replace(self, env, bound = {}):
+    pass
+  def __eq__(self, other):
+    return OpExpression('=', [self, other])
+  def __lt__(self, other):
+    return OpExpression('<', [self, other])
+  def __le__(self, other):
+    return OpExpression('<=', [self, other])
+  def __gt__(self, other):
+    return OpExpression('>', [self, other])
+  def __ge__(self, other):
+    return OpExpression('>=', [self, other])
+  def __add__(self, other):
+    return OpExpression('+', [self, other])
+  def __sub__(self, other):
+    return OpExpression('-', [self, other])
+  def __mul__(self, other):
+    return OpExpression('*', [self, other])
+  def __div__(self, other):
+    return OpExpression('/', [self, other])
+  def __and__(self, other):
+    return OpExpression('&', [self, other])
+  def __or__(self, other):
+    return OpExpression('|', [self, other])
+  def __xor__(self, other):
+    return OpExpression('^', [self, other])
+  def __invert__(self):
+    return OpExpression('~', [self])
+  def __str__(self):
+    return "Expression"
+  def __repr__(self):
+    return self.__str__()
+  def __hash__(self):
+    return self.hashval
+                                            
 
 class ConstExpression(Expression):
   def __init__(self, value):
@@ -157,6 +216,9 @@ def num_expr(c):
 
 def int_expr(c):
   return constant(IntValue(c))
+
+def nat_expr(c):
+  return constant(NatValue(c))
 
 def bool_expr(b):
   return constant(BoolValue(b))

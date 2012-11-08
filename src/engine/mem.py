@@ -1,7 +1,7 @@
 from globals import EvalNode
 import globals
 from expressions import *
-from declarations import XRP
+from xrp import *
 
 # THIS XRP IMPLEMENTATION IS NOT INDEPENDENT OF DIRECTIVES IMPLEMENTATION 
 class mem_proc_XRP(XRP):

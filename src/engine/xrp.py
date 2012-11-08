@@ -1,6 +1,5 @@
 from values import *
 import math
-from declarations import XRP
 
 # HELPERS
 
@@ -101,12 +100,12 @@ class array_XRP(XRP):
     return
   def apply(self, args = None):
     assert len(args) == 1
-    i = args[0].int
+    i = args[0].nat
     assert 0 <= i < self.n
     return self.array[i]
   def prob(self, val, args = None):
     assert len(args) == 1
-    i = args[0].int
+    i = args[0].nat
     assert 0 <= i < self.n
     assert val == self.array[i]
     return 0
@@ -339,11 +338,11 @@ class uniform_args_XRP(XRP):
     self.deterministic = False
     return
   def apply(self, args = None):
-    n = args[0].nonnegint
-    return NonnegIntValue(rrandom.random.randbelow(n))
+    n = args[0].nat
+    return NatValue(rrandom.random.randbelow(n))
   def prob(self, val, args = None):
-    n = args[0].nonnegint
-    assert 0 <= val.nonnegint < n
+    n = args[0].nat
+    assert 0 <= val.nat < n
     return -math.log(n)
   def __str__(self):
     return 'uniform'
@@ -356,11 +355,11 @@ class uniform_no_args_XRP(XRP):
   def apply(self, args = None):
     if args is not None and len(args) != 0:
       raise Exception('Warning: uniform_no_args_XRP has no need to take in arguments %s' % str(args))
-    return NonnegIntValue(rrandom.random.randbelow(self.n))
+    return NatValue(rrandom.random.randbelow(self.n))
   def prob(self, val, args = None):
     if args is not None and len(args) != 0:
       raise Exception('Warning: uniform_no_args_XRP has no need to take in arguments %s' % str(args))
-    assert 0 <= val.nonnegint < self.n
+    assert 0 <= val.nat < self.n
     return -math.log(self.n)
   def __str__(self):
     return 'uniform(%d)' % self.n
@@ -370,7 +369,7 @@ class gen_uniform_XRP(XRP):
     self.deterministic = True
     return
   def apply(self, args = None):
-    n = args[0].nonnegint
+    n = args[0].nat
     return XRPValue(uniform_no_args_XRP(n)) 
   def __str__(self):
     return 'uniform_XRP'

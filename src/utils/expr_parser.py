@@ -83,8 +83,8 @@ def parse_op(s, i, operator):
 def parse_value_token(token):
   try:
     intval = int(token)
-    if intval > 0:
-      val = NonnegIntValue(intval)
+    if intval >= 0:
+      val = NatValue(intval)
     else:
       val = IntValue(intval)
   except:
@@ -160,5 +160,4 @@ def parse_directive(s):
     reset()
   else:
     raise Exception("Invalid directive")
-  # return values?  directive ID?
   return ret_str

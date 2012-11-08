@@ -3,47 +3,6 @@ from globals import Environment, RandomDB
 from expressions import *
 from mem import *
 
-class DirectivesMemory:
-  def __init__(self):
-    # id -> (name, expr)
-    self.assumes = {}
-    # id -> (expr, val, active)
-    self.observes = {}
-    self.directives = []
-    self.next_id = -1 
-
-  def reset(self):
-    self.__init__()
-
-  def get_next_id(self):
-    self.next_id += 1
-    return self.next_id
-
-  def assume(self, name, expr): 
-    self.directives.append('assume')
-    id = self.get_next_id()
-    self.assumes[id] = (name, expr)
-    return id
-
-  def observe(self, expr, val): 
-    self.directives.append('observe')
-    id = self.get_next_id()
-    self.observes[id] = (expr, val, True)
-    return id
-
-  def forget(self, id):
-    if id not in self.observes:
-      raise Exception("id %d was never observed" % id) 
-    (expr, val, active) = self.observes[id]
-    if not active:
-      raise Exception("id %d was already forgotten" % id) 
-    self.observes[id] = (expr, val, False)
-    
-  def reset(self):
-    self.__init__()
-
-memory = DirectivesMemory()
-
 def reset():
   if globals.use_traces:
     globals.traces.reset()
@@ -60,10 +19,10 @@ def reset():
   assume('rand', function([], apply(var('beta'), [num_expr(1), num_expr(1)])))
 
   # NOTE: There are a constant number of floating assumes!
-  memory.reset()
+  globals.memory.reset()
 
 def assume(varname, expr):
-  id = memory.assume(varname, expr)
+  id = globals.memory.assume(varname, expr)
   if globals.use_traces:
     val =  globals.traces.assume(varname, expr)
   else:
@@ -71,7 +30,7 @@ def assume(varname, expr):
   return (val, id)
 
 def observe(expr, obs_val):
-  id = memory.observe(expr, obs_val)
+  id = globals.memory.observe(expr, obs_val)
 
   #NOTE: would be true, except there could be variables, etc
   #assert expr.type == 'apply' and expr.op.type == 'value' 
@@ -90,7 +49,7 @@ def forget(id):
   # if using db, is a hashval
   # if using traces, is an evalnode
 
-  memory.forget(id)
+  globals.memory.forget(id)
   if globals.use_traces:
     globals.traces.forget(id)
   else:
