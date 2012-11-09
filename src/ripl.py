@@ -12,9 +12,7 @@
 # FIXME: Better document exceptions here
 
 import sys
-from engine.globals import Environment, Traces, RandomDB
-#from engine.globals import *
-#from engine.directives import *
+from engine.directives import *
 
 ##import evaluators
 ##import datatypes

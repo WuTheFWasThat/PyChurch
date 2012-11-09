@@ -19,7 +19,6 @@ from utils.random_choice_dict import RandomChoiceDict
     #if use_jit:
     #  jitdriver.jit_merge_point(node=node)
 
-
 # Class representing environments
 class EnvironmentNode(Environment):
   def __init__(self, parent = None):
@@ -555,31 +554,23 @@ class Traces(Engine):
   
     p = rrandom.random.random()
     if new_p + new_to_old_q - old_p - old_to_new_q < math.log(p):
+      new_val = reflip_node.reflip(old_val)
+
       if debug: 
         print 'restore'
-      new_val = reflip_node.reflip(old_val)
+        #print "original uneval", math.exp(uneval_p)
+        #print "original eval", math.exp(eval_p)
+        #print "new uneval", math.exp(self.uneval_p)
+        #print "new eval", math.exp(self.eval_p)
 
       #assert self.p == old_p
       #assert self.uneval_p  + uneval_p == eval_p + self.eval_p
 
-      #print "original uneval", math.exp(uneval_p)
-      #print "original eval", math.exp(eval_p)
-      #print "new uneval", math.exp(self.uneval_p)
-      #print "new eval", math.exp(self.eval_p)
-      #assert self.p == old_p
       #assert self.uneval_p == eval_p
       #assert self.eval_p == uneval_p
+      # May not be true, because sometimes things get removed then incorporated
     if debug:
       print "new:\n", self
-
-    # ENVELOPE CALCULATION?
-
-  def evaluate(self, expression, reflip = False):
-    assert False
-    stack = ['expr', expression.hashval]
-    evalnode = self.get_or_make(stack, expression)
-    val = evalnode.evaluate(reflip)
-    return val
 
   # Add an XRP application node to the db
   def add_xrp(self, args, evalnodecheck = None):
