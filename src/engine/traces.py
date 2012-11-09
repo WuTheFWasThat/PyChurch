@@ -33,7 +33,6 @@ class EnvironmentNode(Environment):
   def add_assume(self, name, evalnode):
     if name in self.assumes:
       raise Exception("Already assumed something with this name")
-      # TODO just make it unevaluate / overwrite instead?
     self.assumes[name] = evalnode
 
   def add_lookup(self, name, evalnode):
@@ -42,12 +41,11 @@ class EnvironmentNode(Environment):
     self.lookups[name][evalnode] = True
 
   def rem_lookup(self, name, evalnode):
-    assert name in self.lookups
     del self.lookups[name][evalnode]
 
   def get_lookups(self, name, evalnode):
-    assert name in self.assumes
-    assert self.assumes[name] is evalnode
+    if self.assumes[name] is not evalnode:
+      raise Exception("Wrong evalnode getting lookups for %s" % name)
     if name in self.lookups:
       return self.lookups[name]
     else:
@@ -138,27 +136,23 @@ class EvalNode:
     # TODO: optimize to not re-propogate. needs to calculate explicit trace structure
 
     oldval = self.val
-    if self.observed:
-      assert self.random_xrp_apply
-      val = self.evaluate(reflip = 0.5, xrp_force_val = self.observe_val)
+    if self.random_xrp_apply:
+      val = self.evaluate(reflip = 0.5, xrp_force_val = self.val)
       assert val == oldval
     else:
-      if self.random_xrp_apply:
-        val = self.evaluate(reflip = 0.5, xrp_force_val = self.val)
-        assert val == oldval
-      else:
-        val = self.evaluate(reflip = 0.5, xrp_force_val = None)
+      val = self.evaluate(reflip = 0.5, xrp_force_val = None)
 
-      if self.assume:
-        assert self.parent is None
-        # lookups can be affected *while* propogating up. 
-        lookup_nodes = []
-        for evalnode in self.env.get_lookups(self.assume_name, self):
-          lookup_nodes.append(evalnode)
-        for evalnode in lookup_nodes:
-          evalnode.propogate_up()
-      elif self.parent is not None:
-        self.parent.propogate_up()
+    if self.assume:
+      assert self.parent is None
+      # lookups can be affected *while* propogating up. 
+      lookup_nodes = []
+      for evalnode in self.env.get_lookups(self.assume_name, self):
+        lookup_nodes.append(evalnode)
+      for evalnode in lookup_nodes:
+        evalnode.propogate_up()
+    elif self.parent is not None:
+      self.parent.propogate_up()
+
     if self.mem:
       # self.mem_calls can be affected *while* propogating up.  However, if new links are created, they'll use the new value
       for evalnode in self.mem_calls.keys():
@@ -245,8 +239,12 @@ class EvalNode:
 
     expr = self.expression
 
+    if self.observed:
+      xrp_force_val = self.observe_val
+
     if xrp_force_val is not None:
-      assert self.type == 'apply'
+      if self.type != 'apply':
+        raise Exception("Require outermost XRP application")
 
     if self.type == 'value':
       val = expr.val
@@ -288,6 +286,11 @@ class EvalNode:
       n = len(expr.children)
       args = [self.evaluate_recurse(expr.children[i], self.env, 'arg' + str(i), reflip) for i in range(n)]
       op = self.evaluate_recurse(expr.op, self.env, 'operator', reflip)
+
+      if xrp_force_val is not None:
+        if op.type != 'xrp':
+          raise Exception("Require outermost XRP application")
+
       if op.type == 'procedure':
         self.procedure_apply = True
         for x in self.applychildren:
@@ -308,21 +311,17 @@ class EvalNode:
           val = self.val
           self.add_xrp(self.xrp, self.val, self.args)
         elif xrp_force_val is not None:
-          assert reflip != True
-          assert not xrp.is_mem()
-          assert not xrp.deterministic
+          assert reflip != True or self.observed
+          if xrp.is_mem():
+            raise Exception("Forced XRP application should not be mem")
+          if xrp.deterministic:
+            raise Exception("Forced XRP application should not be deterministic")
+            
           val = xrp_force_val
-          if self.active:
-            self.remove_xrp() 
-            # if reflip is 0.5, we want to save uneval/eval probabilities
-          self.add_xrp(xrp, val, args)
-        elif self.observed:
-          val = self.observe_val
-          assert not xrp.is_mem()
-          assert not xrp.deterministic
           if self.active:
             self.remove_xrp()
           self.add_xrp(xrp, val, args)
+
         elif xrp.deterministic or (not reflip):
           if self.active:
             if self.args == args and self.xrp == xrp:
@@ -423,12 +422,6 @@ class EvalNode:
 
     return val
 
-  def sample(self, expr):
-    evalnode = EvalNode(self, self.env, expr)
-    val = evalnode.evaluate(False)
-    evalnode.unevaluate()
-    return val
-  
   def reflip(self, force_val = None):
     self.evaluate(reflip = 0.5, xrp_force_val = force_val)
     self.propogate_up()
@@ -482,6 +475,12 @@ class Traces(Engine):
     evalnode.add_assume(name, self.env)
     self.env.set(name, val)
     return val
+
+  def sample(self, expr):
+    evalnode = EvalNode(self, self.env, expr)
+    val = evalnode.evaluate(False)
+    evalnode.unevaluate()
+    return val  
 
   def observe(self, expr, obs_val, id):
     evalnode = EvalNode(self, self.env, expr)
