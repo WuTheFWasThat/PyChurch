@@ -3,21 +3,19 @@ from expressions import *
 from environment import *
 from utils.random_choice_dict import RandomChoiceDict
 
-#try:
-#  from pypy.rlib.jit import JitDriver
-#  jitdriver = JitDriver(greens = [], reds=['node'])
-#  
-#  def jitpolicy(driver):
-#    from pypy.jit.codewriter.policy import JitPolicy
-#    return JitPolicy()
-#
-#  use_jit = True
-#except:
-#  use_jit = False
+try:
+  from pypy.rlib.jit import JitDriver
+  jitdriver = JitDriver(greens = [], reds=['node'])
+  
+  def jitpolicy(driver):
+    from pypy.jit.codewriter.policy import JitPolicy
+    return JitPolicy()
+
+  use_jit = True
+except:
+  use_jit = False
 
 # THEN, in REFLIP:
-    #if use_jit:
-    #  jitdriver.jit_merge_point(node=node)
 
 # Class representing environments
 class EnvironmentNode(Environment):
@@ -161,6 +159,8 @@ class EvalNode:
     return self.val
 
   def unevaluate(self):
+    # NOTE:  We may want to remove references to nodes when we unevaluate, such as when we have arguments
+    # drawn from some continuous domain
     if not self.active:
       return
     expr = self.expression
@@ -279,6 +279,8 @@ class EvalNode:
         if val.type == 'procedure':
           val.env = new_env
       new_body = expr.body.replace(new_env)
+      # TODO :  should probably be an applychild
+      self.get_child('letbody', new_env, new_body).unevaluate()
       val = self.evaluate_recurse(new_body, new_env, 'letbody', reflip)
 
     elif self.type == 'apply':
@@ -422,6 +424,8 @@ class EvalNode:
     return val
 
   def reflip(self, force_val = None):
+    #if use_jit:
+    #  jitdriver.jit_merge_point(node=self.val)
     self.evaluate(reflip = 0.5, xrp_force_val = force_val)
     self.propogate_up()
     return self.val
@@ -585,14 +589,10 @@ class Traces(Engine):
   def infer(self):
     try:
       evalnode = self.db.randomKey()
-      #evalnode = self.idToKey[index]
     except:
+      # No coin flips!
       return
     self.reflip(evalnode)
-
-  def random_node(self):
-
-    return evalnode
 
   def reset(self):
     self.__init__(self.env)

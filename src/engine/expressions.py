@@ -185,17 +185,24 @@ def var(v):
 def op(operator, children):
   return OpExpression(operator, children) 
 
-def apply(f, args = []):
-  return ApplyExpression(f, args)
-
 def ifelse(ifvar, truevar, falsevar):
   return IfExpression(ifvar, truevar, falsevar)
 
-def let(letmap, body):
-  return LetExpression(letmap, body)
+def apply(f, args = []):
+  return ApplyExpression(f, args)
 
 def function(vars, body):
   return FunctionExpression(vars, body)
+
+def let(letmap, body):
+  return LetExpression(letmap, body)
+  ## version of let which doesn't allow recursion
+  #vars = []
+  #args = []
+  #for (var, arg) in letmap:
+  #  vars.append(var)
+  #  args.append(arg)
+  #return apply(function(vars, body), args)
 
 def negation(expr):
   return OpExpression('~', [expr])
