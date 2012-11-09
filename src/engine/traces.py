@@ -37,7 +37,6 @@ class EnvironmentNode(Environment):
     self.assumes[name] = evalnode
 
   def add_lookup(self, name, evalnode):
-    assert evalnode.traces.has(evalnode)
     if name not in self.lookups:
       self.lookups[name] = {}
     self.lookups[name][evalnode] = True
@@ -107,7 +106,6 @@ class EvalNode:
       self.applychildren[addition] = child
     else:
       self.children[addition] = child
-    self.traces.add_node(child)
 
   def add_assume(self, name, env):
     assert env == self.env
@@ -158,14 +156,12 @@ class EvalNode:
         for evalnode in self.env.get_lookups(self.assume_name, self):
           lookup_nodes.append(evalnode)
         for evalnode in lookup_nodes:
-          assert self.traces.has(evalnode)
           evalnode.propogate_up()
       elif self.parent is not None:
         self.parent.propogate_up()
     if self.mem:
       # self.mem_calls can be affected *while* propogating up.  However, if new links are created, they'll use the new value
       for evalnode in self.mem_calls.keys():
-        assert self.traces.has(evalnode)
         evalnode.propogate_up()
 
     self.val = val
@@ -243,8 +239,6 @@ class EvalNode:
   #          0.5 # reflip current, but don't recurse
   #          0 # reflip nothing
   def evaluate(self, reflip = False, xrp_force_val = None):
-    if not self.traces.has(self):
-      assert False
     if reflip == False and self.active:
       assert self.val is not None
       return self.val
@@ -430,10 +424,10 @@ class EvalNode:
     return val
 
   def sample(self, expr):
-    name = str(expr) + str(rrandom.random.randbelow())
-    #TODO: Change the way this works
-    self.assume(name, expr)
-    return self.env.assumes[name].evaluate(False)
+    evalnode = EvalNode(self, self.env, expr)
+    val = evalnode.evaluate(False)
+    evalnode.unevaluate()
+    return val
   
   def reflip(self, force_val = None):
     self.evaluate(reflip = 0.5, xrp_force_val = force_val)
@@ -466,9 +460,6 @@ class EvalNode:
 
 class Traces(Engine):
   def __init__(self, env):
-    self.evalnodes = {} # just a set
-
-    # set of evalnodes with no parents
     self.assumes = []
     self.observes = {} # just a set
 
@@ -484,7 +475,6 @@ class Traces(Engine):
 
   def assume(self, name, expr):
     evalnode = EvalNode(self, self.env, expr)
-    self.add_node(evalnode)
 
     self.assumes.append(evalnode)
     val = evalnode.evaluate()
@@ -496,7 +486,6 @@ class Traces(Engine):
   def observe(self, expr, obs_val, id):
     evalnode = EvalNode(self, self.env, expr)
 
-    self.add_node(evalnode)
     assert id not in self.observes
     self.observes[id] = evalnode
 
@@ -509,7 +498,6 @@ class Traces(Engine):
     assert id in self.observes
     evalnode = self.observes[id]
     evalnode.unevaluate()
-    self.remove_node(evalnode)
     del self.observes[id]
     return
 
@@ -518,9 +506,6 @@ class Traces(Engine):
       assume_node.evaluate(reflip)
     for observe_node in self.observes.values():
       observe_node.evaluate(reflip)
-
-  def has(self, evalnode):
-    return evalnode in self.evalnodes
 
   def reflip(self, reflip_node):
     debug = False
@@ -597,23 +582,13 @@ class Traces(Engine):
     val = evalnode.evaluate(reflip)
     return val
 
-  def add_node(self, evalnode):
-    assert not self.has(evalnode)
-    self.evalnodes[evalnode] = True
-
-  def remove_node(self, evalnode):
-    assert self.has(evalnode)
-    del self.evalnodes[evalnode]
-
   # Add an XRP application node to the db
   def add_xrp(self, args, evalnodecheck = None):
-    assert evalnodecheck in self.evalnodes
     evalnodecheck.setargs(args)
     assert not self.db.__contains__(evalnodecheck)
     self.db.__setitem__(evalnodecheck, True)
 
   def remove_xrp(self, evalnode):
-    assert self.has(evalnode)
     assert self.db.__contains__(evalnode)
     self.db.__delitem__(evalnode)
 

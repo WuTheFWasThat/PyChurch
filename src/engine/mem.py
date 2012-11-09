@@ -20,7 +20,6 @@ class mem_proc_XRP(XRP):
       if addition not in self.argsdict:
         evalnode = EvalNode(globals.engine, globals.engine.env, ApplyExpression(ConstExpression(self.procedure), [ConstExpression(arg) for arg in args]))
         evalnode.mem = True
-        globals.engine.add_node(evalnode)
         self.argsdict[addition] = evalnode
       else:
         evalnode = self.argsdict[addition]
