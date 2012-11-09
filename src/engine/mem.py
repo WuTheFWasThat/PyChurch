@@ -16,17 +16,18 @@ class mem_proc_XRP(XRP):
   def apply_mem(self, args = None, help = None):
     assert len(args) == self.n
     addition = ','.join([x.str_hash for x in args])
-    if globals.use_traces:
+    if globals.engine_type == 'traces':
       if addition not in self.argsdict:
-        evalnode = EvalNode(globals.traces, globals.traces.env, ApplyExpression(ConstExpression(self.procedure), [ConstExpression(arg) for arg in args]))
+        evalnode = EvalNode(globals.engine, globals.engine.env, ApplyExpression(ConstExpression(self.procedure), [ConstExpression(arg) for arg in args]))
         evalnode.mem = True
-        globals.traces.add_node(evalnode)
+        globals.engine.add_node(evalnode)
         self.argsdict[addition] = evalnode
       else:
         evalnode = self.argsdict[addition]
       val = evalnode.evaluate(False)
       return val
     else:
+      assert globals.engine_type == 'randomdb'
       # help is call_stack for db
       if addition in self.argsdict:
         (val, count) = self.argsdict[addition]
@@ -37,13 +38,14 @@ class mem_proc_XRP(XRP):
     return self.incorporate_mem(val, args)
   def incorporate_mem(self, val, args = None, help = None):
     addition = ','.join([x.str_hash for x in args])
-    if globals.use_traces:
+    if globals.engine_type == 'traces':
       # help is evalnode
       assert addition in self.argsdict
       evalnode = self.argsdict[addition]
       assert help not in evalnode.mem_calls
       evalnode.mem_calls[help] = True
     else:
+      assert globals.engine_type == 'randomdb'
       if addition not in self.argsdict:
         self.argsdict[addition] = (val, 1)
       else:
@@ -55,7 +57,7 @@ class mem_proc_XRP(XRP):
   def remove_mem(self, val, args = None, help = None):
     addition = ','.join([x.str_hash for x in args])
     assert addition in self.argsdict
-    if globals.use_traces:
+    if globals.engine_type == 'traces':
       assert help is not None
       evalnode = self.argsdict[addition]
       assert help in evalnode.mem_calls
@@ -63,6 +65,7 @@ class mem_proc_XRP(XRP):
       if len(evalnode.mem_calls) == 0:
         evalnode.unevaluate()
     else:
+      assert globals.engine_type == 'randomdb'
       (oldval, oldcount) = self.argsdict[addition]
       assert oldval == val
       if oldcount == 1:
@@ -94,7 +97,7 @@ class mem_XRP(XRP):
     assert val.type == 'xrp'
     assert val.xrp in self.procmem
     # unevaluate val's evalnodes
-    if globals.use_traces:
+    if globals.engine_type == 'traces':
       for args in val.xrp.argsdict:
         evalnode = val.xrp.argsdict[args]
         evalnode.unevaluate()

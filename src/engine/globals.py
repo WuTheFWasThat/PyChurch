@@ -1,4 +1,5 @@
 from traces import *
+#from reducedtraces import *
 from randomdb import *
 import sys
 
@@ -43,23 +44,33 @@ class DirectivesMemory:
 
 memory = DirectivesMemory()
 
-use_traces = True
+engine_type = 'traces'
 
 # The global environment. Has assignments of names to expressions, and parent pointer 
 
-if use_traces:
+if engine_type == 'reduced traces':
   env = EnvironmentNode()
   # The traces datastructure. 
   # DAG of two interlinked trees: 
   #   1. eval (with subcases: IF, symbollookup, combination, lambda) + apply
   #   2. environments
   # crosslinked by symbol lookup nodes and by the env argument to eval
-  traces = Traces(env)
-else:
+  engine = ReducedTraces(env)
+elif engine_type == 'traces':
+  env = EnvironmentNode()
+  # The traces datastructure. 
+  # DAG of two interlinked trees: 
+  #   1. eval (with subcases: IF, symbollookup, combination, lambda) + apply
+  #   2. environments
+  # crosslinked by symbol lookup nodes and by the env argument to eval
+  engine = Traces(env)
+elif engine_type == 'randomdb':
   # The global environment. Has assignments of names to expressions, and parent pointer 
   env = Environment()
   # Table storing a list of (xrp, value, probability) tuples
-  db = RandomDB(env)
+  engine = RandomDB(env)
+else:
+  raise Exception("Engine %s is not implemented" % engine_type)
 
 sys.setrecursionlimit(10000)
 
