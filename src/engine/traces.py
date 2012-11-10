@@ -124,7 +124,7 @@ class EvalNode:
     assert self.type == 'apply'
     self.args = args
 
-  def propogate_up(self):
+  def propogate_up(self, start = False):
     # NOTE: 
     # assert self.active <--- almost true
     # This only breaks when this node is unevaluated from another branch of propogate_up
@@ -132,10 +132,14 @@ class EvalNode:
     # the result may be wrong!  We can't always re-evaluate the branches, because of the way reflip restores.
     # TODO: optimize to not re-propogate. needs to calculate explicit trace structure
 
-    oldval = self.val
     if self.random_xrp_apply:
-      val = self.evaluate(reflip = 0.5, xrp_force_val = self.val)
-      assert val == oldval
+      if not start:
+        oldval = self.val
+        val = self.evaluate(reflip = 0.5, xrp_force_val = self.val)
+        assert val == oldval
+        return val
+      else:
+        val = self.val
     else:
       val = self.evaluate(reflip = 0.5, xrp_force_val = None)
 
@@ -198,7 +202,7 @@ class EvalNode:
     prob = xrp.prob(self.val, self.args)
     self.traces.uneval_p += prob
     self.traces.p -= prob
-    if ((not xrp.deterministic) and (not xrp.is_mem())):
+    if not xrp.deterministic:
       self.traces.remove_xrp(self)
 
   def add_xrp(self, xrp, val, args):
@@ -211,7 +215,7 @@ class EvalNode:
     else:
       xrp.incorporate(val, args)
 
-    if ((not xrp.deterministic) and (not xrp.is_mem())):
+    if not xrp.deterministic:
       self.random_xrp_apply = True
       self.traces.add_xrp(args, self)
 
@@ -313,8 +317,6 @@ class EvalNode:
           self.add_xrp(self.xrp, self.val, self.args)
         elif xrp_force_val is not None:
           assert reflip != True or self.observed
-          if xrp.is_mem():
-            raise Exception("Forced XRP application should not be mem")
           if xrp.deterministic:
             raise Exception("Forced XRP application should not be deterministic")
             
@@ -427,7 +429,8 @@ class EvalNode:
     #if use_jit:
     #  jitdriver.jit_merge_point(node=self.val)
     self.evaluate(reflip = 0.5, xrp_force_val = force_val)
-    self.propogate_up()
+    assert self.random_xrp_apply
+    self.propogate_up(True)
     return self.val
 
   def str_helper(self, n = 0, verbose = True):

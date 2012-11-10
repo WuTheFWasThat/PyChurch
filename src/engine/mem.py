@@ -6,7 +6,7 @@ from xrp import *
 # THIS XRP IMPLEMENTATION IS NOT INDEPENDENT OF DIRECTIVES IMPLEMENTATION 
 class mem_proc_XRP(XRP):
   def __init__(self, procedure):
-    self.deterministic = False
+    self.deterministic = True
     self.procedure = procedure
     self.n = len(procedure.vars)
     self.argsdict = {}
