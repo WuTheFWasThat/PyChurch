@@ -2,6 +2,7 @@ from engine import *
 from expressions import *
 from environment import *
 from utils.random_choice_dict import RandomChoiceDict
+import utils.rhash as rhash
 
 try:
   from pypy.rlib.jit import JitDriver
@@ -239,20 +240,11 @@ class ReducedEvalNode:
     if self.observed:
       xrp_force_val = self.observe_val
 
-    if expr.type == 'apply':
-      n = len(expr.children)
-      op = self.evaluate_recurse(expr.op, env, addition = 0)
+    val = self.evaluate_recurse(expr, env, 0, 0, xrp_force_val)
 
-      if op.type == 'xrp' and not op.xrp.deterministic:
-        args = [self.evaluate_recurse(expr.children[i], env, addition = i+1)  for i in range(n)]
-        self.random_xrp_apply = True
-
-        val = self.apply_random_xrp(op.xrp, args, xrp_force_val)
-        
     if not self.random_xrp_apply:
       if xrp_force_val is not None:
         raise Exception("Can only force non-deterministic XRP applications")
-      val = self.evaluate_recurse(expr, env)
       assert self.assume or self.mem or self.sample
 
     if self.assume:
@@ -269,23 +261,17 @@ class ReducedEvalNode:
 
     return val
 
-  def get_args_addition(self, args):
-    hashval = 0
-    for arg in args:
-      hashval = rrandom.intmask((rrandom.r_uint(arg.__hash__()) * rrandom.r_uint(12345) + rrandom.r_uint(hashval)) % rrandom.r_uint(18446744073709551557))
-    return hashval
-    
   def binary_op_evaluate(self, expr, env, hashval):
-    val1 = self.evaluate_recurse(expr.children[0], env, hashval, 0)
-    val2 = self.evaluate_recurse(expr.children[1], env, hashval, 1)
+    val1 = self.evaluate_recurse(expr.children[0], env, hashval, 1)
+    val2 = self.evaluate_recurse(expr.children[1], env, hashval, 2)
     return (val1 , val2)
 
   def children_evaluate(self, expr, env, hashval):
-    return [self.evaluate_recurse(expr.children[i], env, hashval, i) for i in range(len(expr.children))]
+    return [self.evaluate_recurse(expr.children[i], env, hashval, i+1) for i in range(len(expr.children))]
   
-  def evaluate_recurse(self, expr, env, hashval = 0, addition = None):
+  def evaluate_recurse(self, expr, env, hashval, addition, xrp_force_val = None):
     if addition is not None:
-      hashval = rrandom.intmask((rrandom.r_uint(hashval) * rrandom.r_uint(67890) + rrandom.r_uint(addition)) % rrandom.r_uint(18446744073709551557))
+      hashval = rhash.hash_pair(hashval, addition)
 
     if expr.type == 'value':
       val = expr.val
@@ -293,11 +279,11 @@ class ReducedEvalNode:
       (val, lookup_env) = env.lookup(expr.name)
       self.addlookup(expr.name, lookup_env)
     elif expr.type == 'if':
-      cond = self.evaluate_recurse(expr.cond, env, hashval, 0)
+      cond = self.evaluate_recurse(expr.cond, env, hashval, 1)
       if cond.bool:
-        val = self.evaluate_recurse(expr.true, env, hashval, 1)
+        val = self.evaluate_recurse(expr.true, env, hashval, 2)
       else:
-        val = self.evaluate_recurse(expr.false, env, hashval, 2)
+        val = self.evaluate_recurse(expr.false, env, hashval, 3)
     elif expr.type == 'let':
       # TODO: this really is a let*
       n = len(expr.vars)
@@ -306,18 +292,18 @@ class ReducedEvalNode:
       new_env = env
       for i in range(n): # Bind variables
         new_env = new_env.spawn_child()
-        val = self.evaluate_recurse(expr.expressions[i], new_env, hashval, i+1)
+        val = self.evaluate_recurse(expr.expressions[i], new_env, hashval, i+2)
         values.append(val)
         new_env.set(expr.vars[i], values[i])
         if val.type == 'procedure':
           val.env = new_env
       new_body = expr.body.replace(new_env)
-      val = self.evaluate_recurse(new_body, new_env, hashval, 0)
+      val = self.evaluate_recurse(new_body, new_env, hashval, 1)
 
     elif expr.type == 'apply':
       n = len(expr.children)
-      op = self.evaluate_recurse(expr.op, env, hashval, 0)
-      args = [self.evaluate_recurse(expr.children[i], env, hashval, i + 1) for i in range(n)]
+      op = self.evaluate_recurse(expr.op, env, hashval, 1)
+      args = [self.evaluate_recurse(expr.children[i], env, hashval, i+2) for i in range(n)]
 
       if op.type == 'procedure':
         if n != len(op.vars):
@@ -325,13 +311,17 @@ class ReducedEvalNode:
         new_env = op.env.spawn_child()
         for i in range(n):
           new_env.set(op.vars[i], args[i])
-        addition = self.get_args_addition(args)
+        addition = rhash.hash_many([x.__hash__() for x in args])
         val = self.evaluate_recurse(op.body, new_env, hashval, addition)
       elif op.type == 'xrp':
         xrp = op.xrp
         if not xrp.deterministic:
-          child = self.get_child(hashval, env, expr)
-          val = child.val
+          if hashval == 0:
+            self.random_xrp_apply = True
+            val = self.apply_random_xrp(xrp, args, xrp_force_val)
+          else:
+            child = self.get_child(hashval, env, expr)
+            val = child.val
         else:
           val = xrp.apply(args)
           self.add_xrp(xrp, val, args)
@@ -383,7 +373,7 @@ class ReducedEvalNode:
         orval = orval.__or__(x)
       val = orval
     elif expr.type == '~':
-      negval = self.evaluate_recurse(expr.children[0] , env, hashval, 0)
+      negval = self.evaluate_recurse(expr.children[0] , env, hashval, 1)
       val = negval.__inv__()
     elif expr.type == '+':
       vals = self.children_evaluate(expr, env, hashval)
@@ -392,8 +382,8 @@ class ReducedEvalNode:
         sum_val = sum_val.__add__(x)
       val = sum_val
     elif expr.type == '-':
-      val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 0)
-      val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 1)
+      val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 1)
+      val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 2)
       val = val1.__sub__(val2)
     elif expr.type == '*':
       vals = self.children_evaluate(expr, env, hashval)
@@ -402,8 +392,8 @@ class ReducedEvalNode:
         prod_val = prod_val.__mul__(x)
       val = prod_val
     elif expr.type == '/':
-      val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 0)
-      val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 1)
+      val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 1)
+      val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 2)
       val = val1.__div__(val2)
     else:
       raise Exception('Invalid expression type %s' % expr.type)

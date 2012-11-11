@@ -1,4 +1,5 @@
 import utils.rrandom as rrandom 
+import utils.rhash as rhash
 
 class XRP:
   def __init__(self):
@@ -30,7 +31,7 @@ class Value:
     self.body = None
     self.env = None
   def __hash__(self):
-    return self.str_hash.__hash__()
+    raise Exception("Invalid operation")
   def __repr__(self):
     return self.__str__()
   def __eq__(self, other):
@@ -126,7 +127,7 @@ class NumValue(Value):
   def __str__(self):
     return str(self.num)
   def __hash__(self):
-    return hash(self.num)
+    return rhash.hash_float(self.num)
   def __eq__(self, other):
     return BoolValue((self.type == other.type) and (self.num == other.num))
   def __gt__(self, other):
@@ -157,6 +158,8 @@ class IntValue(NumValue):
     self.int = num
     self.num = num
     self.str_hash = str(self.int)
+  def __hash__(self):
+    return self.int
   def __add__(self, other):
     if other.type == 'int':
       return IntValue(self.int + other.int)

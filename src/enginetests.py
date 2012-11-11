@@ -5,9 +5,9 @@ import unittest
 
 test_expressions = True
 test_recursion = True
-test_mem = False
+test_mem = True
 
-test_HMM = False
+test_HMM = True
 test_bayes_nets = True
 
 test_xor = False 
@@ -177,7 +177,7 @@ class TestDirectives(unittest.TestCase):
 
     print sample(var('second-state'))
 
-    print test_prior(10, 10)
+    print test_prior(1000, 10)
   
 
   @unittest.skipIf(not test_bayes_nets, "skipping test_bayes_nets")
