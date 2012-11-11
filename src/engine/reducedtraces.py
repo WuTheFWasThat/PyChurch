@@ -51,7 +51,7 @@ class EnvironmentNode(Environment):
   def spawn_child(self): 
     return EnvironmentNode(self)
 
-class EvalNode:
+class ReducedEvalNode:
   def __init__(self, traces, env, expression):
     self.traces = traces
 
@@ -106,7 +106,7 @@ class EvalNode:
     return evalnode
   
   def spawnchild(self, addition, env, subexpr):
-    child = EvalNode(self.traces, env, subexpr)
+    child = ReducedEvalNode(self.traces, env, subexpr)
     child.parent = self
     self.children[addition] = child # make sure this is correct
     self.active_children[addition] = child # make sure this is correct
@@ -229,14 +229,6 @@ class EvalNode:
     self.traces.add_xrp(self.args, self)
     return val
 
-  def binary_op_evaluate(self, expr, env, stack, reflip):
-    val1 = self.evaluate_recurse(expr.children[0], env, stack, 'operand0', reflip)
-    val2 = self.evaluate_recurse(expr.children[1], env, stack, 'operand1', reflip)
-    return (val1 , val2)
-
-  def children_evaluate(self, expr, env, stack, reflip):
-    return [self.evaluate_recurse(expr.children[i], env, stack, 'child' + str(i), reflip) for i in range(len(expr.children))]
-  
   def evaluate(self, xrp_force_val = None):
     expr = self.expression
     env = self.env
@@ -249,10 +241,10 @@ class EvalNode:
 
     if expr.type == 'apply':
       n = len(expr.children)
-      op = self.evaluate_recurse(expr.op, env, [], 'operator')
+      op = self.evaluate_recurse(expr.op, env, addition = 0)
 
       if op.type == 'xrp' and not op.xrp.deterministic:
-        args = [self.evaluate_recurse(expr.children[i], env, [], 'arg' + str(i)) for i in range(n)]
+        args = [self.evaluate_recurse(expr.children[i], env, addition = i+1)  for i in range(n)]
         self.random_xrp_apply = True
 
         val = self.apply_random_xrp(op.xrp, args, xrp_force_val)
@@ -260,7 +252,7 @@ class EvalNode:
     if not self.random_xrp_apply:
       if xrp_force_val is not None:
         raise Exception("Can only force non-deterministic XRP applications")
-      val = self.evaluate_recurse(expr, env, [], None)
+      val = self.evaluate_recurse(expr, env)
       assert self.assume or self.mem or self.sample
 
     if self.assume:
@@ -277,16 +269,26 @@ class EvalNode:
 
     return val
 
+  def get_args_addition(self, args):
+    hashval = 0
+    for arg in args:
+      hashval = rrandom.intmask((rrandom.r_uint(arg.__hash__()) * rrandom.r_uint(12345) + rrandom.r_uint(hashval)) % rrandom.r_uint(18446744073709551557))
+    return hashval
+    
+  def binary_op_evaluate(self, expr, env, hashval, reflip):
+    val1 = self.evaluate_recurse(expr.children[0], env, hashval, 0, reflip)
+    val2 = self.evaluate_recurse(expr.children[1], env, hashval, 1, reflip)
+    return (val1 , val2)
+
+  def children_evaluate(self, expr, env, hashval, reflip):
+    return [self.evaluate_recurse(expr.children[i], env, hashval, i, reflip) for i in range(len(expr.children))]
+  
   # reflip = 1 # reflip all
   #          0 # reflip nothing
-  def evaluate_recurse(self, expr, env, stack, addition, reflip = False):
-    if addition is not None:
-      stack = stack + [addition]
 
-    if expr is None:
-      expr = self.expression
-    if env is None:
-      env = self.env
+  def evaluate_recurse(self, expr, env, hashval = 0, addition = None, reflip = False):
+    if addition is not None:
+      hashval = rrandom.intmask((rrandom.r_uint(hashval) * rrandom.r_uint(67890) + rrandom.r_uint(addition)) % rrandom.r_uint(18446744073709551557))
 
     if expr.type == 'value':
       val = expr.val
@@ -294,11 +296,11 @@ class EvalNode:
       (val, lookup_env) = env.lookup(expr.name)
       self.addlookup(expr.name, lookup_env)
     elif expr.type == 'if':
-      cond = self.evaluate_recurse(expr.cond, env, stack, 'cond', reflip)
+      cond = self.evaluate_recurse(expr.cond, env, hashval, 0, reflip)
       if cond.bool:
-        val = self.evaluate_recurse(expr.true, env, stack, 'true', reflip)
+        val = self.evaluate_recurse(expr.true, env, hashval, 1, reflip)
       else:
-        val = self.evaluate_recurse(expr.false, env, stack, 'false', reflip)
+        val = self.evaluate_recurse(expr.false, env, hashval, 2, reflip)
     elif expr.type == 'let':
       # TODO: this really is a let*
       n = len(expr.vars)
@@ -307,18 +309,18 @@ class EvalNode:
       new_env = env
       for i in range(n): # Bind variables
         new_env = new_env.spawn_child()
-        val = self.evaluate_recurse(expr.expressions[i], new_env, stack, 'let' + str(i), reflip)
+        val = self.evaluate_recurse(expr.expressions[i], new_env, hashval, i+1, reflip)
         values.append(val)
         new_env.set(expr.vars[i], values[i])
         if val.type == 'procedure':
           val.env = new_env
       new_body = expr.body.replace(new_env)
-      val = self.evaluate_recurse(new_body, new_env, stack, 'letbody', reflip)
+      val = self.evaluate_recurse(new_body, new_env, hashval, 0, reflip)
 
     elif expr.type == 'apply':
       n = len(expr.children)
-      op = self.evaluate_recurse(expr.op, env, stack, 'operator', reflip)
-      args = [self.evaluate_recurse(expr.children[i], env, stack, 'arg' + str(i), reflip) for i in range(n)]
+      op = self.evaluate_recurse(expr.op, env, hashval, 0, reflip)
+      args = [self.evaluate_recurse(expr.children[i], env, hashval, i + 1, reflip) for i in range(n)]
 
       if op.type == 'procedure':
         if n != len(op.vars):
@@ -326,13 +328,12 @@ class EvalNode:
         new_env = op.env.spawn_child()
         for i in range(n):
           new_env.set(op.vars[i], args[i])
-        addition = ','.join([x.str_hash for x in args])
-        val = self.evaluate_recurse(op.body, new_env, stack, addition, reflip)
+        addition = self.get_args_addition(args)
+        val = self.evaluate_recurse(op.body, new_env, hashval, addition, reflip)
       elif op.type == 'xrp':
         xrp = op.xrp
         if not xrp.deterministic:
-          addition = ','.join(stack)
-          child = self.get_child(addition, env, expr)
+          child = self.get_child(hashval, env, expr)
           val = child.val
         else:
           val = xrp.apply(args)
@@ -352,60 +353,60 @@ class EvalNode:
       procedure_body = expr.body.replace(new_env, bound)
       val = Procedure(expr.vars, procedure_body, env)
     elif expr.type == '=':
-      (val1, val2) = self.binary_op_evaluate(expr, env, stack, reflip)
+      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, reflip)
       val = val1.__eq__(val2)
     elif expr.type == '<':
-      (val1, val2) = self.binary_op_evaluate(expr, env, stack, reflip)
+      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, reflip)
       val = val1.__lt__(val2)
     elif expr.type == '>':
-      (val1, val2) = self.binary_op_evaluate(expr, env, stack, reflip)
+      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, reflip)
       val = val1.__gt__(val2)
     elif expr.type == '<=':
-      (val1, val2) = self.binary_op_evaluate(expr, env, stack, reflip)
+      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, reflip)
       val = val1.__le__(val2)
     elif expr.type == '>=':
-      (val1, val2) = self.binary_op_evaluate(expr, env, stack, reflip)
+      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, reflip)
       val = val1.__ge__(val2)
     elif expr.type == '&':
-      vals = self.children_evaluate(expr, env, stack, reflip)
+      vals = self.children_evaluate(expr, env, hashval, reflip)
       andval = BoolValue(True)
       for x in vals:
         andval = andval.__and__(x)
       val = andval
     elif expr.type == '^':
-      vals = self.children_evaluate(expr, env, stack, reflip)
+      vals = self.children_evaluate(expr, env, hashval, reflip)
       xorval = BoolValue(True)
       for x in vals:
         xorval = xorval.__xor__(x)
       val = xorval
     elif expr.type == '|':
-      vals = self.children_evaluate(expr, env, stack, reflip)
+      vals = self.children_evaluate(expr, env, hashval, reflip)
       orval = BoolValue(False)
       for x in vals:
         orval = orval.__or__(x)
       val = orval
     elif expr.type == '~':
-      negval = self.evaluate_recurse(expr.children[0] , env, stack, 'neg', reflip)
+      negval = self.evaluate_recurse(expr.children[0] , env, hashval, 0, reflip)
       val = negval.__inv__()
     elif expr.type == '+':
-      vals = self.children_evaluate(expr, env, stack, reflip)
+      vals = self.children_evaluate(expr, env, hashval, reflip)
       sum_val = NatValue(0)
       for x in vals:
         sum_val = sum_val.__add__(x)
       val = sum_val
     elif expr.type == '-':
-      val1 = self.evaluate_recurse(expr.children[0] , env, stack, 'sub0', reflip)
-      val2 = self.evaluate_recurse(expr.children[1] , env, stack, 'sub1', reflip)
+      val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 0, reflip)
+      val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 1, reflip)
       val = val1.__sub__(val2)
     elif expr.type == '*':
-      vals = self.children_evaluate(expr, env, stack, reflip)
+      vals = self.children_evaluate(expr, env, hashval, reflip)
       prod_val = NatValue(1)
       for x in vals:
         prod_val = prod_val.__mul__(x)
       val = prod_val
     elif expr.type == '/':
-      val1 = self.evaluate_recurse(expr.children[0] , env, stack, 'div0', reflip)
-      val2 = self.evaluate_recurse(expr.children[1] , env, stack, 'div1', reflip)
+      val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 0, reflip)
+      val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 1, reflip)
       val = val1.__div__(val2)
     else:
       raise Exception('Invalid expression type %s' % expr.type)
@@ -438,7 +439,6 @@ class EvalNode:
       string += ", VALUE = " + str(self.val)
       for key in self.children:
         child = self.children[key]
-        string += '\n'  + (' ' * (n + 2)) + key
         string += child.str_helper(n + 2)
     return string
 
@@ -464,7 +464,7 @@ class ReducedTraces(Engine):
     return
 
   def assume(self, name, expr):
-    evalnode = EvalNode(self, self.env, expr)
+    evalnode = ReducedEvalNode(self, self.env, expr)
     self.env.add_assume(name, evalnode)
     evalnode.add_assume(name, self.env)
 
@@ -473,14 +473,14 @@ class ReducedTraces(Engine):
     return val
 
   def sample(self, expr):
-    evalnode = EvalNode(self, self.env, expr)
+    evalnode = ReducedEvalNode(self, self.env, expr)
     evalnode.sample = True
     val = evalnode.evaluate()
     evalnode.unevaluate()
     return val  
 
   def observe(self, expr, obs_val, id):
-    evalnode = EvalNode(self, self.env, expr)
+    evalnode = ReducedEvalNode(self, self.env, expr)
 
     assert id not in self.observes
     self.observes[id] = evalnode

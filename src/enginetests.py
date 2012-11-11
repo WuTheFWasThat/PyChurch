@@ -8,9 +8,9 @@ test_recursion = True
 test_mem = False
 
 test_HMM = False
-test_bayes_nets = False
+test_bayes_nets = True
 
-test_xor = True 
+test_xor = False 
 
 test_tricky  = False 
 
@@ -22,7 +22,7 @@ test_CRP = False
 
 test_easy_mixture = False
 
-running_main = False
+running_main = True
 
 """ TESTS """
 
@@ -319,6 +319,7 @@ class TestDirectives(unittest.TestCase):
   @unittest.skipIf(not test_xor, "skipping test_xor")
   def test_xor(self):
     # needs like 500 to mix
+    rrandom.random.seed(2222)
     p = 0.6
     q = 0.4
     noise_level = .01

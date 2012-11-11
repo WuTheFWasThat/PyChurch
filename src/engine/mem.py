@@ -1,6 +1,6 @@
 import directives 
-#from traces import EvalNode
-from reducedtraces import EvalNode
+from traces import EvalNode
+from reducedtraces import ReducedEvalNode
 from expressions import *
 from xrp import *
 
@@ -19,7 +19,7 @@ class mem_proc_XRP(XRP):
     addition = ','.join([x.str_hash for x in args])
     if directives.engine_type == 'reduced traces':
       if addition not in self.argsdict:
-        evalnode = EvalNode(directives.engine, directives.engine.env, ApplyExpression(ConstExpression(self.procedure), [ConstExpression(arg) for arg in args]))
+        evalnode = ReducedEvalNode(directives.engine, directives.engine.env, ApplyExpression(ConstExpression(self.procedure), [ConstExpression(arg) for arg in args]))
         evalnode.mem = True
         self.argsdict[addition] = evalnode
         val = evalnode.evaluate()

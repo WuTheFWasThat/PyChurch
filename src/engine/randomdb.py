@@ -3,6 +3,8 @@ from expressions import *
 from environment import *
 from utils.random_choice_dict import RandomChoiceDict
 
+# TODO:  Use rolling hash for stack
+
 # Class representing random db
 class RandomDB(Engine):
   def __init__(self, env):
