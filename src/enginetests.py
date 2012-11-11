@@ -3,9 +3,9 @@ from time import *
 
 import unittest
 
-test_expressions = True
-test_recursion = True
-test_mem = True
+test_expressions = False
+test_recursion = False
+test_mem = False
 
 test_HMM = False
 test_bayes_nets = True
@@ -183,7 +183,7 @@ class TestDirectives(unittest.TestCase):
   def test_bayes_nets(self):
     print "\n TESTING INFERENCE ON CLOUDY/SPRINKLER\n"
     
-    niters, burnin = 100, 10
+    niters, burnin = 1000, 10
     #niters, burnin = 10, 10
 
     rrandom.random.seed(22342)
@@ -205,8 +205,8 @@ class TestDirectives(unittest.TestCase):
     #self.assertTrue(  abs(d['cloudy'][False] / (niters + 0.0) - 5 / 6.0) < 0.1)
     #self.assertTrue(test_prior_bool(d, 'sprinkler') < 0.1)
     print 'Should be .833 False, .166 True'
-    #print infer_many('sprinkler', niters, burnin)
-    #print 'Should be 0 False, 1 True'
+    print infer_many('sprinkler', niters, burnin)
+    print 'Should be 0 False, 1 True'
     
     #a = follow_prior(['cloudy', 'sprinkler'], 1000, 100, timer = False)
     #print [(x, count_up(a[x])) for x in a]
@@ -362,11 +362,11 @@ class TestDirectives(unittest.TestCase):
     assume('bad_mem_fibonacci', mem(var('fibonacci'))) 
   
     t2 = time()
-    self.assertTrue(sample(apply(var('bad_mem_fibonacci'), [num_expr(20)])).num == 10946)
+    assume('bad_fib_20', apply(var('bad_mem_fibonacci'), [num_expr(20)]))
     t2 = time() - t2
 
     t3 = time()
-    self.assertTrue(sample(apply(var('bad_mem_fibonacci'), [num_expr(20)])).num == 10946)
+    self.assertTrue(sample(var('bad_fib_20')).num == 10946)
     t3 = time() - t3
 
     mem_fibonacci_expr = function(['x'], ifelse(var('x') <= num_expr(1), num_expr(1), \
@@ -638,7 +638,7 @@ class TestDirectives(unittest.TestCase):
     print sample(apply('f', 0))
     #print [sample('x') for i in range(10)]
 
-def run_HMM(t, s, niters = 1000, burnin = 100, countup = True):
+def run_HMM(t, s, niters = 100, burnin = 100, countup = True):
     reset()
     rrandom.random.seed(s)
     n = 5
@@ -756,7 +756,7 @@ def run_bayes_net(k, s, niters = 1000, burnin = 100, countup = True):
 
 if __name__ == '__main__':
   t = time()
-  running_main = False
+  running_main = True
   if not running_main:
     #a = run_topic_model(5, 222222, 100)
     a = run_HMM(5, 2223)

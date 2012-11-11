@@ -1,5 +1,6 @@
 import directives 
-from traces import EvalNode
+#from traces import EvalNode
+from reducedtraces import EvalNode
 from expressions import *
 from xrp import *
 
@@ -16,7 +17,17 @@ class mem_proc_XRP(XRP):
   def apply_mem(self, args = None, help = None):
     assert len(args) == self.n
     addition = ','.join([x.str_hash for x in args])
-    if directives.engine_type == 'traces':
+    if directives.engine_type == 'reduced traces':
+      if addition not in self.argsdict:
+        evalnode = EvalNode(directives.engine, directives.engine.env, ApplyExpression(ConstExpression(self.procedure), [ConstExpression(arg) for arg in args]))
+        evalnode.mem = True
+        self.argsdict[addition] = evalnode
+        val = evalnode.evaluate(False)
+      else:
+        evalnode = self.argsdict[addition]
+        val = evalnode.val
+      return val
+    elif directives.engine_type == 'traces':
       if addition not in self.argsdict:
         evalnode = EvalNode(directives.engine, directives.engine.env, ApplyExpression(ConstExpression(self.procedure), [ConstExpression(arg) for arg in args]))
         evalnode.mem = True
@@ -37,7 +48,15 @@ class mem_proc_XRP(XRP):
     return self.incorporate_mem(val, args)
   def incorporate_mem(self, val, args = None, help = None):
     addition = ','.join([x.str_hash for x in args])
-    if directives.engine_type == 'traces':
+    if directives.engine_type == 'reduced traces':
+      # help is evalnode
+      assert addition in self.argsdict
+      evalnode = self.argsdict[addition]
+      if help not in evalnode.mem_calls:
+        evalnode.mem_calls[help] = 1
+      else:
+        evalnode.mem_calls[help] += 1
+    elif directives.engine_type == 'traces':
       # help is evalnode
       assert addition in self.argsdict
       evalnode = self.argsdict[addition]
@@ -56,7 +75,17 @@ class mem_proc_XRP(XRP):
   def remove_mem(self, val, args = None, help = None):
     addition = ','.join([x.str_hash for x in args])
     assert addition in self.argsdict
-    if directives.engine_type == 'traces':
+    if directives.engine_type == 'reduced traces':
+      assert help is not None
+      evalnode = self.argsdict[addition]
+      assert help in evalnode.mem_calls
+      if evalnode.mem_calls[help] == 1:
+        del evalnode.mem_calls[help]
+      else:
+        evalnode.mem_calls[help] -= 1
+      if len(evalnode.mem_calls) == 0:
+        evalnode.unevaluate()
+    elif directives.engine_type == 'traces':
       assert help is not None
       evalnode = self.argsdict[addition]
       assert help in evalnode.mem_calls
@@ -100,6 +129,12 @@ class mem_XRP(XRP):
       for args in val.xrp.argsdict:
         evalnode = val.xrp.argsdict[args]
         evalnode.unevaluate()
+    elif directives.engine_type == 'reduced traces':
+      for args in val.xrp.argsdict:
+        evalnode = val.xrp.argsdict[args]
+        evalnode.unevaluate()
+    else:
+      assert directives.engine_type == 'randomdb'
     del self.procmem[val.xrp]
   def prob(self, val, args = None):
     return 0 # correct since other flips will be added to db? 
@@ -159,6 +194,7 @@ class CRP_XRP(XRP):
 
 class gen_CRP_XRP(XRP):
   def __init__(self):
+    self.deterministic = True
     return
   def apply(self, args = None):
     alpha = args[0].num

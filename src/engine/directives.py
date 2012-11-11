@@ -2,7 +2,7 @@ from expressions import *
 from mem import *
 
 from traces import *
-#from reducedtraces import *
+from reducedtraces import *
 from randomdb import *
 
 import sys
@@ -48,7 +48,7 @@ class DirectivesMemory:
 
 memory = DirectivesMemory()
 
-engine_type = 'traces'
+engine_type = 'reduced traces'
 
 # The global environment. Has assignments of names to expressions, and parent pointer 
 

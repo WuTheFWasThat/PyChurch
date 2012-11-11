@@ -302,7 +302,7 @@ class EvalNode:
           self.applychildren[x].unevaluate()
 
         if n != len(op.vars):
-          raise Exception('Procedure should have %d arguments.  \nVars were \n%s\n, but had %d children.' % (n, op.vars, len(self.children)))
+          raise Exception('Procedure should have %d arguments.  \nVars were \n%s\n, but had %d children.' % (n, op.vars, len(expr.children)))
         new_env = op.env.spawn_child()
         for i in range(n):
           new_env.set(op.vars[i], args[i])
@@ -349,7 +349,6 @@ class EvalNode:
 
       self.args = args
     elif self.type == 'function':
-      val = self.val
       n = len(expr.vars)
       new_env = self.env.spawn_child()
       bound = {}
@@ -518,7 +517,7 @@ class Traces(Engine):
     if debug:
       old_self = self.__str__()
 
-    assert reflip_node.type == 'apply'
+    assert reflip_node.random_xrp_apply
     assert reflip_node.val is not None
     
     self.eval_p = 0
@@ -531,10 +530,6 @@ class Traces(Engine):
     new_val = reflip_node.reflip()
     new_to_old_q -= math.log(self.db.__len__())
     old_to_new_q += reflip_node.p
-
-    assert 'operator' in reflip_node.children
-    assert reflip_node.children['operator'].val.type == 'xrp'
-    xrp = reflip_node.children['operator'].val.xrp
 
     if debug:
       print "\n-----------------------------------------\n"
