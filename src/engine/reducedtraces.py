@@ -275,18 +275,15 @@ class ReducedEvalNode:
       hashval = rrandom.intmask((rrandom.r_uint(arg.__hash__()) * rrandom.r_uint(12345) + rrandom.r_uint(hashval)) % rrandom.r_uint(18446744073709551557))
     return hashval
     
-  def binary_op_evaluate(self, expr, env, hashval, reflip):
-    val1 = self.evaluate_recurse(expr.children[0], env, hashval, 0, reflip)
-    val2 = self.evaluate_recurse(expr.children[1], env, hashval, 1, reflip)
+  def binary_op_evaluate(self, expr, env, hashval):
+    val1 = self.evaluate_recurse(expr.children[0], env, hashval, 0)
+    val2 = self.evaluate_recurse(expr.children[1], env, hashval, 1)
     return (val1 , val2)
 
-  def children_evaluate(self, expr, env, hashval, reflip):
-    return [self.evaluate_recurse(expr.children[i], env, hashval, i, reflip) for i in range(len(expr.children))]
+  def children_evaluate(self, expr, env, hashval):
+    return [self.evaluate_recurse(expr.children[i], env, hashval, i) for i in range(len(expr.children))]
   
-  # reflip = 1 # reflip all
-  #          0 # reflip nothing
-
-  def evaluate_recurse(self, expr, env, hashval = 0, addition = None, reflip = False):
+  def evaluate_recurse(self, expr, env, hashval = 0, addition = None):
     if addition is not None:
       hashval = rrandom.intmask((rrandom.r_uint(hashval) * rrandom.r_uint(67890) + rrandom.r_uint(addition)) % rrandom.r_uint(18446744073709551557))
 
@@ -296,11 +293,11 @@ class ReducedEvalNode:
       (val, lookup_env) = env.lookup(expr.name)
       self.addlookup(expr.name, lookup_env)
     elif expr.type == 'if':
-      cond = self.evaluate_recurse(expr.cond, env, hashval, 0, reflip)
+      cond = self.evaluate_recurse(expr.cond, env, hashval, 0)
       if cond.bool:
-        val = self.evaluate_recurse(expr.true, env, hashval, 1, reflip)
+        val = self.evaluate_recurse(expr.true, env, hashval, 1)
       else:
-        val = self.evaluate_recurse(expr.false, env, hashval, 2, reflip)
+        val = self.evaluate_recurse(expr.false, env, hashval, 2)
     elif expr.type == 'let':
       # TODO: this really is a let*
       n = len(expr.vars)
@@ -309,18 +306,18 @@ class ReducedEvalNode:
       new_env = env
       for i in range(n): # Bind variables
         new_env = new_env.spawn_child()
-        val = self.evaluate_recurse(expr.expressions[i], new_env, hashval, i+1, reflip)
+        val = self.evaluate_recurse(expr.expressions[i], new_env, hashval, i+1)
         values.append(val)
         new_env.set(expr.vars[i], values[i])
         if val.type == 'procedure':
           val.env = new_env
       new_body = expr.body.replace(new_env)
-      val = self.evaluate_recurse(new_body, new_env, hashval, 0, reflip)
+      val = self.evaluate_recurse(new_body, new_env, hashval, 0)
 
     elif expr.type == 'apply':
       n = len(expr.children)
-      op = self.evaluate_recurse(expr.op, env, hashval, 0, reflip)
-      args = [self.evaluate_recurse(expr.children[i], env, hashval, i + 1, reflip) for i in range(n)]
+      op = self.evaluate_recurse(expr.op, env, hashval, 0)
+      args = [self.evaluate_recurse(expr.children[i], env, hashval, i + 1) for i in range(n)]
 
       if op.type == 'procedure':
         if n != len(op.vars):
@@ -329,7 +326,7 @@ class ReducedEvalNode:
         for i in range(n):
           new_env.set(op.vars[i], args[i])
         addition = self.get_args_addition(args)
-        val = self.evaluate_recurse(op.body, new_env, hashval, addition, reflip)
+        val = self.evaluate_recurse(op.body, new_env, hashval, addition)
       elif op.type == 'xrp':
         xrp = op.xrp
         if not xrp.deterministic:
@@ -353,60 +350,60 @@ class ReducedEvalNode:
       procedure_body = expr.body.replace(new_env, bound)
       val = Procedure(expr.vars, procedure_body, env)
     elif expr.type == '=':
-      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, reflip)
+      (val1, val2) = self.binary_op_evaluate(expr, env, hashval)
       val = val1.__eq__(val2)
     elif expr.type == '<':
-      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, reflip)
+      (val1, val2) = self.binary_op_evaluate(expr, env, hashval)
       val = val1.__lt__(val2)
     elif expr.type == '>':
-      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, reflip)
+      (val1, val2) = self.binary_op_evaluate(expr, env, hashval)
       val = val1.__gt__(val2)
     elif expr.type == '<=':
-      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, reflip)
+      (val1, val2) = self.binary_op_evaluate(expr, env, hashval)
       val = val1.__le__(val2)
     elif expr.type == '>=':
-      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, reflip)
+      (val1, val2) = self.binary_op_evaluate(expr, env, hashval)
       val = val1.__ge__(val2)
     elif expr.type == '&':
-      vals = self.children_evaluate(expr, env, hashval, reflip)
+      vals = self.children_evaluate(expr, env, hashval)
       andval = BoolValue(True)
       for x in vals:
         andval = andval.__and__(x)
       val = andval
     elif expr.type == '^':
-      vals = self.children_evaluate(expr, env, hashval, reflip)
+      vals = self.children_evaluate(expr, env, hashval)
       xorval = BoolValue(True)
       for x in vals:
         xorval = xorval.__xor__(x)
       val = xorval
     elif expr.type == '|':
-      vals = self.children_evaluate(expr, env, hashval, reflip)
+      vals = self.children_evaluate(expr, env, hashval)
       orval = BoolValue(False)
       for x in vals:
         orval = orval.__or__(x)
       val = orval
     elif expr.type == '~':
-      negval = self.evaluate_recurse(expr.children[0] , env, hashval, 0, reflip)
+      negval = self.evaluate_recurse(expr.children[0] , env, hashval, 0)
       val = negval.__inv__()
     elif expr.type == '+':
-      vals = self.children_evaluate(expr, env, hashval, reflip)
+      vals = self.children_evaluate(expr, env, hashval)
       sum_val = NatValue(0)
       for x in vals:
         sum_val = sum_val.__add__(x)
       val = sum_val
     elif expr.type == '-':
-      val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 0, reflip)
-      val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 1, reflip)
+      val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 0)
+      val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 1)
       val = val1.__sub__(val2)
     elif expr.type == '*':
-      vals = self.children_evaluate(expr, env, hashval, reflip)
+      vals = self.children_evaluate(expr, env, hashval)
       prod_val = NatValue(1)
       for x in vals:
         prod_val = prod_val.__mul__(x)
       val = prod_val
     elif expr.type == '/':
-      val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 0, reflip)
-      val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 1, reflip)
+      val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 0)
+      val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 1)
       val = val1.__div__(val2)
     else:
       raise Exception('Invalid expression type %s' % expr.type)
