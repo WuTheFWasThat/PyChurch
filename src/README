@@ -1,0 +1,5 @@
+To run locally (not very elegant, at the moment):
+  python pypyserver.py
+  in a different window:
+  python local_client.py
+
