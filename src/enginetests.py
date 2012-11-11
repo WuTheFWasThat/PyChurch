@@ -22,7 +22,7 @@ test_CRP = False
 
 test_easy_mixture = False
 
-running_main = True
+running_main = False
 
 """ TESTS """
 
@@ -684,6 +684,48 @@ def run_topic_model(docsize, s, niters = 1000, burnin = 100, countup = True):
 
     for i in range(docsize):
       assume('get-word' + str(i), apply('get-word', i)) 
+
+    a = test_prior(niters, burnin, countup)
+    return a
+
+
+def run_topic_model_half_collapsed(ntopics, s, niters = 1000, burnin = 100, countup = True):
+    reset()
+    random.seed(s)
+    #ntopics = 5
+    nwords = 20
+    docsize = 5
+
+    assume('numtopics', ('value', IntValue(ntopics)))
+    assume('alpha', gamma(constant(NumValue(1.0)), constant(NumValue(1.0))))
+    assume('topics-dirichlet', dirichlet(var('numtopics'), var('alpha')))
+    assume('words-dirichlet', dirichlet(constant(IntValue(nwords)), constant(NumValue(1.0)))) #_no_args_XRP([1]*nwords))
+
+    assume('get-topic-dist', apply(var('topics-dirichlet'), []))
+    assume('get-topic-words-dist', mem(function(var('i'), apply(var('words-dirichlet'), []))))
+    assume('get-topic', mem(function(var('i'), apply(var('get-topic-dist'), []))))
+    assume('get-word', mem(function(var('i'), apply(apply(var('get-topic-words-dist'), [apply(var('get-topic'), [var('i')])]),[]))))
+
+    for i in range(docsize):
+      assume('word' + str(i), apply(var('get-word'), IntValue(i))) 
+
+    a = test_prior(niters, burnin, countup)
+    return a
+
+def run_topic_model_collapsed(nwords, s, niters = 1000, burnin = 100, countup = True):
+    reset()
+    random.seed(s)
+    docsize = 5
+    ntopics = 5 
+    #nwords = 20
+
+    assume('numwords', nwords)
+    assume('numtopics', ntopics)
+    assume('alpha', gamma(1, 1))
+    assume('topic-model', apply(gen_topic_model_XRP(), ['numtopics', 'alpha', 'numwords', 1]))
+
+    for i in range(docsize):
+      assume('word' + str(i), apply('topic-model'))
 
     a = test_prior(niters, burnin, countup)
     return a

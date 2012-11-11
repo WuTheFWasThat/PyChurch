@@ -1,0 +1,6 @@
+assume cloudy (bernoulli 0.5)
+assume rainy (if cloudy (bernoulli 0.3) (bernoullie 0.7))
+observe (bernoulli (if rainy 1 0.01)) True
+infer
+infer
+

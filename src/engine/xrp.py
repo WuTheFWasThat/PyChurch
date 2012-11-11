@@ -23,6 +23,7 @@ def sum(array):
   return ans
 
 # taken from Wikipedia's page on Lanczos approximation, but only works on real numbers
+
 def math_gamma(z):
   g = 7
   p = [0.99999999999980993, 676.5203681218851, -1259.1392167224028,
@@ -44,7 +45,36 @@ def dirichlet(params):
   z = sum(sample) + 0.0
   return [v/z for v in sample]
 
-# SPECIFIC XRPs
+def sample_categorical(probs):
+  (i, v) = (0, rrandom.random.random())
+  while probs[i] < v:
+    v -= probs[i]
+    i += 1
+  return i
+
+# GENERALLY USEFUL XRPs
+
+class categorical_no_args_XRP(XRP):
+  def __init__(self, probs):
+    self.deterministic = False
+    self.state = None
+    self.probs = [check_prob(p) for p in probs]
+    assert .999 <= sum(self.probs) <= 1.001
+    self.n = len(self.probs)
+    return
+  def apply(self, args = None):
+    i = sample_categorical(self.probs)
+    if args != None and len(args) != 0:
+      raise Exception("categorical_no_args_XRP has no need to take arguments")
+    return IntValue(i)
+  def prob(self, val, args = None):
+    if args != None and len(args) != 0:
+      raise Exception("categorical_no_args_XRP has no need to take arguments")
+    assert 0 <= val.int < self.n
+    log_prob = math.log(self.probs[val.int])
+    return log_prob
+  def __str__(self):
+    return 'categorical(%f, %f)' % (self.mu, self.sigma)
 
 class gaussian_args_XRP(XRP):
   def __init__(self):
@@ -374,20 +404,22 @@ class gen_uniform_XRP(XRP):
   def __str__(self):
     return 'uniform_XRP'
 
+### MORE SPECIFIC XRPs
+
 class beta_bernoulli_1(XRP):
   def __init__(self, start_state = (1, 1)):
     self.deterministic = False
     (a, b) = start_state
-    self.p = rrandom.random.betavariate(a, b)
-    p = check_prob(self.p)
+    self.p = check_prob(rrandom.random.betavariate(a, b))
+    self.true_log_p = math.log(self.p)
+    self.false_log_p = math.log(1.0 - self.p)
   def apply(self, args = None):
     return BoolValue((rrandom.random.random() < self.p))
   def prob(self, val, args = None):
-    # PREPROCESS?
     if val.bool:
-      return math.log(self.p)
+      return self.true_log_p
     else:
-      return math.log(1.0 - self.p)
+      return self.false_log_p
   def __str__(self):
     return 'beta_bernoulli'
 
@@ -423,3 +455,108 @@ class beta_bernoulli_2(XRP):
         return math.log(self.t) - math.log(self.h + self.t)
   def __str__(self):
     return 'beta_bernoulli'
+
+### TOPIC MODELS
+
+# fully collapsed topic model
+class topic_model_XRP(XRP):
+  def __init__(self, ntopics, alpha_topics, nwords, alpha_words):
+    self.deterministic = False
+    self.state = None
+    (self.ntopics, self.alpha_topics, self.nwords, self.alpha_words) = (ntopics, alpha_topics, nwords, alpha_words)
+    self.topicdist = sample_dirichlet([alpha_topics] * ntopics)
+    self.worddist = [sample_dirichlet([alpha_words] * nwords) for i in range(ntopics)]
+    self.wordlogprobs = [sum(self.topicdist[j] * self.worddist[j][i] for j in range(ntopics)) for i in xrange(nwords)]
+    return
+  def apply(self, args = None):
+    topic = sample_categorical(self.topicdist)
+    assert 0 <= topic < self.ntopics
+    word = sample_categorical(self.worddist[topic])
+    assert 0 <= word < self.nwords
+    return IntValue(word)
+  def prob(self, val, args = None):
+    assert 0 <= val.int <= self.nwords
+    return self.wordlogprobs[val.int]
+  def __str__(self):
+    return 'topic model'
+
+class gen_topic_model_XRP(XRP):
+  def __init__(self):
+    self.deterministic = False # params chosen in the constructor
+    self.state = None
+    return
+  def apply(self, args = None):
+    (ntopics, alpha_topics, nwords, alpha_words) = args
+    return XRPValue(topic_model_XRP(ntopics.int, alpha_topics.float, nwords.int, alpha_words.float)) 
+  def prob(self, val, args = None):
+    return 0
+  def __str__(self):
+    return 'gen_topic_model_XRP'
+
+# half collapsed topic model
+#class word_dist_XRP(XRP):
+#  def __init__(self, ntopics, alpha_topics, nwords, alpha_words):
+#    self.deterministic = False
+#    self.state = None
+#    (self.ntopics, self.alpha_topics, self.nwords, self.alpha_words) = (ntopics, alpha_topics, nwords, alpha_words)
+#    self.topicdist = sample_dirichlet([alpha_topics] * ntopics)
+#    self.worddist = [sample_dirichlet([alpha_words] * nwords) for i in range(ntopics)]
+#    self.wordlogprobs = [sum(self.topicdist[j] * self.worddist[j][i] for j in range(ntopics)) for i in xrange(nwords)]
+#    return
+#  def apply(self, args = None):
+#    topic = sample_categorical(self.topicdist)
+#    assert 0 <= topic < self.ntopics
+#    word = sample_categorical(self.worddist[topic])
+#    assert 0 <= word < self.nwords
+#    return IntValue(word)
+#  def prob(self, val, args = None):
+#    assert 0 <= val.val <= self.nwords
+#    return self.wordlogprobs[val.val]
+#  def __str__(self):
+#    return 'topic model'
+#
+#class gen_word_dist_XRP(XRP):
+#  def __init__(self):
+#    self.deterministic = False # params chosen in the constructor
+#    self.state = None
+#    return
+#  def apply(self, args = None):
+#    (nwords, alpha_words) = args
+#    return XRPValue(word_dist_XRP(nwords.val, alpha_words.val)) 
+#  def prob(self, val, args = None):
+#    return 0
+#  def __str__(self):
+#    return 'gen_word_dist_XRP'
+#
+#class topic_dist_XRP(XRP):
+#  def __init__(self, ntopics, alpha_topics):
+#    self.deterministic = False
+#    self.state = None
+#    (self.ntopics, self.alpha_topics) = (ntopics, alpha_topics)
+#    self.topicdist = sample_dirichlet([alpha_topics] * ntopics)
+#    return
+#  def apply(self, args = None):
+#    topic = sample_categorical(self.topicdist)
+#    assert 0 <= topic < self.ntopics
+#    word = sample_categorical(self.worddist[topic])
+#    assert 0 <= word < self.nwords
+#    return IntValue(word)
+#  def prob(self, val, args = None):
+#    assert 0 <= val.val <= self.nwords
+#    return self.wordlogprobs[val.val]
+#  def __str__(self):
+#    return 'topic_dist_XRP'
+#
+#class gen_topic_dist_XRP(XRP):
+#  def __init__(self):
+#    self.deterministic = False # params chosen in the constructor
+#    self.state = None
+#    return
+#  def apply(self, args = None):
+#    (ntopics, alpha_topics) = args
+#    return XRPValue(topic_dist_XRP(ntopics.val, alpha_topics.val)) 
+#  def prob(self, val, args = None):
+#    return 0
+#  def __str__(self):
+#    return 'gen_topic_dist_XRP'
+#
