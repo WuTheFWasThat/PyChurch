@@ -3,25 +3,26 @@ from time import *
 
 import unittest
 
-test_expressions = False
-test_recursion = False
+test_expressions = True
+test_recursion = True
 test_mem = False
 
 test_HMM = False
-test_bayes_nets = True
-test_two_layer_nets = False
+test_bayes_nets = False
 
-test_xor = False 
+test_xor = True 
 
 test_tricky  = False 
 
 # something wrong with this test
-test_geometric = False 
+test_geometric = False
 
 test_DPmem = False
 test_CRP = False
 
 test_easy_mixture = False
+
+running_main = False
 
 """ TESTS """
 
@@ -212,8 +213,8 @@ class TestDirectives(unittest.TestCase):
     #print [(x, count_up(a[x])) for x in a]
   
     forget(sprinkler_ob)
-    #print infer_many('cloudy', niters, burnin)
-    #print 'Should be .500 False, .500 True'
+    print infer_many('cloudy', niters, burnin)
+    print 'Should be .500 False, .500 True'
   
     #print "\n TESTING BEACH NET\n"
     
@@ -236,13 +237,12 @@ class TestDirectives(unittest.TestCase):
     #print test_prior(1000, 100)
     
     observe(noisy(var('weekend'), noise_level), BoolValue(True))
-    #print infer_many('sunny', niters, burnin)
-    #print 'Should be .5 False, .5 True'
+    print infer_many('sunny', niters, burnin)
+    print 'Should be .5 False, .5 True'
     
     observe(noisy(var('beach'), noise_level), BoolValue(True))
-    #print infer_many('sunny', niters, burnin)
-    #print 'Should be .357142857 False, .642857143 True'
-    return
+    print infer_many('sunny', niters, burnin)
+    print 'Should be .357142857 False, .642857143 True'
 
     #print "\n TESTING BURGLARY NET\n" # An example from AIMA
   
@@ -272,8 +272,8 @@ class TestDirectives(unittest.TestCase):
     print "\n TESTING MODIFIED BURGLARY NET\n" # An example from AIMA
     reset()
   
-    #niters, burnin = 1000, 100
-    niters, burnin = 10, 10
+    niters, burnin = 1000, 100
+    #niters, burnin = 10, 10
   
     pB = 0.1
     pE = 0.2
@@ -326,15 +326,15 @@ class TestDirectives(unittest.TestCase):
     assume('b', bernoulli(num_expr(q))) 
     assume('c', var('a') ^ var('b'))
 
-    d = test_prior(1000, 100, timer = False)
-    print d
-    self.assertTrue(test_prior_bool(d, 'a') < 0.05)
-    self.assertTrue(test_prior_bool(d, 'b') < 0.05)
-    self.assertTrue(test_prior_bool(d, 'c') < 0.05)
+    #d = test_prior(1000, 100, timer = False)
+    #print d
+    #self.assertTrue(test_prior_bool(d, 'a') < 0.05)
+    #self.assertTrue(test_prior_bool(d, 'b') < 0.05)
+    #self.assertTrue(test_prior_bool(d, 'c') < 0.05)
   
-    #xor_ob = observe(noisy('c', noise_level), BoolValue(True)) 
-    #print infer_many('a', 100, 500) 
-    #print 'should be 0.69 true'
+    xor_ob = observe(noisy(var('c'), noise_level), BoolValue(True)) 
+    print infer_many('a', 1000, 500) 
+    print 'should be 0.69 true'
     # should be True : p(1-q)/(p(1-q)+(1-p)q), False : q(1-p)/(p(1-q) + q(1-p)) 
     # I believe this gets skewed because it has to pass through illegal states, and the noise values get rounded badly 
   
@@ -656,7 +656,8 @@ def run_HMM(t, s, niters = 100, burnin = 100, countup = True):
   
     assume('start-state', apply(var('state'), [num_expr(0)]))
     assume('last-state', apply(var('state'), [num_expr(t)]))
-    a = test_prior(niters, burnin, countup)
+    #a = test_prior(niters, burnin, countup)
+    print infer_many('last-state', 100, 10)
     return a
 
 def run_topic_model(docsize, s, niters = 1000, burnin = 100, countup = True):
@@ -756,8 +757,9 @@ def run_bayes_net(k, s, niters = 1000, burnin = 100, countup = True):
 
 if __name__ == '__main__':
   t = time()
-  running_main = True
-  if not running_main:
+  if running_main:
+    unittest.main()
+  else:
     #a = run_topic_model(5, 222222, 100)
     a = run_HMM(5, 2223)
     print a
@@ -773,5 +775,3 @@ if __name__ == '__main__':
     #print average(followtimes)
     #print standard_deviation(followtimes)
     #print time() - t
-  else:
-    unittest.main()

@@ -22,7 +22,7 @@ class mem_proc_XRP(XRP):
         evalnode = EvalNode(directives.engine, directives.engine.env, ApplyExpression(ConstExpression(self.procedure), [ConstExpression(arg) for arg in args]))
         evalnode.mem = True
         self.argsdict[addition] = evalnode
-        val = evalnode.evaluate(False)
+        val = evalnode.evaluate()
       else:
         evalnode = self.argsdict[addition]
         val = evalnode.val

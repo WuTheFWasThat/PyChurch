@@ -375,19 +375,19 @@ class EvalNode:
       vals = self.children_evaluate(reflip)
       andval = BoolValue(True)
       for x in vals:
-        andval = andval.__and__(x.bool)
+        andval = andval.__and__(x)
       val = andval
     elif self.type == '^':
       vals = self.children_evaluate(reflip)
       xorval = BoolValue(True)
       for x in vals:
-        xorval = xorval.__xor__(x.bool)
+        xorval = xorval.__xor__(x)
       val = xorval
     elif self.type == '|':
       vals = self.children_evaluate(reflip)
       orval = BoolValue(False)
       for x in vals:
-        orval = orval.__or__(x.bool)
+        orval = orval.__or__(x)
       val = orval
     elif self.type == '~':
       negval = self.evaluate_recurse(expr.children[0] , self.env, 'neg', reflip)

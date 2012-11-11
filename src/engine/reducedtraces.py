@@ -94,7 +94,10 @@ class EvalNode:
     else:
       evalnode = self.children[addition]
       if not evalnode.active:
-        evalnode.evaluate(evalnode.val)
+        if evalnode.random_xrp_apply:
+          evalnode.evaluate(evalnode.val)
+        else:
+          evalnode.evaluate()
       assert addition not in self.active_children 
       self.active_children[addition] = evalnode
 
@@ -261,6 +264,7 @@ class EvalNode:
       assert self.assume or self.mem or self.sample
 
     if self.assume:
+      assert self.parent is None
       self.env.set(self.assume_name, val) # Environment in which this was evaluated
 
     self.val = val
@@ -279,7 +283,6 @@ class EvalNode:
     if addition is not None:
       stack = stack + [addition]
 
-     # MARK EVALUATED NODES... UNEVALUATION OF NEGLECTED NODES.
     if expr is None:
       expr = self.expression
     if env is None:
@@ -367,19 +370,19 @@ class EvalNode:
       vals = self.children_evaluate(expr, env, stack, reflip)
       andval = BoolValue(True)
       for x in vals:
-        andval = andval.__and__(x.bool)
+        andval = andval.__and__(x)
       val = andval
     elif expr.type == '^':
       vals = self.children_evaluate(expr, env, stack, reflip)
       xorval = BoolValue(True)
       for x in vals:
-        xorval = xorval.__xor__(x.bool)
+        xorval = xorval.__xor__(x)
       val = xorval
     elif expr.type == '|':
       vals = self.children_evaluate(expr, env, stack, reflip)
       orval = BoolValue(False)
       for x in vals:
-        orval = orval.__or__(x.bool)
+        orval = orval.__or__(x)
       val = orval
     elif expr.type == '~':
       negval = self.evaluate_recurse(expr.children[0] , env, stack, 'neg', reflip)
@@ -406,11 +409,6 @@ class EvalNode:
       val = val1.__div__(val2)
     else:
       raise Exception('Invalid expression type %s' % expr.type)
-
-    if self.assume:
-      assert self.parent is None
-      assert env is self.env
-      env.set(self.assume_name, val) # Environment in which this was evaluated
 
     return val
 
@@ -599,4 +597,7 @@ class ReducedTraces(Engine):
       evalnode = self.assumes[i]
       if i > 7:
         string += evalnode.str_helper()
+    for id in self.observes:
+      evalnode = self.observes[id]
+      string += evalnode.str_helper()
     return string

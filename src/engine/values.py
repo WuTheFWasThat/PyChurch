@@ -106,6 +106,12 @@ class BoolValue(Value):
     return (1 if self.bool else 0)
   def __eq__(self, other):
     return BoolValue((self.type == other.type) and (self.bool == other.bool))
+  def __and__(self, other):
+    return BoolValue(self.bool and other.bool)
+  def __or__(self, other):
+    return BoolValue(self.bool or other.bool)
+  def __xor__(self, other):
+    return BoolValue(self.bool ^ other.bool)
   def __inv__(self):
     return BoolValue(not self.bool)
   def __nonzero__(self):
