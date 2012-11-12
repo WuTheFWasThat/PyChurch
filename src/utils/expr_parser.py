@@ -1,5 +1,7 @@
 from engine.directives import *
 import utils.infertools as infertools 
+from utils.format import table_to_string
+import time
 
 def parse_token(s, i = 0):
     delim = ['(', ')', '[', ']', ',']
@@ -41,6 +43,12 @@ def parse_if(s, i):
     (true_expr, i) = parse_expression(s, i)
     (false_expr, i) = parse_expression(s, i)
     expr = ifelse(cond_expr, true_expr, false_expr)
+    return (expr, i)
+
+def parse_noisy(s, i):
+    (observation, i) = parse_expression(s, i)
+    (noise, i) = parse_expression(s, i)
+    expr = apply(var('bernoulli'), [ifelse(observation, int_expr(1), noise)])
     return (expr, i)
 
 def parse_apply(s, i):
@@ -130,6 +138,8 @@ def parse_expression(s, i):
                      'and', 'or', 'xor', 'not', \
                      '=', '<', '<=', '>', '>=']:
         (expr, i) = parse_op(s, j, token)
+      elif token == 'noisy':
+        (expr, i) = parse_noisy(s, j)
       else:
         (expr, i) = parse_apply(s, i)
       (token, i) = parse_token(s, i)
@@ -170,17 +180,22 @@ def parse_directive(s):
     (expression, i) = parse_expression(s, i)
     (niters, i) = parse_integer(s, i)
     (burnin, i) = parse_integer(s, i)
+    t = time.time()
     d = infertools.infer_many(expression, niters, burnin)
+    t = time.time() - t
     ret_str = '\n'
+    table = []
     for val in d:
       p = d[val]
-      ret_str += 'Value:  %s\n' % str(val)
-      ret_str += '  %f\n\n' % str(p)
+      table.append([val.__str__(), str(p)])
+    ret_str = table_to_string(table, ['Value', 'Count'])
+    ret_str += '\nTime taken (seconds): ' + str(t)
   elif token == 'clear':
     reset()
     ret_str = 'cleared'
   elif token == 'report_directives':
-    ret_str = report_directives()
+    (directive_type, i) = parse_token(s, i)
+    ret_str = report_directives(directive_type)
   else:
     raise Exception("Invalid directive")
   return ret_str

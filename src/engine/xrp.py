@@ -111,7 +111,7 @@ class gaussian_no_args_XRP(XRP):
   def __str__(self):
     return 'gaussian(%f, %f)' % (self.mu, self.sigma)
 
-class gen_gaussian_XRP(XRP):
+class make_gaussian_XRP(XRP):
   def __init__(self):
     self.deterministic = True
     return
@@ -200,12 +200,24 @@ class dirichlet_no_args_XRP(XRP):
   def __str__(self):
     return 'dirichlet(%s)' % str(self.alphas)
 
-class gen_dirichlet_XRP(XRP):
+class make_symmetric_dirichlet_XRP(XRP):
   def __init__(self):
     self.deterministic = True
     return
   def apply(self, args = None):
-    return XRPValue(dirichlet_no_args_XRP(args)) 
+    if len(args) != 2:
+      raise Exception("Symmetric dirichlet generator takes two arguments, n and alpha")
+    (n, alpha) = (args[0], args[1])
+    return XRPValue(dirichlet_no_args_XRP([alpha.num] * n.nat)) 
+  def __str__(self):
+    return 'dirichlet_XRP'
+
+class make_dirichlet_XRP(XRP):
+  def __init__(self):
+    self.deterministic = True
+    return
+  def apply(self, args = None):
+    return XRPValue(dirichlet_no_args_XRP([arg.num for arg in args])) 
   def __str__(self):
     return 'dirichlet_XRP'
 
@@ -248,7 +260,7 @@ class beta_no_args_XRP(XRP):
   def __str__(self):
     return 'beta(%d, %d)' % (self.a, self.b)
 
-class gen_beta_XRP(XRP):
+class make_beta_XRP(XRP):
   def __init__(self):
     self.deterministic = True
     return
@@ -302,7 +314,7 @@ class gamma_no_args_XRP(XRP):
   def __str__(self):
     return 'gamma(%d, %d)' % (self.a, self.b)
 
-class gen_gamma_XRP(XRP):
+class make_gamma_XRP(XRP):
   def __init__(self):
     self.deterministic = True
     return
@@ -352,7 +364,7 @@ class bernoulli_no_args_XRP(XRP):
   def __str__(self):
     return 'bernoulli(%f)' % self.p
 
-class gen_bernoulli_XRP(XRP):
+class make_bernoulli_XRP(XRP):
   def __init__(self):
     self.deterministic = True
     return
@@ -394,7 +406,7 @@ class uniform_no_args_XRP(XRP):
   def __str__(self):
     return 'uniform(%d)' % self.n
 
-class gen_uniform_XRP(XRP):
+class make_uniform_XRP(XRP):
   def __init__(self):
     self.deterministic = True
     return
@@ -480,7 +492,7 @@ class topic_model_XRP(XRP):
   def __str__(self):
     return 'topic model'
 
-class gen_topic_model_XRP(XRP):
+class make_topic_model_XRP(XRP):
   def __init__(self):
     self.deterministic = False # params chosen in the constructor
     self.state = None
@@ -491,7 +503,7 @@ class gen_topic_model_XRP(XRP):
   def prob(self, val, args = None):
     return 0
   def __str__(self):
-    return 'gen_topic_model_XRP'
+    return 'make_topic_model_XRP'
 
 # half collapsed topic model
 #class word_dist_XRP(XRP):
@@ -515,7 +527,7 @@ class gen_topic_model_XRP(XRP):
 #  def __str__(self):
 #    return 'topic model'
 #
-#class gen_word_dist_XRP(XRP):
+#class make_word_dist_XRP(XRP):
 #  def __init__(self):
 #    self.deterministic = False # params chosen in the constructor
 #    self.state = None
@@ -526,7 +538,7 @@ class gen_topic_model_XRP(XRP):
 #  def prob(self, val, args = None):
 #    return 0
 #  def __str__(self):
-#    return 'gen_word_dist_XRP'
+#    return 'make_word_dist_XRP'
 #
 #class topic_dist_XRP(XRP):
 #  def __init__(self, ntopics, alpha_topics):
@@ -547,7 +559,7 @@ class gen_topic_model_XRP(XRP):
 #  def __str__(self):
 #    return 'topic_dist_XRP'
 #
-#class gen_topic_dist_XRP(XRP):
+#class make_topic_dist_XRP(XRP):
 #  def __init__(self):
 #    self.deterministic = False # params chosen in the constructor
 #    self.state = None
@@ -558,5 +570,5 @@ class gen_topic_model_XRP(XRP):
 #  def prob(self, val, args = None):
 #    return 0
 #  def __str__(self):
-#    return 'gen_topic_dist_XRP'
+#    return 'make_topic_dist_XRP'
 #

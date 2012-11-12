@@ -107,9 +107,35 @@ def reset():
   assume('beta', xrp(beta_args_XRP()), True)
   assume('gamma', xrp(gamma_args_XRP()), True)
   assume('gaussian', xrp(gaussian_args_XRP()), True)
+  assume('normal', var('gaussian'), True)
   assume('uniform', xrp(uniform_args_XRP()), True)
-  assume('mem', xrp(mem_XRP()), True)
   assume('rand', function([], apply(var('beta'), [num_expr(1), num_expr(1)])), True)
+
+  assume('make-symmetric-dirichlet', xrp(make_symmetric_dirichlet_XRP()), True)
+
+  assume('mem', xrp(mem_XRP()), True)
+
+  """DEFINITION OF DP"""
+  assume('DP_uncollapsed', \
+         function(['concentration', 'basemeasure'], \
+                  let([('sticks', mem(function(['j'], beta(num_expr(1), var('concentration'))))),
+                       ('atoms',  mem(function(['j'], apply(var('basemeasure'), [])))),
+                       ('loop', \
+                        function(['j'], \
+                                 ifelse(bernoulli(apply(var('sticks'), [var('j')])), \
+                                        apply(var('atoms'), [var('j')]), \
+                                        apply(var('loop'), [var('j')+num_expr(1)])))) \
+                      ], \
+                      function([], apply(var('loop'), [num_expr(1)])))),
+         True) 
+
+  """DEFINITION OF ONE ARGUMENT DPMEM"""
+  assume('DPmem_uncollapsed', \
+         function(['concentration', 'proc'], \
+                  let([('restaurants', \
+                        mem( function(['args'], apply(var('DP'), [var('concentration'), function([], apply(var('proc'), [var('args')]))]))))], \
+                      function(['args'], apply(var('restaurants'), [var('args')])))), 
+         True) 
 
   memory.reset()
 

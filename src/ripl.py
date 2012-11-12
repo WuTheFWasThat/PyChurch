@@ -297,7 +297,7 @@ class SocketRIPL(RIPL):
         msg = self.socket.recv(1024)
         val = None
         id = None
-        return (id, val)
+        raise Exception("not implemented")
 
     def observe(self, expr_lst, literal_val):
         msg = "assume " + name_str + " " + expr_list_to_string(expr_list)
@@ -307,10 +307,12 @@ class SocketRIPL(RIPL):
         return id
 
     def predict(self, expr_lst):
-        msg = "predict " + expr_list_to_string(expr_list)
+        msg = "predict " + expr_list_to_string(expr_lst)
         self.socket.send(msg)
         msg = self.socket.recv(1024)
         val = msg[msg.find(':') + 2:]
+        val = None
+        id = None
         raise Exception("not implemented")
         
 ##        prediction = {}
@@ -321,19 +323,22 @@ class SocketRIPL(RIPL):
 ##        self.predicts[d_id] = prediction
 
     def forget(self, directive_id):
-        print "forgetting", directive_id
-        raise Exception("not implemented")
+        msg = "forget " + str(directive_id)
+        self.socket.send(msg)
+        msg = self.socket.recv(1024)
 
     def clear(self):
-        print "CLEAR"
-        raise Exception("not implemented")
+        msg = "clear"
+        self.socket.send(msg)
+        msg = self.socket.recv(1024)
 
     def logscore(self, directive_id=None):
         raise Exception("not implemented")
 
     def infer(self, infer_config=None):
-        print "INFER"
-        raise Exception("not implemented")
+        msg = "infer"
+        self.socket.send(msg)
+        msg = self.socket.recv(1024)
 
 ##    # FIXME: support RIPL/engine parameters in a standardized way
     def toggle_continuous_inference(self):

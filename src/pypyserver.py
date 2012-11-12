@@ -54,7 +54,7 @@ def run(fp):
         while True:
             msg = client_sock.recv(1024)
             msg = msg.rstrip("\n")
-            print "received: '%s'" % msg
+            print "\nRECEIVED:\n%s" % msg
             if msg == "exit":
                 client_sock.close()
                 break;
@@ -66,6 +66,7 @@ def run(fp):
               else:
                 ret_msg = e.message
             client_sock.send(ret_msg)
+            print "\nSENT:\n%s" % ret_msg
         return 1
 
 def mainloop(program, bracket_map):

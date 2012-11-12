@@ -171,11 +171,13 @@ def test_prior(niter = 1000, burnin = 100, countup = True, timer = True):
 
   # TODO : get all the observed variables
   if directives.engine_type == 'reduced traces':
-    for evalnode in directives.engine.assumes:
+    for id in directives.engine.assumes:
+      evalnode = directives.engine.assumes[id]
       expressions.append(evalnode.expression)
       varnames.append(evalnode.assume_name)
   elif directives.engine_type == 'traces':
-    for evalnode in directives.engine.assumes:
+    for id in directives.engine.assumes:
+      evalnode = directives.engine.assumes[id]
       assert evalnode.assume_name not in ['TIME']
       expressions.append(evalnode.expression)
       varnames.append(evalnode.assume_name)

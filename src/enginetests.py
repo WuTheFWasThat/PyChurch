@@ -667,25 +667,25 @@ def run_topic_model(docsize, s, niters = 1000, burnin = 100, countup = True):
     ntopics = 5
     nwords = 20
 
-    assume('topics-dirichlet', xrp(dirichlet_no_args_XRP([1]*ntopics)))
-    assume('words-dirichlet', xrp(dirichlet_no_args_XRP([1]*nwords)))
+    assume('topics-dirichlet', apply(var('make-symmetric-dirichlet'), [nat_expr(ntopics), nat_expr(1)]))
+    assume('words-dirichlet', apply(var('make-symmetric-dirichlet'), [nat_expr(nwords), nat_expr(1)]))
 
-    assume('get-topic-dist', apply('topics-dirichlet'))
-    assume('get-topic-words-dist', mem(function(['i'], apply('words-dirichlet'))))
+    assume('get-topic-dist', apply(var('topics-dirichlet'), []))
+    assume('get-topic-words-dist', mem(function(['i'], apply(var('words-dirichlet'), []))))
     assume('sample-dirichlet', function(['prob_array'],
                                let([('loop', 
                                     function(['v', 'i'], 
-                                             let([('w', apply('prob_array', 'i'))], 
-                                              ifelse(var('v') < 'w', 'i', apply('loop', [var('v') -'w', var('i') + 1])))))
+                                             let([('w', apply(var('prob_array'), [var('i')]))], 
+                                              ifelse(op('<', [var('v'), var('w')]), var('i'), apply(var('loop'), [op('-', [var('v'), var('w')]), op('+', [var('i'), int_expr(1)])])))))
                                    ], 
-                                   apply('loop', [uniform(), 0]))))
-    assume('get-topic', mem(function(['i'], apply('sample-dirichlet', 'get-topic-dist'))))
-    assume('get-word', mem(function(['i'], apply('sample-dirichlet', apply('get-topic-words-dist', apply('get-topic', 'i'))))))
+                                   apply(var('loop'), [uniform(), nat_expr(0)]))))
+    assume('get-topic', mem(function(['i'], apply(var('sample-dirichlet'), [var('get-topic-dist')]))))
+    assume('get-word', mem(function(['i'], apply(var('sample-dirichlet'), [apply(var('get-topic-words-dist'), [apply(var('get-topic'), [var('i')])])]))))
 
     for i in range(docsize):
-      assume('get-word' + str(i), apply('get-word', i)) 
+      assume('get-word' + str(i), apply(var('get-word'), [nat_expr(i)])) 
 
-    a = test_prior(niters, burnin, countup)
+    a = test_prior(niters, burnin, countup, False)
     return a
 
 
@@ -722,7 +722,7 @@ def run_topic_model_collapsed(nwords, s, niters = 1000, burnin = 100, countup = 
     assume('numwords', nwords)
     assume('numtopics', ntopics)
     assume('alpha', gamma(1, 1))
-    assume('topic-model', apply(gen_topic_model_XRP(), ['numtopics', 'alpha', 'numwords', 1]))
+    assume('topic-model', apply(make_topic_model_XRP(), ['numtopics', 'alpha', 'numwords', 1]))
 
     for i in range(docsize):
       assume('word' + str(i), apply('topic-model'))
@@ -750,31 +750,11 @@ def run_mixture(n, s, niters = 1000, burnin = 100, countup = True):
 def run_mixture_uncollapsed(n, s):
     rrandom.random.seed(s)
 
-    """DEFINITION OF DP"""
-    assume('DP', \
-           function(['concentration', 'basemeasure'], \
-                    let([('sticks', mem(function(['j'], beta(num_expr(1), var('concentration'))))),
-                         ('atoms',  mem(function(['j'], apply(var('basemeasure'), [])))),
-                         ('loop', \
-                          function(['j'], \
-                                   ifelse(bernoulli(apply(var('sticks'), [var('j')])), \
-                                          apply(var('atoms'), [var('j')]), \
-                                          apply(var('loop'), [var('j')+num_expr(1)])))) \
-                        ], \
-                        function([], apply(var('loop'), [num_expr(1)]))))) 
-
-    """DEFINITION OF ONE ARGUMENT DPMEM"""
-    assume('DPmem', \
-           function(['concentration', 'proc'], \
-                    let([('restaurants', \
-                          mem( function(['args'], apply(var('DP'), [var('concentration'), function([], apply(var('proc'), [var('args')]))]))))], \
-                        function(['args'], apply(var('restaurants'), [var('args')]))))) 
-
     print "\n TESTING GAUSSIAN MIXTURE MODEL\n"
     assume('expected-mean', gaussian(num_expr(0), num_expr(5))) 
     assume('expected-variance', gamma(num_expr(1), num_expr(2))) 
     assume('alpha', gamma(num_expr(0.1), num_expr(10)))
-    assume('gen-cluster-mean', apply(var('DPmem'), [var('alpha'), function(['x'], gaussian(var('expected-mean'), [var('expected-variance')]))]))
+    assume('gen-cluster-mean', apply(var('DPmem_uncollapsed'), [var('alpha'), function(['x'], gaussian(var('expected-mean'), [var('expected-variance')]))]))
     assume('get-datapoint', mem(function(['id'], gaussian(apply(apply(var('gen-cluster-mean'), [num_expr(222)]), []), num_expr(0.1)))))
     assume('noise-variance', gamma(num_expr(0.01), num_expr(1)))
 
@@ -803,12 +783,14 @@ if __name__ == '__main__':
   if running_main:
     unittest.main()
   else:
-    #a = run_topic_model(5, 222222, 100)
-    a = run_HMM(5, 2223)
-    print a
+    a = run_topic_model(5, 222222, 100, 10)
+    #a = run_HMM(5, 2223)
   
+    #a = run_topic_model_uncollapsed(15, 222222)
     #a = run_mixture(15, 222222)
     #a = run_bayes_net(20, 222222)
+
+    print a
 
     #sampletimes = a[0]['TIME']
     #print average(sampletimes)

@@ -1,14 +1,31 @@
 import socket
 import time
 
-a = socket.create_connection(('localhost', 5000))
-print a.recv(1024)
 
-while True:
-  var = raw_input(">>> ")
-  a.send(var)
-  if var == 'exit':
-    break
+if __name__ == "__main__":
+  a = socket.create_connection(('localhost', 5000))
   print a.recv(1024)
+  
+  while True:
+    line = raw_input(">>> ")
 
-a.close()
+    msg = ""
+    i = line.find(',')
+    while i != -1:
+      for j in range(i+1, len(line)):
+        if line[j] != ' ':
+          print "Warning:  Characters after ',' ignored"
+          break
+      msg += line[:i] + ' '
+      line = raw_input("... ")
+      i = line.find(',')
+    msg += line
+
+    a.send(msg)
+    if msg == 'exit':
+      break
+    print
+    print a.recv(1024)
+    print
+  
+  a.close()
