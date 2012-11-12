@@ -123,7 +123,7 @@ class Random(object):
           r = (a * 67108864 + b)
         else:
           r = (a * 67108864 + b) % max
-        return r
+        return intmask(r)
 
     def randrange(self, start, stop=None, step=1):
         """Choose a random item from range(start, stop[, step]).

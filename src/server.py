@@ -6,7 +6,7 @@ import os
 import sys
 import utils.expr_parser as parser
 
-# from tests import *
+from engine.directives import *
 
 try:
   from pypy.rlib import rsocket
