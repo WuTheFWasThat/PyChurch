@@ -676,7 +676,7 @@ def run_topic_model(docsize, s, niters = 1000, burnin = 100, countup = True):
                                let([('loop', 
                                     function(['v', 'i'], 
                                              let([('w', apply(var('prob_array'), [var('i')]))], 
-                                              ifelse(op('<', [var('v'), var('w')]), var('i'), apply(var('loop'), [op('-', [var('v'), var('w')]), op('+', [var('i'), int_expr(1)])])))))
+                                              ifelse(op('<', [var('v'), var('w')]), var('i'), apply(var('loop'), [op('-', [var('v'), var('w')]), op('+', [var('i'), nat_expr(1)])])))))
                                    ], 
                                    apply(var('loop'), [uniform(), nat_expr(0)]))))
     assume('get-topic', mem(function(['i'], apply(var('sample-dirichlet'), [var('get-topic-dist')]))))
@@ -685,6 +685,9 @@ def run_topic_model(docsize, s, niters = 1000, burnin = 100, countup = True):
     for i in range(docsize):
       assume('get-word' + str(i), apply(var('get-word'), [nat_expr(i)])) 
 
+    reset()
+    assume('f', function([], apply(var('uniform'), [nat_expr(20)])))
+    assume('e', apply(var('f'), []))
     a = test_prior(niters, burnin, countup, False)
     return a
 
@@ -783,7 +786,7 @@ if __name__ == '__main__':
   if running_main:
     unittest.main()
   else:
-    a = run_topic_model(5, 222222, 100, 10)
+    a = run_topic_model(1, 222222, 100, 10)
     #a = run_HMM(5, 2223)
   
     #a = run_topic_model_uncollapsed(15, 222222)

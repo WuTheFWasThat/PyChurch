@@ -56,18 +56,13 @@ class ReducedEvalNode:
   def __init__(self, traces, env, expression):
     self.traces = traces
 
-    self.active = False # Whether this node is currently activated
-
     self.parent = None 
-    self.children = {} 
-    self.active_children = {} 
-    # relative path -> evalnode
 
     self.mem = False # Whether this is the root of a mem'd procedure's application
     self.mem_calls = {} # just a set
 
     self.env = env # Environment in which this was evaluated
-    self.lookups = {} 
+
     self.assume = False
     self.assume_name = None
     self.predict = False
@@ -75,19 +70,30 @@ class ReducedEvalNode:
     self.observed = False
     self.observe_val = None 
 
-    self.xrp_applies = [] 
-    # (xrp, args) list
+    self.expression = expression
+    self.type = expression.type
 
+    self.reset()
+    return
+
+  # Reset things that have to do with current run, but not with program
+  def reset(self):
+    self.active = False # Whether this node is currently activated
+
+    self.children = {}  
+    self.active_children = {}  
+    # relative path -> evalnode
+
+    self.lookups = {}  
+
+    self.xrp_applies = []  
+    # (xrp, args) list
     self.random_xrp_apply = False
     self.xrp = XRP()
     self.args = None
     self.p = 0
 
-    self.expression = expression
-    self.type = expression.type
-
     self.val = None
-    return
 
   def get_child(self, addition, env, subexpr):
     if addition not in self.children:
@@ -200,9 +206,9 @@ class ReducedEvalNode:
 
   def add_xrp(self, xrp, val, args):
     prob = xrp.prob(val, args)
-    self.p = prob
     self.traces.eval_p += prob
     self.traces.p += prob
+    self.p = prob
     if xrp.is_mem():
       xrp.incorporate_mem(val, args, self)
     else:
@@ -266,8 +272,7 @@ class ReducedEvalNode:
     return [self.evaluate_recurse(expr.children[i], env, hashval, i+1) for i in range(len(expr.children))]
   
   def evaluate_recurse(self, expr, env, hashval, addition, xrp_force_val = None):
-    if addition is not None:
-      hashval = rhash.hash_pair(hashval, addition)
+    hashval = rhash.hash_pair(hashval, addition)
 
     if expr.type == 'value':
       val = expr.val
@@ -510,14 +515,29 @@ class ReducedTraces(Engine):
     #del d[id]
     return
 
-  def rerun(self, reflip):
+  def rerun(self):
     # TODO: fix this
-    for assume_node in self.assumes.values():
-      assert assume_node.active
-      assume_node.evaluate()
-    for observe_node in self.observes.values():
-      assert observe_node.active
-      observe_node.evaluate()
+    self.db = RandomChoiceDict() 
+
+    self.uneval_p = 0
+    self.eval_p = 0
+    self.p = 0
+
+    for id in range(len(self.directives)):
+      if self.directives[id] == 'assume':
+        assume_node = self.assumes[id]
+        assert assume_node.active
+        assume_node.reset()
+        assume_node.evaluate()
+      elif self.directives[id] == 'observe':
+        observe_node = self.observes[id]
+        observe_node.reset()
+        observe_node.evaluate()
+      else:
+        assert self.directives[id] == 'predict'
+        predict_node = self.predicts[id]
+        predict_node.reset()
+        predict_node.evaluate()
 
   def reflip(self, reflip_node):
     debug = False

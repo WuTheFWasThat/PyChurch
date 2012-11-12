@@ -531,11 +531,25 @@ class Traces(Engine):
     #del d[id]
     return
 
-  def rerun(self, reflip):
-    for assume_node in self.assumes.values():
-      assume_node.evaluate(reflip)
-    for observe_node in self.observes.values():
-      observe_node.evaluate(reflip)
+  def rerun(self):
+    self.db = RandomChoiceDict() 
+
+    self.uneval_p = 0 
+    self.eval_p = 0 
+    self.p = 0 
+
+    for id in range(len(self.directives)):
+      if self.directives[id] == 'assume':
+        assume_node = self.assumes[id]
+        assert assume_node.active
+        assume_node.evaluate(True)
+      elif self.directives[id] == 'observe':
+        observe_node = self.observes[id]
+        observe_node.evaluate(True)
+      else:
+        assert self.directives[id] == 'predict'
+        predict_node = self.predicts[id]
+        predict_node.evaluate(True)
 
   def reflip(self, reflip_node):
     debug = False

@@ -50,7 +50,7 @@ def reject_infer():
   assert not directives.engine_type == 'traces'
   flag = False
   while not flag:
-    rerun(True)
+    rerun()
 
     # Reject if observations untrue
     flag = True
@@ -88,7 +88,7 @@ def reject_infer_many(name, niter = 1000):
 def infer_many(expression, niter = 1000, burnin = 100, printiters = 0):
 
   if directives.engine_type == 'traces':
-    rerun(True)
+    rerun()
   dict = {}
   for n in range(niter):
     if printiters > 0 and n % printiters == 0: 
@@ -107,7 +107,7 @@ def infer_many(expression, niter = 1000, burnin = 100, printiters = 0):
   return dict 
 
 def follow_prior(names, niter = 1000, burnin = 100, timer = True, printiters = 0):
-  rerun(True)
+  rerun()
   dict = {}
 
   for t in range(burnin):
@@ -151,9 +151,9 @@ def sample_prior(names, niter = 1000, timer = True, printiters = 0):
     if printiters > 0 and n % printiters == 0: 
       print n, "iters"
     t = time.time()
-    rerun(True)
+    rerun()
     for name in names:
-      (val, id) = predict(var(name))
+      (val, id) = predict(var(name))  # really only need one node...
       if val.type != 'procedure' and val.type != 'xrp': 
         dict[name].append(val)
     t = time.time() - t

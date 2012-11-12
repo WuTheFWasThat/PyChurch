@@ -115,27 +115,27 @@ def reset():
 
   assume('mem', xrp(mem_XRP()), True)
 
-  """DEFINITION OF DP"""
-  assume('DP_uncollapsed', \
-         function(['concentration', 'basemeasure'], \
-                  let([('sticks', mem(function(['j'], beta(num_expr(1), var('concentration'))))),
-                       ('atoms',  mem(function(['j'], apply(var('basemeasure'), [])))),
-                       ('loop', \
-                        function(['j'], \
-                                 ifelse(bernoulli(apply(var('sticks'), [var('j')])), \
-                                        apply(var('atoms'), [var('j')]), \
-                                        apply(var('loop'), [var('j')+num_expr(1)])))) \
-                      ], \
-                      function([], apply(var('loop'), [num_expr(1)])))),
-         True) 
+  #"""DEFINITION OF DP"""
+  #assume('DP_uncollapsed', \
+  #       function(['concentration', 'basemeasure'], \
+  #                let([('sticks', apply(var('mem'), function(['j'], apply(var('beta'), [num_expr(1), var('concentration')])))),
+  #                     ('atoms',  apply(var('mem'), function(['j'], apply(var('basemeasure'), [])))),
+  #                     ('loop', \
+  #                      function(['j'], \
+  #                               ifelse(bernoulli(apply(var('sticks'), [var('j')])), \
+  #                                      apply(var('atoms'), [var('j')]), \
+  #                                      apply(var('loop'), [var('j')+num_expr(1)])))) \
+  #                    ], \
+  #                    function([], apply(var('loop'), [num_expr(1)])))),
+  #       True) 
 
-  """DEFINITION OF ONE ARGUMENT DPMEM"""
-  assume('DPmem_uncollapsed', \
-         function(['concentration', 'proc'], \
-                  let([('restaurants', \
-                        mem( function(['args'], apply(var('DP'), [var('concentration'), function([], apply(var('proc'), [var('args')]))]))))], \
-                      function(['args'], apply(var('restaurants'), [var('args')])))), 
-         True) 
+  #"""DEFINITION OF ONE ARGUMENT DPMEM"""
+  #assume('DPmem_uncollapsed', \
+  #       function(['concentration', 'proc'], \
+  #                let([('restaurants', \
+  #                      apply(var('mem'), function(['args'], apply(var('DP'), [var('concentration'), function([], apply(var('proc'), [var('args')]))]))))], \
+  #                    function(['args'], apply(var('restaurants'), [var('args')])))), 
+  #       True) 
 
   memory.reset()
 
@@ -161,9 +161,9 @@ def predict(expr):
   val = engine.predict(expr, id)
   return (val, id)
 
-def rerun(reflip):
+def rerun():
 # Class representing environments
-  engine.rerun(reflip)
+  engine.rerun()
   
 def report_directives(directive_type = ""):
   directives_report = engine.report_directives(directive_type)

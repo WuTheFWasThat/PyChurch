@@ -11,7 +11,7 @@ class Engine:
     raise Exception("Not implemented")
   def infer(self):
     raise Exception("Not implemented")
-  def rerun(self, reflip):
+  def rerun(self):
     raise Exception("Not implemented")
   def reset(self):
     raise Exception("Not implemented")

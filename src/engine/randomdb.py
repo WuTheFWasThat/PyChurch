@@ -42,13 +42,13 @@ class RandomDB(Engine):
     self.evaluate(expr, self.env, reflip = False, stack = ['obs', id], xrp_force_val = obs_val)
     return expr.hashval
 
-  def rerun(self, reflip):
+  def rerun(self):
     for (varname, expr) in self.assumes:
-      value = self.evaluate(expr, self.env, reflip = reflip, stack = [varname])
+      value = self.evaluate(expr, self.env, reflip = True, stack = [varname])
       self.env.set(varname, value)
     for id in self.observes:
       (expr, obs_val) = self.observes[id]
-      self.evaluate(expr, self.env, reflip = False, stack = ['obs', id], xrp_force_val = obs_val)
+      self.evaluate(expr, self.env, reflip = True, stack = ['obs', id], xrp_force_val = obs_val)
 
   def forget(self, id):
     self.remove(['obs', id])
