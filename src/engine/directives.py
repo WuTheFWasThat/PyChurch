@@ -115,6 +115,8 @@ def reset():
 
   assume('mem', xrp(mem_XRP()), True)
 
+  assume('make-CRP', xrp(gen_CRP_XRP()), True)
+
   """DEFINITION OF DP"""
   assume('DP_uncollapsed', \
          function(['concentration', 'basemeasure'], \

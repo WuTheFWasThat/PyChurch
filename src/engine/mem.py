@@ -141,10 +141,6 @@ class mem_XRP(XRP):
   def __str__(self):
     return 'Memoization XRP'
 
-mem_xrp = ConstExpression(XRPValue(mem_XRP()))
-def mem(function):
-  return ApplyExpression(mem_xrp, [function])
-
 class CRP_XRP(XRP):
   def __init__(self, alpha):
     self.deterministic = False
@@ -154,39 +150,39 @@ class CRP_XRP(XRP):
     self.weight = alpha
     return
   def apply(self, args = None):
-    if args != None and len(args) != 0:
-      raise Exception('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
+    if args is not None and len(args) != 0:
+      raise Exception('CRP_XRP has no need to take in arguments %s' % str(args))
     x = rrandom.random.random() * self.weight
     for id in self.tables:
       x -= self.tables[id]
       if x <= 0:
-        return id
-    return NumValue(rrandom.random.randbelow())
+        return NatValue(id)
+    return NatValue(rrandom.random.randbelow())
   def incorporate(self, val, args = None):
-    if args != None and len(args) != 0:
-      raise Exception('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
+    if args is not None and len(args) != 0:
+      raise Exception('CRP_XRP has no need to take in arguments %s' % str(args))
     self.weight += 1
-    if val in self.tables:
-      self.tables[val] += 1
+    if val.nat in self.tables:
+      self.tables[val.nat] += 1
     else:
-      self.tables[val] = 1
+      self.tables[val.nat] = 1
   def remove(self, val, args = None):
-    if args != None and len(args) != 0:
-      raise Exception('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
-    if val in self.tables:
-      if self.tables[val] == 1:
-        del self.tables[val]
+    if args is not None and len(args) != 0:
+      raise Exception('CRP_XRP has no need to take in arguments %s' % str(args))
+    if val.nat in self.tables:
+      if self.tables[val.nat] == 1:
+        del self.tables[val.nat]
       else:
-        assert self.tables[val] > 1
-        self.tables[val] -= 1
+        assert self.tables[val.nat] > 1
+        self.tables[val.nat] -= 1
         self.weight -= 1
     else:
-      raise Exception('Warning: CRP_XRP cannot remove the value %d, as it has state %s' % (str(val), str(self.tables)))
+      raise Exception('CRP_XRP cannot remove the value %d, as it has state %s' % (val.nat, str(self.tables.keys())))
   def prob(self, val, args = None):
-    if args != None and len(args) != 0:
-      raise Exception('Warning: CRP_XRP has no need to take in arguments %s' % str(args))
-    if val in self.tables:
-      return math.log(self.tables[val]) - math.log(self.weight)
+    if args is not None and len(args) != 0:
+      raise Exception('CRP_XRP has no need to take in arguments %s' % str(args))
+    if val.nat in self.tables:
+      return math.log(self.tables[val.nat]) - math.log(self.weight)
     else:
       return math.log(self.alpha) - math.log(self.weight)
   def __str__(self):
@@ -204,8 +200,4 @@ class gen_CRP_XRP(XRP):
     return 0
   def __str__(self):
     return 'CRP_XRP'
-
-crp_xrp = ConstExpression(XRPValue(gen_CRP_XRP()))
-def CRP(alpha):
-  return ApplyExpression(crp_xrp, alpha)
 
