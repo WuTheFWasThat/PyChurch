@@ -90,6 +90,10 @@ def infer_many(expression, niter = 1000, burnin = 100, printiters = 0):
   if directives.engine_type == 'traces':
     rerun()
   dict = {}
+
+  (val, id) = predict(expression)
+  evalnode = directives.engine.predicts[id]
+
   for n in range(niter):
     if printiters > 0 and n % printiters == 0: 
       print n, "iters"
@@ -98,7 +102,7 @@ def infer_many(expression, niter = 1000, burnin = 100, printiters = 0):
     for t in range(burnin):
       infer()
 
-    (val, id) = predict(expression)
+    val = evalnode.val
     if val in dict:
       dict[val] += 1
     else:
@@ -109,6 +113,7 @@ def infer_many(expression, niter = 1000, burnin = 100, printiters = 0):
 def follow_prior(names, niter = 1000, burnin = 100, timer = True, printiters = 0):
   rerun()
   dict = {}
+  evalnodes = {}
 
   for t in range(burnin):
     infer()
@@ -116,6 +121,8 @@ def follow_prior(names, niter = 1000, burnin = 100, timer = True, printiters = 0
   for name in names:
     assert name not in ['TIME']
     dict[name] = []
+    (val, id) = predict(var(name))
+    evalnodes[name] = directives.engine.predicts[id]
   if timer:
     dict['TIME'] = []
   
@@ -126,7 +133,7 @@ def follow_prior(names, niter = 1000, burnin = 100, timer = True, printiters = 0
     infer()
 
     for name in names:
-      (val, id) = predict(var(name))
+      val = evalnodes[name].val
       if val.type != 'procedure' and val.type != 'xrp': 
         dict[name].append(val)
     t = time.time() - t
@@ -140,10 +147,14 @@ def follow_prior(names, niter = 1000, burnin = 100, timer = True, printiters = 0
 
 def sample_prior(names, niter = 1000, timer = True, printiters = 0):
   dict = {}
+  evalnodes = {}
 
   for name in names:
     assert name not in ['TIME']
     dict[name] = []
+    (val, id) = predict(var(name))
+    evalnodes[name] = directives.engine.predicts[id]
+
   if timer:
     dict['TIME'] = []
 
@@ -153,7 +164,7 @@ def sample_prior(names, niter = 1000, timer = True, printiters = 0):
     t = time.time()
     rerun()
     for name in names:
-      (val, id) = predict(var(name))  # really only need one node...
+      val = evalnodes[name].val
       if val.type != 'procedure' and val.type != 'xrp': 
         dict[name].append(val)
     t = time.time() - t
