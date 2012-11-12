@@ -309,7 +309,7 @@ class RandomDB(Engine):
     for tuple_stack in to_delete:
       self.remove(tuple_stack)
 
-  def sample(self, expr):
+  def predict(self, expr):
     return self.evaluate(expr, env, reflip, ['expr', expr.hashval])
 
   def save(self):

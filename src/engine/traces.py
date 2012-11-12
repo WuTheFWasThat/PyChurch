@@ -107,10 +107,6 @@ class EvalNode:
     self.assume_name = name
     self.assume = True
 
-  def observe(self, obs_val):
-    self.observed = True
-    self.observe_val = obs_val
-
   def setlookup(self, env):
     assert self.expression.type == 'variable'
     self.lookup = env 
@@ -458,8 +454,10 @@ class EvalNode:
 
 class Traces(Engine):
   def __init__(self, env):
-    self.assumes = []
-    self.observes = {} # just a set
+    self.assumes = {} # id -> evalnode
+    self.observes = {} # id -> evalnode
+    self.predicts = {} # id -> evalnode
+    self.directives = []
 
     self.db = RandomChoiceDict() 
 
@@ -471,42 +469,70 @@ class Traces(Engine):
     self.p = 0
     return
 
+  def report_directives(self, directive_type = ""):
+    directive_report = []
+    for id in range(len(self.directives)):
+      directive = self.directives[id]
+      if directive_type in ["", directive]:
+        if directive == 'assume':
+          directive_report.append([str(id), directive, self.assumes[id].val.__str__()])
+        elif directive == 'observe':
+          directive_report.append([str(id), directive, self.observes[id].val.__str__()])
+        else:
+          assert directive == 'predict'
+          directive_report.append([str(id), directive, self.predicts[id].val.__str__()])
+    return directive_report
+
   def assume(self, name, expr):
     evalnode = EvalNode(self, self.env, expr)
 
-    self.assumes.append(evalnode)
+    if id != -1:
+      self.assumes[id] = evalnode
+      assert id == len(self.directives)
+      self.directives.append('assume')
+
     val = evalnode.evaluate()
     self.env.add_assume(name, evalnode)
     evalnode.add_assume(name, self.env)
     self.env.set(name, val)
     return val
 
-  def sample(self, expr):
+  def predict(self, expr, id):
     evalnode = EvalNode(self, self.env, expr)
+
+    assert id == len(self.directives)
+    self.directives.append('predict')
+    self.predicts[id] = evalnode
     val = evalnode.evaluate(False)
-    evalnode.unevaluate()
-    return val  
+    return val
 
   def observe(self, expr, obs_val, id):
     evalnode = EvalNode(self, self.env, expr)
 
-    assert id not in self.observes
+    assert id == len(self.directives)
+    self.directives.append('observe')
     self.observes[id] = evalnode
 
-    evalnode.observe(obs_val)
-    evalnode.evaluate()
+    self.observed = True
+    self.observe_val = obs_val
 
-    return evalnode
+    val = evalnode.evaluate()
+    return val
 
   def forget(self, id):
-    assert id in self.observes
-    evalnode = self.observes[id]
+    if id in self.observes:
+      d = self.observes
+    elif id in self.predicts:
+      d = self.predicts
+    else:
+      raise Exception("Can only forget predicts and observes")
+    evalnode = d[id]
     evalnode.unevaluate()
-    del self.observes[id]
+    #del d[id]
     return
 
   def rerun(self, reflip):
-    for assume_node in self.assumes:
+    for assume_node in self.assumes.values():
       assume_node.evaluate(reflip)
     for observe_node in self.observes.values():
       observe_node.evaluate(reflip)
@@ -597,6 +623,6 @@ class Traces(Engine):
     
   def __str__(self):
     string = "EvalNodeTree:"
-    for evalnode in self.assumes:
+    for evalnode in self.assumes.values():
       string += evalnode.str_helper()
     return string

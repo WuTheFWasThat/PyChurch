@@ -70,7 +70,7 @@ class ReducedEvalNode:
     self.lookups = {} 
     self.assume = False
     self.assume_name = None
-    self.sample = False
+    self.predict = False
 
     self.observed = False
     self.observe_val = None 
@@ -118,10 +118,6 @@ class ReducedEvalNode:
     assert env == self.env
     self.assume_name = name
     self.assume = True
-
-  def observe(self, obs_val):
-    self.observed = True
-    self.observe_val = obs_val
 
   def addlookup(self, name, env):
     self.lookups[name] = env 
@@ -188,7 +184,7 @@ class ReducedEvalNode:
       self.remove_xrp(self.xrp, self.args)
       self.traces.remove_xrp(self)
     else:
-      assert self.assume or self.sample or self.mem
+      assert self.assume or self.predict or self.mem
 
     self.active = False
     return
@@ -245,7 +241,7 @@ class ReducedEvalNode:
     if not self.random_xrp_apply:
       if xrp_force_val is not None:
         raise Exception("Can only force non-deterministic XRP applications")
-      assert self.assume or self.mem or self.sample
+      assert self.assume or self.mem or self.predict
 
     if self.assume:
       assert self.parent is None
@@ -437,8 +433,10 @@ class ReducedEvalNode:
 
 class ReducedTraces(Engine):
   def __init__(self, env):
-    self.assumes = []
-    self.observes = {} # just a set
+    self.assumes = {} # id -> evalnode
+    self.observes = {} # id -> evalnode
+    self.predicts = {} # id -> evalnode
+    self.directives = []
 
     self.db = RandomChoiceDict() 
 
@@ -450,43 +448,71 @@ class ReducedTraces(Engine):
     self.p = 0
     return
 
-  def assume(self, name, expr):
+  def report_directives(self, directive_type = ""):
+    directive_report = []
+    for id in range(len(self.directives)):
+      directive = self.directives[id]
+      if directive_type in ["", directive]:
+        if directive == 'assume':
+          directive_report.append([str(id), directive, self.assumes[id].val.__str__()])
+        elif directive == 'observe':
+          directive_report.append([str(id), directive, self.observes[id].val.__str__()])
+        else:
+          assert directive == 'predict'
+          directive_report.append([str(id), directive, self.predicts[id].val.__str__()])
+    return directive_report
+
+  def assume(self, name, expr, id = -1):
     evalnode = ReducedEvalNode(self, self.env, expr)
     self.env.add_assume(name, evalnode)
     evalnode.add_assume(name, self.env)
 
-    self.assumes.append(evalnode)
+    if id != -1:
+      self.assumes[id] = evalnode
+      assert id == len(self.directives)
+      self.directives.append('assume')
     val = evalnode.evaluate()
     return val
 
-  def sample(self, expr):
+  def predict(self, expr, id):
     evalnode = ReducedEvalNode(self, self.env, expr)
-    evalnode.sample = True
+
+    assert id == len(self.directives)
+    self.directives.append('predict')
+    self.predicts[id] = evalnode
+
+    evalnode.predict = True
     val = evalnode.evaluate()
-    evalnode.unevaluate()
-    return val  
+    return val
 
   def observe(self, expr, obs_val, id):
     evalnode = ReducedEvalNode(self, self.env, expr)
 
-    assert id not in self.observes
+    assert id == len(self.directives)
+    self.directives.append('observe')
     self.observes[id] = evalnode
 
-    evalnode.observe(obs_val)
-    evalnode.evaluate()
+    evalnode.observed = True
+    evalnode.observe_val = obs_val
 
-    return evalnode
+    val = evalnode.evaluate()
+    return val
 
   def forget(self, id):
-    assert id in self.observes
-    evalnode = self.observes[id]
+    if id in self.observes:
+      d = self.observes
+    elif id in self.predicts:
+      d = self.predicts
+    else:
+      raise Exception("Can only forget predicts and observes")
+    evalnode = d[id]
     evalnode.unevaluate()
-    del self.observes[id]
+    #del d[id]
     return
 
   def rerun(self, reflip):
     # TODO: fix this
-    for assume_node in self.assumes:
+    for assume_node in self.assumes.values():
       assert assume_node.active
       assume_node.evaluate()
     for observe_node in self.observes.values():
@@ -580,9 +606,9 @@ class ReducedTraces(Engine):
   def __str__(self):
     string = "EvalNodeTree:"
     # Ignore default assumes
-    for i in range(len(self.assumes)):
-      evalnode = self.assumes[i]
-      if i > 7:
+    for id in self.assumes:
+      evalnode = self.assumes[id]
+      if id > 7: # default assumes
         string += evalnode.str_helper()
     for id in self.observes:
       evalnode = self.observes[id]

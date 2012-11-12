@@ -4,6 +4,7 @@ from mem import *
 from traces import *
 from reducedtraces import *
 from randomdb import *
+from utils.format import table_to_string
 
 import sys
 
@@ -13,6 +14,9 @@ class DirectivesMemory:
     self.assumes = {}
     # id -> (expr, val, active)
     self.observes = {}
+    # id -> (expr, active)
+    self.predicts = {}
+
     self.directives = []
     self.next_id = -1
 
@@ -35,13 +39,29 @@ class DirectivesMemory:
     self.observes[id] = (expr, val, True)
     return id
 
+  def predict(self, expr): 
+    self.directives.append('predict')
+    id = self.get_next_id()
+    self.predicts[id] = (expr, True)
+    return id
+
   def forget(self, id):
-    if id not in self.observes:
-      raise Exception("id %d was never observed" % id) 
-    (expr, val, active) = self.observes[id]
-    if not active:
-      raise Exception("id %d was already forgotten" % id) 
-    self.observes[id] = (expr, val, False)
+    if self.directives[id] == 'observe':
+      if id not in self.observes:
+        raise Exception("id %d was never observed" % id) 
+      (expr, val, active) = self.observes[id]
+      if not active:
+        raise Exception("observe %d was already forgotten" % id) 
+      self.observes[id] = (expr, val, False)
+    elif self.directives[id] == 'predict':
+      if id not in self.predicts:
+        raise Exception("id %d was never predicted" % id) 
+      (expr, active) = self.predicts[id]
+      if not active:
+        raise Exception("predict %d was already forgotten" % id) 
+      self.predicts[id] = (expr, False)
+    else:
+      raise Exception("Cannot forget assumes")
     
   def reset(self):
     self.__init__()
@@ -82,47 +102,46 @@ sys.setrecursionlimit(10000)
 def reset():
   engine.reset()
 
-  assume('bernoulli', xrp(bernoulli_args_XRP()))
-  assume('flip', var('bernoulli'))
-  assume('beta', xrp(beta_args_XRP()))
-  assume('gamma', xrp(gamma_args_XRP()))
-  assume('gaussian', xrp(gaussian_args_XRP()))
-  assume('uniform', xrp(uniform_args_XRP()))
-  assume('mem', xrp(mem_XRP()))
-  assume('rand', function([], apply(var('beta'), [num_expr(1), num_expr(1)])))
+  assume('bernoulli', xrp(bernoulli_args_XRP()), True)
+  assume('flip', var('bernoulli'), True)
+  assume('beta', xrp(beta_args_XRP()), True)
+  assume('gamma', xrp(gamma_args_XRP()), True)
+  assume('gaussian', xrp(gaussian_args_XRP()), True)
+  assume('uniform', xrp(uniform_args_XRP()), True)
+  assume('mem', xrp(mem_XRP()), True)
+  assume('rand', function([], apply(var('beta'), [num_expr(1), num_expr(1)])), True)
 
-  # NOTE: There are a constant number of floating assumes!
   memory.reset()
 
-def assume(varname, expr):
-  id = memory.assume(varname, expr)
-  val = engine.assume(varname, expr)
+def assume(varname, expr, default = False):
+  id = -1
+  if not default:
+    id = memory.assume(varname, expr)
+  val = engine.assume(varname, expr, id)
   return (val, id)
 
 def observe(expr, obs_val):
   id = memory.observe(expr, obs_val)
-
-  #NOTE: the following would be true, except there could be variables, etc
-  #assert expr.type == 'apply' and expr.op.type == 'value' 
-  #assert expr.op.val.type == 'xrp'
-  #assert not expr.op.val.xrp.deterministic
-
-  engine.observe(expr, obs_val, id)
+  val = engine.observe(expr, obs_val, id)
   return id
 
 def forget(id):
-  # if using db, is a hashval
-  # if using traces, is an evalnode
-
   memory.forget(id)
   engine.forget(id)
+  return
   
-def sample(expr):
-  return engine.sample(expr)
+def predict(expr):
+  id = memory.predict(expr)
+  val = engine.predict(expr, id)
+  return (val, id)
 
 def rerun(reflip):
 # Class representing environments
   engine.rerun(reflip)
   
+def report_directives(directive_type = ""):
+  directives_report = engine.report_directives(directive_type)
+  return table_to_string(directives_report, ['id', 'directive', 'value'])  
+
 def infer():
   engine.infer()

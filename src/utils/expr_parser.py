@@ -1,4 +1,5 @@
 from engine.directives import *
+import utils.infertools as infertools 
 
 def parse_token(s, i = 0):
     delim = ['(', ')', '[', ']', ',']
@@ -17,6 +18,14 @@ def parse_token(s, i = 0):
           break
         j += 1
       return (s[i:j], j)
+
+def parse_integer(s, i):
+  (token, i) = parse_token(s, i)
+  try:
+    integer = int(token)
+  except:
+    raise Exception("Expected integer, got %s" % token)
+  return (integer, i)
 
 def parse_expr_list(s, i):
     (token, j) = parse_token(s, i)
@@ -149,15 +158,29 @@ def parse_directive(s):
     ret_str = 'id: ' + str(id)
   elif token == 'predict':
     (expr, i) = parse_expression(s, i)
-    val = sample(expr)
-    ret_str = 'value: ' + val.__str__()
+    (val, id) = predict(expr)
+    ret_str = 'value: ' + val.__str__() + '\nid: ' + str(id)
   elif token == 'forget':
-    (id, i) = parse_token(s, i)
-    forget(int(id))
+    (id, i) = parse_integer(s, i)
+    forget(id)
+    ret_str = 'forgotten'
   elif token == 'infer':
     infer()
+  elif token == 'infer_many':
+    (expression, i) = parse_expression(s, i)
+    (niters, i) = parse_integer(s, i)
+    (burnin, i) = parse_integer(s, i)
+    d = infertools.infer_many(expression, niters, burnin)
+    ret_str = '\n'
+    for val in d:
+      p = d[val]
+      ret_str += 'Value:  %s\n' % str(val)
+      ret_str += '  %f\n\n' % str(p)
   elif token == 'clear':
     reset()
+    ret_str = 'cleared'
+  elif token == 'report_directives':
+    ret_str = report_directives()
   else:
     raise Exception("Invalid directive")
   return ret_str

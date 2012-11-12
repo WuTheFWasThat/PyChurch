@@ -87,12 +87,12 @@ class TestDirectives(unittest.TestCase):
     nheads = 2
     niters, burnin = 1000, 10
   
-    print infer_many('is-fair', niters, burnin)
+    print infer_many(var('is-fair'), niters, burnin)
     
     for i in range(nheads):
       print '\nsaw', i+1, 'heads'
       observe(noisy(apply(var('coin')), noise_level), BoolValue(True))
-      print infer_many('is-fair', niters, burnin)
+      print infer_many(var('is-fair'), niters, burnin)
   
   @unittest.skipIf(not test_CRP, "skipping test_CRP")
   def test_CRP(self):
@@ -139,7 +139,7 @@ class TestDirectives(unittest.TestCase):
   
     print sample('x')
     print sample('x')
-    a = infer_many('x', 10, 1000)
+    a = infer_many(var('x'), 10, 1000)
     print sample('x')
     print sample('x')
     #print sample(apply('get-datapoint', 0))
@@ -151,7 +151,7 @@ class TestDirectives(unittest.TestCase):
     #print 'running', niters, 'times,', burnin, 'burnin'
   
     #t = time()
-    #a = infer_many('expected-mean', niters, burnin)
+    #a = infer_many(var('expected-mean'), niters, burnin)
     #print format(get_pdf(a, -4, 4, .5), '%0.2f') 
     #print 'time taken', time() - t
   
@@ -194,26 +194,26 @@ class TestDirectives(unittest.TestCase):
     #d = test_prior(niters, burnin)
     #self.assertTrue(test_prior_bool(d, 'cloudy') < 0.1)
     #self.assertTrue(test_prior_bool(d, 'sprinkler') < 0.1)
-    print infer_many('cloudy', niters, burnin)
+    print infer_many(var('cloudy'), niters, burnin)
     print 'Should be .5 False, .5 True'
-    print infer_many('sprinkler', niters, burnin)
+    print infer_many(var('sprinkler'), niters, burnin)
     print 'Should be .7 False, .3 True'
     
     noise_level = .01
     sprinkler_ob = observe(noisy(var('sprinkler'), noise_level), BoolValue(True))
-    d = infer_many('cloudy', niters, burnin)
+    d = infer_many(var('cloudy'), niters, burnin)
     print d
     #self.assertTrue(  abs(d['cloudy'][False] / (niters + 0.0) - 5 / 6.0) < 0.1)
     #self.assertTrue(test_prior_bool(d, 'sprinkler') < 0.1)
     print 'Should be .833 False, .166 True'
-    print infer_many('sprinkler', niters, burnin)
+    print infer_many(var('sprinkler'), niters, burnin)
     print 'Should be 0 False, 1 True'
     
     #a = follow_prior(['cloudy', 'sprinkler'], 1000, 100, timer = False)
     #print [(x, count_up(a[x])) for x in a]
   
     forget(sprinkler_ob)
-    print infer_many('cloudy', niters, burnin)
+    print infer_many(var('cloudy'), niters, burnin)
     print 'Should be .500 False, .500 True'
   
     #print "\n TESTING BEACH NET\n"
@@ -237,11 +237,11 @@ class TestDirectives(unittest.TestCase):
     #print test_prior(1000, 100)
     
     observe(noisy(var('weekend'), noise_level), BoolValue(True))
-    print infer_many('sunny', niters, burnin)
+    print infer_many(var('sunny'), niters, burnin)
     print 'Should be .5 False, .5 True'
     
     observe(noisy(var('beach'), noise_level), BoolValue(True))
-    print infer_many('sunny', niters, burnin)
+    print infer_many(var('sunny'), niters, burnin)
     print 'Should be .357142857 False, .642857143 True'
 
     #print "\n TESTING BURGLARY NET\n" # An example from AIMA
@@ -302,16 +302,16 @@ class TestDirectives(unittest.TestCase):
     assume('maryCalls', ifelse(var('alarm'),  bernoulli(num_expr(pMgA)), bernoulli(num_expr(pMgnA))))
     print test_prior(1000, 100, timer = False)
   
-    print infer_many('alarm', niters, burnin)
+    print infer_many(var('alarm'), niters, burnin)
     print 'Should be %f True' % pA
   
     mary_ob = observe(noisy(var('maryCalls'), noise_level), BoolValue(True))
-    print infer_many('johnCalls', niters, burnin)
+    print infer_many(var('johnCalls'), niters, burnin)
     print 'Should be %f True' % pJgM
     forget(mary_ob)
   
     burglary_ob = observe(noisy(~var('burglary'), noise_level), BoolValue(True))
-    print infer_many('johnCalls', niters, burnin)
+    print infer_many(var('johnCalls'), niters, burnin)
     print 'Should be %f True' % pJgnB
     forget(burglary_ob)
   
@@ -334,7 +334,7 @@ class TestDirectives(unittest.TestCase):
     #self.assertTrue(test_prior_bool(d, 'c') < 0.05)
   
     xor_ob = observe(noisy(var('c'), noise_level), BoolValue(True)) 
-    print infer_many('a', 1000, 500) 
+    print infer_many(var('a'), 1000, 500) 
     print 'should be 0.69 true'
     # should be True : p(1-q)/(p(1-q)+(1-p)q), False : q(1-p)/(p(1-q) + q(1-p)) 
     # I believe this gets skewed because it has to pass through illegal states, and the noise values get rounded badly 
@@ -403,7 +403,7 @@ class TestDirectives(unittest.TestCase):
     # hmm... random walk systematically decays faster
   
     observe(noisy(var('timetodecay') == num_expr(timetodecay), .001), BoolValue(True))
-    dist = infer_many('decay', niters, burnin)
+    dist = infer_many(var('decay'), niters, burnin)
     #print dist 
     #print 'pdf:', get_pdf(dist, 0, 1, .1)
     #print 'cdf:', get_cdf(dist, 0, 1, .1)
@@ -534,7 +534,7 @@ class TestDirectives(unittest.TestCase):
     #print 'running', niters, 'times,', burnin, 'burnin'
   
     #t = time()
-    #a = infer_many('expected-mean', niters, burnin)
+    #a = infer_many(var('expected-mean'), niters, burnin)
     #print format(get_pdf(a, -4, 4, .5), '%0.2f') 
     #print 'time taken', time() - t
   
@@ -568,7 +568,7 @@ class TestDirectives(unittest.TestCase):
       num_repeats = 10
       for j in range(0, num_repeats):
         # start at prior, move i steps towards posterior
-        a = infer_many('get-cluster-mean', 1, i)
+        a = infer_many(var('get-cluster-mean'), 1, i)
   
         # read out inferred mean and sig of gaussian
         avg = sample('get-cluster-mean').num
@@ -611,7 +611,7 @@ class TestDirectives(unittest.TestCase):
     #observe(gaussian(apply('get-datapoint', 3), let([('y', gaussian(0, .1))], var('y') * var('y'))), NumValue(-2.0))
     #observe(gaussian(apply('get-datapoint', 4), let([('y', gaussian(0, .1))], var('y') * var('y'))), NumValue(-2.1))
   
-    #a = infer_many('x', 10, 1000)
+    #a = infer_many(var('x'), 10, 1000)
     #print a
     #print [sample('x') for i in range(10)]
 
@@ -658,7 +658,7 @@ def run_HMM(t, s, niters = 100, burnin = 100, countup = True):
     assume('start-state', apply(var('state'), [num_expr(0)]))
     assume('last-state', apply(var('state'), [num_expr(t)]))
     #a = test_prior(niters, burnin, countup)
-    print infer_many('last-state', 100, 10)
+    print infer_many(var('last-state'), 100, 10)
     return a
 
 def run_topic_model(docsize, s, niters = 1000, burnin = 100, countup = True):

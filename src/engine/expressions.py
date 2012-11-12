@@ -106,7 +106,7 @@ class ApplyExpression(Expression):
     return ApplyExpression(self.op, children)
   
   def __str__(self):
-    return '(%s)%s' % (str(self.op), str(self.children))
+    return '(%s %s)' % (str(self.op), str(self.children))
 
 class FunctionExpression(Expression):
   def __init__(self, vars, body):
@@ -122,7 +122,7 @@ class FunctionExpression(Expression):
     return FunctionExpression(self.vars, body) 
     
   def __str__(self):
-    return 'lambda%s : (%s)' % (str(self.vars), str(self.body))
+    return '(lambda %s : %s)' % (str(self.vars), str(self.body))
 
 class IfExpression(Expression):
   def __init__(self, cond, true, false):
@@ -139,7 +139,7 @@ class IfExpression(Expression):
     return IfExpression(cond, true, false)
   
   def __str__(self):
-    return 'if (%s), then (%s), else (%s)' % (str(self.cond), str(self.true), str(self.false))
+    return '(if %s then %s else %s)' % (str(self.cond), str(self.true), str(self.false))
 
 class LetExpression(Expression):
   def __init__(self, bindings, body):
@@ -160,7 +160,7 @@ class LetExpression(Expression):
     return LetExpression([(self.vars[i], expressions[i]) for i in range(len(expressions))], body) 
 
   def __str__(self):
-    return 'let %s = %s in (%s)' % (str(self.vars), str(self.expressions), str(self.body))
+    return '(let %s = %s in %s)' % (str(self.vars), str(self.expressions), str(self.body))
 
 class OpExpression(Expression):
   def __init__(self, op, children):

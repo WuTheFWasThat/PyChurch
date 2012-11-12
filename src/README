@@ -1,5 +1,17 @@
+THIS README IS STILL IN PROGRESS
+
 To run locally (not very elegant, at the moment):
   python pypyserver.py
   in a different window:
   python local_client.py
 
+You can also compile a faster version of the server by doing the following:
+  Install pypy.  Then, (replace translate.py as appropriate):
+  python /Applications/pypy/pypy/translator/goal/translate.py pypyserver.py 
+  
+THIS IS NOT YET READY, but soon:
+You can generate a tracing JIT version of the server by doing the following:
+  python /Applications/pypy/pypy/translator/goal/translate.py --opt=jit pypyserver.py 
+
+
+To define custom XRPs,

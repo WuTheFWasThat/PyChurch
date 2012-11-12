@@ -1,9 +1,11 @@
 class Engine:
-  def assume(self, varname, expr):
+  def assume(self, varname, expr, id):
     raise Exception("Not implemented")
-  def sample(self, expr):
+  def predict(self, expr, id):
     raise Exception("Not implemented")
   def observe(self, expr, obs_val, id):
+    raise Exception("Not implemented")
+  def report_directives(self, directive_type):
     raise Exception("Not implemented")
   def forget(self, id):
     raise Exception("Not implemented")

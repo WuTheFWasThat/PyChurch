@@ -56,7 +56,7 @@ def reject_infer():
     flag = True
     for obs_hash in directives.engine.observes:
       (obs_expr, obs_val) = directives.engine.observes[obs_hash] 
-      val = sample(obs_expr)
+      (val, id) = predict(obs_expr)
       if val != obs_val:
         flag = False
         break
@@ -70,7 +70,7 @@ def reject_infer_many(name, niter = 1000):
     warnings.warn('%s is not defined' % str(name))
 
   dict = {}
-  for n in xrange(niter):
+  for n in range(niter):
     # Re-draw from prior
     reject_infer()
     ans = directives.engine.evaluate(expr, None, False, [name]) 
@@ -85,24 +85,20 @@ def reject_infer_many(name, niter = 1000):
     dict[val] = dict[val] / (z + 0.0) 
   return dict 
 
-def infer_many(name, niter = 1000, burnin = 100, printiters = 0):
-  #if name in mem.vars:
-  #  expr = mem.vars[name]
-  #else:
-  #  warnings.warn('%s is not defined' % str(name))
+def infer_many(expression, niter = 1000, burnin = 100, printiters = 0):
 
   if directives.engine_type == 'traces':
     rerun(True)
   dict = {}
-  for n in xrange(niter):
+  for n in range(niter):
     if printiters > 0 and n % printiters == 0: 
       print n, "iters"
 
     # re-draw from prior
-    for t in xrange(burnin):
+    for t in range(burnin):
       infer()
 
-    val = directives.engine.sample(var(name))
+    (val, id) = predict(expression)
     if val in dict:
       dict[val] += 1
     else:
@@ -114,7 +110,7 @@ def follow_prior(names, niter = 1000, burnin = 100, timer = True, printiters = 0
   rerun(True)
   dict = {}
 
-  for t in xrange(burnin):
+  for t in range(burnin):
     infer()
 
   for name in names:
@@ -123,14 +119,14 @@ def follow_prior(names, niter = 1000, burnin = 100, timer = True, printiters = 0
   if timer:
     dict['TIME'] = []
   
-  for n in xrange(niter):
+  for n in range(niter):
     if printiters > 0 and n % printiters == 0: 
       print n, "iters"
     t = time.time()
     infer()
 
     for name in names:
-      val = directives.engine.sample(var(name))
+      (val, id) = predict(var(name))
       if val.type != 'procedure' and val.type != 'xrp': 
         dict[name].append(val)
     t = time.time() - t
@@ -151,13 +147,13 @@ def sample_prior(names, niter = 1000, timer = True, printiters = 0):
   if timer:
     dict['TIME'] = []
 
-  for n in xrange(niter):
+  for n in range(niter):
     if printiters > 0 and n % printiters == 0: 
       print n, "iters"
     t = time.time()
     rerun(True)
     for name in names:
-      val = directives.engine.sample(var(name))
+      (val, id) = predict(var(name))
       if val.type != 'procedure' and val.type != 'xrp': 
         dict[name].append(val)
     t = time.time() - t
@@ -192,7 +188,7 @@ def test_prior(niter = 1000, burnin = 100, countup = True, timer = True):
   d1 = sample_prior(varnames, niter, timer)
   d2 = follow_prior(varnames, niter, burnin, timer)
 
-  for i in xrange(len(varnames)):
+  for i in range(len(varnames)):
     name = varnames[i]
     if name in d1:
       assert name in d2
@@ -273,10 +269,10 @@ def format(list, format):
 """ DISTANCE MEASURES """
 
 def L0distance(cdf1, cdf2):  # Kolmogorov-Smirnov test 
-  return max(abs(cdf1[i] - cdf2[i]) for i in xrange(len(cdf1)))
+  return max(abs(cdf1[i] - cdf2[i]) for i in range(len(cdf1)))
 
 def L1distance(cdf2, cdf1):
-  return sum(abs(cdf1[i] - cdf2[i]) for i in xrange(len(cdf1)))
+  return sum(abs(cdf1[i] - cdf2[i]) for i in range(len(cdf1)))
 
 def KLdivergence(d, pdf):
   d = normalize(d)
