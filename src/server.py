@@ -1,90 +1,95 @@
-import flask
-from flask import request
-from flask import make_response
+"""
+Based on the PyPy tutorial by Andrew Brown
+"""
 
-import json
+import os
+import sys
+import utils.expr_parser as parser
 
-import ripl
+# from tests import *
 
-global ripl
-ripl = ripl.LocalRIPL()
+try:
+  from pypy.rlib import rsocket
+  use_pypy = True
+except:
+  import socket as rsocket
+  use_pypy = False
+ 
+# copied from http://www.smipple.net/snippet/Shibukawa%20Yoshi/RPython%20echo%20server
 
-global app
-app = flask.Flask(__name__)
+#def parse_stuff():
+#    s = '((bernoulli 0.5) (beta (bernoulli 0.5) (bernoulli 1)) (bernoulli 1) 0.03)'
+#    s = '(lambda (x) (if (bernoulli x) 3.14 3))'
+#    s = '(if (xor (bernoulli 1)) (+ 0 (- 5 3)) (/ 6 3))'
+#    s = '(let ((x 2) (y 3) (z 4)) (* x y z))'
+#    index = 0
+#    (expression, index) = parser.parse_expression(s, 0)
+#    print expression.__str__()
 
-@app.route('/', methods=['GET'])
-def index():
-    #resp = make_response()
-    #resp.status_code = 201
-    #resp.data = json.dumps(directives)
-    #return resp
+def run(fp):
 
-    directives = ripl.report_directives()
-    return json.dumps(directives)
-
-@app.route('/', methods=['DELETE'])
-def clear():
-    ripl.clear()
-    return "Cleared"
-
-@app.route('/<int:did>', methods=['DELETE'])
-def forget(did):
-    ripl.forget(did)
-    return "Deleted"
-
-@app.route('/<int:did>', methods=['GET'])
-def report_value(did):
-    # FIXME: Make this threadsafe, and pass better reporting
-    #        through the LocalRIPL caching layer
-    if did in ripl.assumes:
-        return json.dumps(ripl.assumes[did])
-    elif did in ripl.observes:
-        return json.dumps(ripl.observes[did])
-    elif did in ripl.predicts:
-        return json.dumps(ripl.predicts[did])
+    hostip = rsocket.gethostbyname('localhost')
+    if use_pypy:
+      host = rsocket.INETAddress(hostip.get_host(), 5000)
+      socket = rsocket.RSocket(rsocket.AF_INET, rsocket.SOCK_STREAM)
     else:
-        raise Exception("requested invalid")
+      host = (hostip, 5000)
+      socket = rsocket.socket(rsocket.AF_INET, rsocket.SOCK_STREAM)
+    
+    socket.bind(host)
+    socket.listen(1)
+   
+    while True:
+        if use_pypy:
+          (client_sock_fd, client_addr) = socket.accept()
+          client_sock = rsocket.fromfd(client_sock_fd, rsocket.AF_INET, rsocket.SOCK_STREAM)
+        else:
+          (client_sock, client_addr) = socket.accept()
+        client_sock.send("Server ready!\n")
+        print 'Client contacted'
+        while True:
+            msg = client_sock.recv(1024)
+            msg = msg.rstrip("\n")
+            print "\nRECEIVED:\n%s" % msg
+            if msg == "exit":
+                client_sock.close()
+                break;
+            try:
+              ret_msg = parser.parse_directive(msg)
+            except Exception as e:
+              if use_pypy:
+                ret_msg = "Error occured"
+              else:
+                ret_msg = e.message
+            client_sock.send(ret_msg)
+            print "\nSENT:\n%s" % ret_msg
+        return 1
 
-@app.route('/infer', methods=['PUT'])
-def infer():
-    # FIXME: Define and support a proper config
-    ripl.infer()
-    return "Did one step of inference"
+def mainloop(program, bracket_map):
+    pc = 0
+    tape = Tape()
+    
+    while pc < len(program):
+      print "im in a loop"
 
-@app.route('/assume', methods=['PUT'])
-def assume():
-    name_str = json.loads(request.form["name_str"])
-    expr_lst = json.loads(request.form["expr_lst"])
-    print "ASSUMPTION REQUEST"
-    print "name_str: " + str(name_str)
-    print "expr_lst: " + str(expr_lst)
-    (d_id, val) = ripl.assume(name_str, expr_lst)
-    print "d_id: " + str(d_id)
-    print "val: " + str(val)
-    return json.dumps({"d_id": d_id,
-                       "val": val})
+def read(fp):
+    program = ""
+    while True:
+        read = os.read(fp, 4096)
+        if len(read) == 0:
+            break
+        program += read
+    return program
 
-@app.route('/observe', methods=['PUT'])
-def observe():
-    expr_lst = json.loads(request.form["expr_lst"])
-    literal_val = json.loads(request.form["literal_val"])
-    print "OBSERVE"
-    print str(expr_lst)
-    d_id = ripl.observe(expr_lst, literal_val)
-    print "d_id: " + str(d_id)
-    return json.dumps({"d_id": d_id})
+def entry_point(argv):
 
-@app.route('/predict', methods=['PUT'])
-def predict():
-    expr_lst = json.loads(request.form["expr_lst"])
-    print "PREDICT"
-    print str(expr_lst)
-    (d_id, val) = ripl.predict(expr_lst)
-    print "d_id: " + str(d_id)
-    print "val: " + str(val)
-    return json.dumps({"d_id": d_id, "val": val})
+    #run(os.open(filename, os.O_RDONLY, 0777))
+    run(10)
+    
+    return 0
 
-if __name__ == '__main__':
-    #ripl.set_continuous_inference(enable=True)
-    app.run(debug=True, use_reloader=False)
-
+def target(*args):
+    return entry_point, None
+    
+if __name__ == "__main__":
+    entry_point(sys.argv)

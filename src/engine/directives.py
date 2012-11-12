@@ -98,7 +98,6 @@ else:
 
 sys.setrecursionlimit(10000)
 
-
 def reset():
   engine.reset()
 
@@ -141,6 +140,7 @@ def reset():
 
   memory.reset()
 
+
 def assume(varname, expr, default = False):
   id = -1
   if not default:
@@ -173,3 +173,5 @@ def report_directives(directive_type = ""):
 
 def infer():
   engine.infer()
+
+reset()
