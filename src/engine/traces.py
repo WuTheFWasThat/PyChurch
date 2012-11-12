@@ -483,7 +483,7 @@ class Traces(Engine):
           directive_report.append([str(id), directive, self.predicts[id].val.__str__()])
     return directive_report
 
-  def assume(self, name, expr):
+  def assume(self, name, expr, id):
     evalnode = EvalNode(self, self.env, expr)
 
     if id != -1:
@@ -532,12 +532,6 @@ class Traces(Engine):
     return
 
   def rerun(self):
-    self.db = RandomChoiceDict() 
-
-    self.uneval_p = 0 
-    self.eval_p = 0 
-    self.p = 0 
-
     for id in range(len(self.directives)):
       if self.directives[id] == 'assume':
         assume_node = self.assumes[id]
