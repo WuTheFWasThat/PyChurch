@@ -1,11 +1,12 @@
 from values import *
 import math
+from utils.rexceptions import RException
 
 # HELPERS
 
 def check_prob(val):
   if not 0 <= val <= 1:
-    raise Exception("Value %s is not a valid probability" % str(val))
+    raise RException("Value %s is not a valid probability" % str(val))
   if val == 0:
     return 2**(-32)
   elif val == 1:
@@ -14,7 +15,7 @@ def check_prob(val):
 
 def check_pos(val):
   if not 0 < val:
-    raise Exception("Value %s is not positive" % str(val))
+    raise RException("Value %s is not positive" % str(val))
 
 def sum(array):
   ans = 0
@@ -65,11 +66,11 @@ class categorical_no_args_XRP(XRP):
   def apply(self, args = None):
     i = sample_categorical(self.probs)
     if args != None and len(args) != 0:
-      raise Exception("categorical_no_args_XRP has no need to take arguments")
+      raise RException("categorical_no_args_XRP has no need to take arguments")
     return IntValue(i)
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
-      raise Exception("categorical_no_args_XRP has no need to take arguments")
+      raise RException("categorical_no_args_XRP has no need to take arguments")
     assert 0 <= val.int < self.n
     log_prob = math.log(self.probs[val.int])
     return log_prob
@@ -101,11 +102,11 @@ class gaussian_no_args_XRP(XRP):
     return
   def apply(self, args = None):
     if args is not None and len(args) != 0:
-      raise Exception('gaussian_no_args_XRP has no need to take in arguments %s' % str(args))
+      raise RException('gaussian_no_args_XRP has no need to take in arguments %s' % str(args))
     return NumValue(rrandom.random.normalvariate(self.mu, self.sigma))
   def prob(self, val, args = None):
     if args is not None and len(args) != 0:
-      raise Exception('gaussian_no_args_XRP has no need to take in arguments %s' % str(args))
+      raise RException('gaussian_no_args_XRP has no need to take in arguments %s' % str(args))
     log_prob = self.prob_help - math.pow((val.num - self.mu) / self.sigma, 2) / 2.0 
     return log_prob
   def __str__(self):
@@ -181,12 +182,12 @@ class dirichlet_no_args_XRP(XRP):
     return
   def apply(self, args = None):
     if args is not None and len(args) != 0:
-      raise Exception('dirichlet_no_args_XRP has no need to take in arguments %s' % str(args))
+      raise RException('dirichlet_no_args_XRP has no need to take in arguments %s' % str(args))
     probs = [NumValue(p) for p in dirichlet(self.alphas)]
     return XRPValue(array_XRP(probs))
   def prob(self, val, args = None):
     if args is not None and len(args) != 0:
-      raise Exception('dirichlet_no_args_XRP has no need to take in arguments %s' % str(args))
+      raise RException('dirichlet_no_args_XRP has no need to take in arguments %s' % str(args))
     assert val.type == 'xrp'
     probs = [x.num for x in val.xrp.array]
     for prob in probs:
@@ -206,7 +207,7 @@ class make_symmetric_dirichlet_XRP(XRP):
     return
   def apply(self, args = None):
     if len(args) != 2:
-      raise Exception("Symmetric dirichlet generator takes two arguments, n and alpha")
+      raise RException("Symmetric dirichlet generator takes two arguments, n and alpha")
     (n, alpha) = (args[0], args[1])
     return XRPValue(dirichlet_no_args_XRP([alpha.num] * n.nat)) 
   def __str__(self):
@@ -250,11 +251,11 @@ class beta_no_args_XRP(XRP):
     return
   def apply(self, args = None):
     if args is not None and len(args) != 0:
-      raise Exception('beta_no_args_XRP has no need to take in arguments %s' % str(args))
+      raise RException('beta_no_args_XRP has no need to take in arguments %s' % str(args))
     return NumValue(rrandom.random.betavariate(self.a, self.b))
   def prob(self, val, args = None):
     if args is not None and len(args) != 0:
-      raise Exception('beta_no_args_XRP has no need to take in arguments %s' % str(args))
+      raise RException('beta_no_args_XRP has no need to take in arguments %s' % str(args))
     v = check_prob(val.num)
     return self.prob_help + (self.a - 1) * math.log(v) + (self.b - 1) * math.log(1 - v) 
   def __str__(self):
@@ -302,11 +303,11 @@ class gamma_no_args_XRP(XRP):
     return
   def apply(self, args = None):
     if args is not None and len(args) != 0:
-      raise Exception('gamma_no_args_XRP has no need to take in arguments %s' % str(args))
+      raise RException('gamma_no_args_XRP has no need to take in arguments %s' % str(args))
     return NumValue(rrandom.random.gammavariate(self.a, self.b))
   def prob(self, val, args = None):
     if args is not None and len(args) != 0:
-      raise Exception('gamma_no_args_XRP has no need to take in arguments %s' % str(args))
+      raise RException('gamma_no_args_XRP has no need to take in arguments %s' % str(args))
     check_pos(val.num)
     if val.num == 0:
       val.num = .0000000000000001
@@ -352,11 +353,11 @@ class bernoulli_no_args_XRP(XRP):
     return
   def apply(self, args = None):
     if args is not None and len(args) != 0:
-      raise Exception('bernoulli_no_args_XRP has no need to take in arguments %s' % str(args))
+      raise RException('bernoulli_no_args_XRP has no need to take in arguments %s' % str(args))
     return BoolValue(rrandom.random.random() < self.p)
   def prob(self, val, args = None):
     if args is not None and len(args) != 0:
-      raise Exception('bernoulli_no_args_XRP has no need to take in arguments %s' % str(args))
+      raise RException('bernoulli_no_args_XRP has no need to take in arguments %s' % str(args))
     if val.bool:
       return math.log(self.p)
     else:
@@ -396,11 +397,11 @@ class uniform_no_args_XRP(XRP):
     return
   def apply(self, args = None):
     if args is not None and len(args) != 0:
-      raise Exception('uniform_no_args_XRP has no need to take in arguments %s' % str(args))
+      raise RException('uniform_no_args_XRP has no need to take in arguments %s' % str(args))
     return NatValue(rrandom.random.randbelow(self.n))
   def prob(self, val, args = None):
     if args is not None and len(args) != 0:
-      raise Exception('uniform_no_args_XRP has no need to take in arguments %s' % str(args))
+      raise RException('uniform_no_args_XRP has no need to take in arguments %s' % str(args))
     assert 0 <= val.nat < self.n
     return -math.log(self.n)
   def __str__(self):

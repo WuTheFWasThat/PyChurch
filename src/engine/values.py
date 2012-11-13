@@ -1,12 +1,13 @@
 import utils.rrandom as rrandom 
 import utils.rhash as rhash
+from utils.rexceptions import RException
 
 class XRP:
   def __init__(self):
     self.deterministic = False
     return
   def apply(self, args = None):
-    raise Exception("Not implemented")
+    raise RException("Not implemented")
   def incorporate(self, val, args = None):
     pass
   def remove(self, val, args = None):
@@ -31,35 +32,35 @@ class Value:
     self.body = None
     self.env = None
   def __hash__(self):
-    raise Exception("Invalid operation")
+    raise RException("Invalid operation")
   def __repr__(self):
     return self.__str__()
   def __eq__(self, other):
     return BoolValue(self is other)
   def __gt__(self, other):
-    raise Exception("Invalid operation")
+    raise RException("Invalid operation")
   def __lt__(self, other):
-    raise Exception("Invalid operation")
+    raise RException("Invalid operation")
   def __ge__(self, other):
-    raise Exception("Invalid operation")
+    raise RException("Invalid operation")
   def __le__(self, other):
-    raise Exception("Invalid operation")
+    raise RException("Invalid operation")
   def __add__(self, other):
-    raise Exception("Invalid operation")
+    raise RException("Invalid operation")
   def __sub__(self, other):
-    raise Exception("Invalid operation")
+    raise RException("Invalid operation")
   def __mul__(self, other):
-    raise Exception("Invalid operation")
+    raise RException("Invalid operation")
   def __div__(self, other):
-    raise Exception("Invalid operation")
+    raise RException("Invalid operation")
   def __and__(self, other):
-    raise Exception("Invalid operation")
+    raise RException("Invalid operation")
   def __or__(self, other):
-    raise Exception("Invalid operation")
+    raise RException("Invalid operation")
   def __xor__(self, other):
-    raise Exception("Invalid operation")
+    raise RException("Invalid operation")
   def __inv__(self):
-    raise Exception("Invalid operation")
+    raise RException("Invalid operation")
   def __nonzero__(self):
     return BoolValue((self.num > 0))
   pass 

@@ -3,6 +3,7 @@ from expressions import *
 from environment import *
 from utils.random_choice_dict import RandomChoiceDict
 import utils.rhash as rhash
+from utils.rexceptions import RException
 
 try:
   from pypy.rlib.jit import JitDriver
@@ -59,7 +60,7 @@ class EnvironmentNode(Environment):
 
   def add_assume(self, name, evalnode):
     if name in self.assumes:
-      raise Exception("Already assumed something with this name")
+      raise RException("Already assumed something with this name")
     self.assumes[name] = evalnode
 
   def add_lookup(self, name, evalnode):
@@ -72,7 +73,7 @@ class EnvironmentNode(Environment):
 
   def get_lookups(self, name, evalnode):
     if self.assumes[name] is not evalnode:
-      raise Exception("Wrong evalnode getting lookups for %s" % name)
+      raise RException("Wrong evalnode getting lookups for %s" % name)
     if name in self.lookups:
       return self.lookups[name]
     else:
@@ -275,7 +276,7 @@ class ReducedEvalNode:
 
     if not self.random_xrp_apply:
       if xrp_force_val is not None:
-        raise Exception("Can only force non-deterministic XRP applications")
+        raise RException("Can only force non-deterministic XRP applications")
       assert self.assume or self.mem or self.predict
 
     if self.assume:
@@ -337,7 +338,7 @@ class ReducedEvalNode:
 
       if op.type == 'procedure':
         if n != len(op.vars):
-          raise Exception('Procedure should have %d arguments.  \nVars were \n%s\n, but had %d children.' % (n, op.vars, len(expr.children)))
+          raise RException('Procedure should have %d arguments.  \nVars were \n%s\n, but had %d children.' % (n, op.vars, len(expr.children)))
         new_env = op.env.spawn_child()
         for i in range(n):
           new_env.set(op.vars[i], args[i])
@@ -359,7 +360,7 @@ class ReducedEvalNode:
         self.xrp = xrp
         assert val is not None
       else:
-        raise Exception('Must apply either a procedure or xrp.  Instead got expression %s' % str(op))
+        raise RException('Must apply either a procedure or xrp.  Instead got expression %s' % str(op))
 
     elif expr.type == 'function':
       n = len(expr.vars)
@@ -426,7 +427,7 @@ class ReducedEvalNode:
       val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 2)
       val = val1.__div__(val2)
     else:
-      raise Exception('Invalid expression type %s' % expr.type)
+      raise RException('Invalid expression type %s' % expr.type)
 
     return val
 
@@ -568,7 +569,7 @@ class ReducedTraces(Engine):
     elif id in self.predicts:
       d = self.predicts
     else:
-      raise Exception("Can only forget predicts and observes")
+      raise RException("Can only forget predicts and observes")
     evalnode = d[id]
     evalnode.unevaluate()
     #del d[id]
@@ -583,20 +584,31 @@ class ReducedTraces(Engine):
     self.p = 0
 
     for id in range(len(self.directives)):
-      if self.directives[id] == 'assume':
-        assume_node = self.assumes[id]
-        assert assume_node.active
-        assume_node.reset()
-        assume_node.evaluate()
-      elif self.directives[id] == 'observe':
-        observe_node = self.observes[id]
-        observe_node.reset()
-        observe_node.evaluate()
+      node = self.get_directive_node(id)
+      if node.assume:
+        assert node.active
+      if node.active:
+        node.reset()
+        node.evaluate()
       else:
-        assert self.directives[id] == 'predict'
-        predict_node = self.predicts[id]
-        predict_node.reset()
-        predict_node.evaluate()
+        node.reset()
+
+  def report_value(self, id):
+    node = self.get_directive_node(id)
+    if not node.active:
+      raise RException("Error.  Perhaps this directive was forgotten?")
+    val = node.val
+    return val
+
+  def get_directive_node(self, id):
+    if self.directives[id] == 'assume':
+      node = self.assumes[id]
+    elif self.directives[id] == 'observe':
+      node = self.observes[id]
+    else:
+      assert self.directives[id] == 'predict'
+      node = self.predicts[id]
+    return node
 
   def reflip(self, reflip_node):
     debug = False

@@ -685,7 +685,12 @@ def run_topic_model(docsize, s, niters = 1000, burnin = 100, countup = True):
     for i in range(docsize):
       assume('get-word' + str(i), apply(var('get-word'), [nat_expr(i)])) 
 
+    reset()
+    assume('f', function([], apply(var('uniform'), [nat_expr(20)])))
+    assume('e', apply(var('f'), []))
+
     a = test_prior(niters, burnin, countup, False)
+
     return a
 
 

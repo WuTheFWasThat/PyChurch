@@ -1,3 +1,4 @@
+from utils.rexceptions import RException
 
 class Environment:
   def __init__(self, parent = None):
@@ -17,7 +18,7 @@ class Environment:
       return (self.assignments[name], self)
     else:
       if self.parent is None:
-        raise Exception('Variable %s undefined in env:\n%s' % (name, self.__str__()))
+        raise RException('Variable %s undefined in env:\n%s' % (name, self.__str__()))
       else:
         return self.parent.lookup(name)
 

@@ -5,6 +5,7 @@ Based on the PyPy tutorial by Andrew Brown
 import os
 import sys
 import utils.expr_parser as parser
+from utils.rexceptions import RException
 
 from engine.directives import *
 
@@ -56,11 +57,8 @@ def run(fp):
                 break;
             try:
               ret_msg = parser.parse_directive(msg)
-            except Exception as e:
-              if use_pypy:
-                ret_msg = "Error occured"
-              else:
-                ret_msg = e.message
+            except RException as e:
+              ret_msg = e.message
             client_sock.send(ret_msg)
             print "\nSENT:\n%s" % ret_msg
         return 1

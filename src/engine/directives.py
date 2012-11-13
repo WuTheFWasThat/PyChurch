@@ -5,6 +5,7 @@ from traces import *
 from reducedtraces import *
 from randomdb import *
 from utils.format import table_to_string
+from utils.rexceptions import RException
 
 import sys
 
@@ -48,27 +49,27 @@ class DirectivesMemory:
   def forget(self, id):
     if self.directives[id] == 'observe':
       if id not in self.observes:
-        raise Exception("id %d was never observed" % id) 
+        raise RException("id %d was never observed" % id) 
       (expr, val, active) = self.observes[id]
       if not active:
-        raise Exception("observe %d was already forgotten" % id) 
+        raise RException("observe %d was already forgotten" % id) 
       self.observes[id] = (expr, val, False)
     elif self.directives[id] == 'predict':
       if id not in self.predicts:
-        raise Exception("id %d was never predicted" % id) 
+        raise RException("id %d was never predicted" % id) 
       (expr, active) = self.predicts[id]
       if not active:
-        raise Exception("predict %d was already forgotten" % id) 
+        raise RException("predict %d was already forgotten" % id) 
       self.predicts[id] = (expr, False)
     else:
-      raise Exception("Cannot forget assumes")
+      raise RException("Cannot forget assumes")
     
   def reset(self):
     self.__init__()
 
 memory = DirectivesMemory()
 
-engine_type = 'traces'
+engine_type = 'reduced traces'
 
 # The global environment. Has assignments of names to expressions, and parent pointer 
 
@@ -94,7 +95,7 @@ elif engine_type == 'randomdb':
   # Table storing a list of (xrp, value, probability) tuples
   engine = RandomDB(env)
 else:
-  raise Exception("Engine %s is not implemented" % engine_type)
+  raise RException("Engine %s is not implemented" % engine_type)
 
 sys.setrecursionlimit(10000)
 

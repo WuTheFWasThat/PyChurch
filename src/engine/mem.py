@@ -3,6 +3,7 @@ from traces import EvalNode
 from reducedtraces import ReducedEvalNode
 from expressions import *
 from xrp import *
+from utils.rexceptions import RException
 
 # THIS XRP IMPLEMENTATION IS NOT INDEPENDENT OF DIRECTIVES IMPLEMENTATION 
 class mem_proc_XRP(XRP):
@@ -151,7 +152,7 @@ class CRP_XRP(XRP):
     return
   def apply(self, args = None):
     if args is not None and len(args) != 0:
-      raise Exception('CRP_XRP has no need to take in arguments %s' % str(args))
+      raise RException('CRP_XRP has no need to take in arguments %s' % str(args))
     x = rrandom.random.random() * self.weight
     for id in self.tables:
       x -= self.tables[id]
@@ -160,7 +161,7 @@ class CRP_XRP(XRP):
     return NatValue(rrandom.random.randbelow())
   def incorporate(self, val, args = None):
     if args is not None and len(args) != 0:
-      raise Exception('CRP_XRP has no need to take in arguments %s' % str(args))
+      raise RException('CRP_XRP has no need to take in arguments %s' % str(args))
     self.weight += 1
     if val.nat in self.tables:
       self.tables[val.nat] += 1
@@ -168,7 +169,7 @@ class CRP_XRP(XRP):
       self.tables[val.nat] = 1
   def remove(self, val, args = None):
     if args is not None and len(args) != 0:
-      raise Exception('CRP_XRP has no need to take in arguments %s' % str(args))
+      raise RException('CRP_XRP has no need to take in arguments %s' % str(args))
     if val.nat in self.tables:
       if self.tables[val.nat] == 1:
         del self.tables[val.nat]
@@ -177,10 +178,10 @@ class CRP_XRP(XRP):
         self.tables[val.nat] -= 1
         self.weight -= 1
     else:
-      raise Exception('CRP_XRP cannot remove the value %d, as it has state %s' % (val.nat, str(self.tables.keys())))
+      raise RException('CRP_XRP cannot remove the value %d, as it has state %s' % (val.nat, str(self.tables.keys())))
   def prob(self, val, args = None):
     if args is not None and len(args) != 0:
-      raise Exception('CRP_XRP has no need to take in arguments %s' % str(args))
+      raise RException('CRP_XRP has no need to take in arguments %s' % str(args))
     if val.nat in self.tables:
       return math.log(self.tables[val.nat]) - math.log(self.weight)
     else:

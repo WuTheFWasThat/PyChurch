@@ -20,17 +20,18 @@ class RandomDB(Engine):
     env.reset()
     self.env = env
 
-    self.assumes = []
+    self.assumes = {}
     self.observes = {}
+    self.predict = {}
     self.vars = {}
 
   def reset(self):
     self.__init__()
 
-  def assume(self, varname, expr): 
-    self.assumes.append((varname, expr))
+  def assume(self, varname, expr, id): 
+    self.assumes[id] = (varname, expr)
     self.vars[varname] = expr
-    value = self.evaluate(expr, self.env, reflip = True, stack = [varname])
+    value = self.evaluate(expr, self.env, reflip = True, stack = [id])
     self.env.set(varname, value)
     return value
 
@@ -39,16 +40,21 @@ class RandomDB(Engine):
       raise Exception('Already observed %s' % str(expr))
     self.observes[id] = (expr, obs_val) 
     # bit of a hack, here, to make it recognize same things as with noisy_expr
-    self.evaluate(expr, self.env, reflip = False, stack = ['obs', id], xrp_force_val = obs_val)
+    self.evaluate(expr, self.env, reflip = False, stack = [id], xrp_force_val = obs_val)
     return expr.hashval
 
+  def predict(self, expr, id):
+    self.predicts[id] = expr
+    return self.evaluate(expr, self.env, True, [id])
+
   def rerun(self):
-    for (varname, expr) in self.assumes:
-      value = self.evaluate(expr, self.env, reflip = True, stack = [varname])
+    for id in self.assumes:
+      (varname, expr) = self.assumes[id]
+      value = self.evaluate(expr, self.env, reflip = True, stack = [id])
       self.env.set(varname, value)
     for id in self.observes:
       (expr, obs_val) = self.observes[id]
-      self.evaluate(expr, self.env, reflip = True, stack = ['obs', id], xrp_force_val = obs_val)
+      self.evaluate(expr, self.env, reflip = True, stack = [id], xrp_force_val = obs_val)
 
   def forget(self, id):
     self.remove(['obs', id])
@@ -308,9 +314,6 @@ class RandomDB(Engine):
 
     for tuple_stack in to_delete:
       self.remove(tuple_stack)
-
-  def predict(self, expr):
-    return self.evaluate(expr, env, reflip, ['expr', expr.hashval])
 
   def save(self):
     self.log = []

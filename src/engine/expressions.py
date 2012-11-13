@@ -1,3 +1,4 @@
+from utils.rexceptions import RException
 from values import *
 from xrp import *
 
@@ -98,7 +99,7 @@ class ApplyExpression(Expression):
     self.op = op
     self.children = children
     if self.op.type == 'function' and len(self.op.vars) < len(self.children):
-      raise Exception('Applying function to too many arguments!')
+      raise RException('Applying function to too many arguments!')
 
   def replace(self, env, bound = {}):
     # TODO hmm .. replace non-bound things in op?  causes recursion to break...
