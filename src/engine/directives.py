@@ -168,9 +168,12 @@ def rerun():
 # Class representing environments
   engine.rerun()
   
+def report_value(id):
+  value = engine.report_value(id)
+  return value
+
 def report_directives(directive_type = ""):
-  directives_report = engine.report_directives(directive_type)
-  return table_to_string(directives_report, ['id', 'directive', 'value'])  
+  return engine.report_directives(directive_type)
 
 def infer():
   engine.infer()

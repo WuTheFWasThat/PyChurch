@@ -515,6 +515,9 @@ class ReducedTraces(Engine):
 
   def report_directives(self, directive_type = ""):
     directive_report = []
+
+    # full list would be: ID, type, name, expression, obs value, value
+
     for id in range(len(self.directives)):
       directive = self.directives[id]
       if directive_type in ["", directive]:

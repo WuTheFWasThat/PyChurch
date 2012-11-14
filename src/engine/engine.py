@@ -7,6 +7,8 @@ class Engine:
     raise RException("Not implemented")
   def observe(self, expr, obs_val, id):
     raise RException("Not implemented")
+  def report_value(self, id):
+    raise RException("Not implemented")
   def report_directives(self, directive_type):
     raise RException("Not implemented")
   def forget(self, id):

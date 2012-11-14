@@ -31,37 +31,41 @@ def run(fp):
 
     hostip = rsocket.gethostbyname('localhost')
     if use_pypy:
-      host = rsocket.INETAddress(hostip.get_host(), 5000)
+      host = rsocket.INETAddress(hostip.get_host(), 2222)
       socket = rsocket.RSocket(rsocket.AF_INET, rsocket.SOCK_STREAM)
     else:
-      host = (hostip, 5000)
+      host = (hostip, 2222)
       socket = rsocket.socket(rsocket.AF_INET, rsocket.SOCK_STREAM)
     
     socket.bind(host)
     socket.listen(1)
    
+    bufsize = 1048576
     while True:
-        if use_pypy:
-          (client_sock_fd, client_addr) = socket.accept()
-          client_sock = rsocket.fromfd(client_sock_fd, rsocket.AF_INET, rsocket.SOCK_STREAM)
-        else:
-          (client_sock, client_addr) = socket.accept()
-        client_sock.send("Server ready!\n")
-        print 'Client contacted'
-        while True:
-            msg = client_sock.recv(1024)
-            msg = msg.rstrip("\n")
-            print "\nRECEIVED:\n%s" % msg
-            if msg == "exit":
-                client_sock.close()
-                break;
-            try:
-              ret_msg = parser.parse_directive(msg)
-            except RException as e:
-              ret_msg = e.message
-            client_sock.send(ret_msg)
-            print "\nSENT:\n%s" % ret_msg
-        return 1
+      if use_pypy:
+        (client_sock_fd, client_addr) = socket.accept()
+        client_sock = rsocket.fromfd(client_sock_fd, rsocket.AF_INET, rsocket.SOCK_STREAM)
+      else:
+        (client_sock, client_addr) = socket.accept()
+      client_sock.send("Server ready!\n")
+      print 'Client contacted'
+      while True:
+        msg = client_sock.recv(bufsize)
+        if not msg:
+          client_sock.close()
+          break;
+        msg = msg.rstrip("\n")
+        print "\nRECEIVED:\n%s" % msg
+        if msg == "exit":
+          client_sock.close()
+          break;
+        try:
+          ret_msg = parser.parse_directive(msg)
+        except RException as e:
+          ret_msg = e.message
+        client_sock.send(ret_msg)
+        print "\nSENT:\n%s" % ret_msg
+      return 1 # could be unindented, if not for rpython
 
 def mainloop(program, bracket_map):
     pc = 0

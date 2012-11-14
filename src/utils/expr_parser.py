@@ -193,9 +193,13 @@ def parse_directive(s):
   elif token == 'clear':
     reset()
     ret_str = 'cleared'
+  elif token == 'report_value':
+    (id, i) = parse_integer(s, i)
+    ret_str = 'value: ' + report_value(id)
   elif token == 'report_directives':
     (directive_type, i) = parse_token(s, i)
-    ret_str = report_directives(directive_type)
+    directives_report = report_directives(directive_type)
+    ret_str = table_to_string(directives_report, ['id', 'directive', 'value'])
   else:
     raise Exception("Invalid directive")
   return ret_str
