@@ -195,8 +195,8 @@ def test_prior(niter = 1000, burnin = 100, countup = True, timer = True):
       expressions.append(expr)
       varnames.append(varname)
 
-  d1 = sample_prior(varnames, niter, timer)
   d2 = follow_prior(varnames, niter, burnin, timer)
+  d1 = sample_prior(varnames, niter, timer)
 
   for i in range(len(varnames)):
     name = varnames[i]

@@ -169,33 +169,33 @@ class ReducedEvalNode:
     assert self.type == 'apply'
     self.args = args
 
-  def propogate_to(self, evalnode):
+  def propagate_to(self, evalnode):
     assert evalnode.active
     if evalnode.random_xrp_apply:
       evalnode.evaluate(evalnode.val)
     else:
       evalnode.evaluate()
-      evalnode.propogate_up()
+      evalnode.propagate_up()
 
-  def propogate_up(self):
+  def propagate_up(self):
     # NOTE: with multiple parents, could this re-evaluate things in the wrong order and screw things up?
     assert self.active
 
     if self.assume:
       assert self.parent is None
-      # lookups can be affected *while* propogating up. 
+      # lookups can be affected *while* propagating up. 
       lookup_nodes = []
       for evalnode in self.env.get_lookups(self.assume_name, self):
         lookup_nodes.append(evalnode)
       for evalnode in lookup_nodes:
-        self.propogate_to(evalnode)
+        self.propagate_to(evalnode)
     elif self.parent is not None:
-      self.propogate_to(self.parent)
+      self.propagate_to(self.parent)
 
     if self.mem:
-      # self.mem_calls can be affected *while* propogating up.  However, if new links are created, they'll use the new value
+      # self.mem_calls can be affected *while* propagating up.  However, if new links are created, they'll use the new value
       for evalnode in self.mem_calls.keys():
-        self.propogate_to(evalnode)
+        self.propagate_to(evalnode)
 
   def unevaluate(self):
     # NOTE:  We may want to remove references to nodes when we unevaluate, such as when we have arguments
@@ -475,7 +475,7 @@ class ReducedEvalNode:
       assert self.parent is None
       self.env.set(self.assume_name, self.val) # Environment in which this was evaluated
 
-    self.propogate_up()
+    self.propagate_up()
     return self.val
 
   def str_helper(self, n = 0, verbose = True):

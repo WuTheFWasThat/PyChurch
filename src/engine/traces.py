@@ -121,13 +121,13 @@ class EvalNode:
     assert self.type == 'apply'
     self.args = args
 
-  def propogate_up(self, start = False):
+  def propagate_up(self, start = False):
     # NOTE: 
     # assert self.active <--- almost true
-    # This only breaks when this node is unevaluated from another branch of propogate_up
+    # This only breaks when this node is unevaluated from another branch of propagate_up
     # but this means children may have changed, so if we activate this branch and don't re-evaluate,
     # the result may be wrong!  We can't always re-evaluate the branches, because of the way reflip restores.
-    # TODO: optimize to not re-propogate. needs to calculate explicit trace structure
+    # TODO: optimize to not re-propagate. needs to calculate explicit trace structure
 
     if self.random_xrp_apply:
       if not start:
@@ -142,19 +142,19 @@ class EvalNode:
 
     if self.assume:
       assert self.parent is None
-      # lookups can be affected *while* propogating up. 
+      # lookups can be affected *while* propagating up. 
       lookup_nodes = []
       for evalnode in self.env.get_lookups(self.assume_name, self):
         lookup_nodes.append(evalnode)
       for evalnode in lookup_nodes:
-        evalnode.propogate_up()
+        evalnode.propagate_up()
     elif self.parent is not None:
-      self.parent.propogate_up()
+      self.parent.propagate_up()
 
     if self.mem:
-      # self.mem_calls can be affected *while* propogating up.  However, if new links are created, they'll use the new value
+      # self.mem_calls can be affected *while* propagating up.  However, if new links are created, they'll use the new value
       for evalnode in self.mem_calls.keys():
-        evalnode.propogate_up()
+        evalnode.propagate_up()
 
     self.val = val
     return self.val
@@ -324,10 +324,10 @@ class EvalNode:
 
         elif xrp.deterministic or (not reflip):
           if self.active:
-            if self.args == args and self.xrp == xrp:
+            if xrp.is_mem_proc():
+              val = xrp.apply(args)
+            elif self.args == args and self.xrp == xrp:
               val = self.val
-            elif xrp.is_mem():
-              val = self.val # TODO: THIS IS A HACK.  ARGS COULD CHANGE
             else:
               self.remove_xrp()
               val = xrp.apply(args)
@@ -428,7 +428,7 @@ class EvalNode:
     #  jitdriver.jit_merge_point(node=self.val)
     self.evaluate(reflip = 0.5, xrp_force_val = force_val)
     assert self.random_xrp_apply
-    self.propogate_up(True)
+    self.propagate_up(True)
     return self.val
 
   def str_helper(self, n = 0, verbose = True):
