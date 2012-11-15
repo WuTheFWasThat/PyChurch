@@ -69,7 +69,7 @@ class DirectivesMemory:
 
 memory = DirectivesMemory()
 
-engine_type = 'reduced traces'
+engine_type = 'traces'
 
 # The global environment. Has assignments of names to expressions, and parent pointer 
 

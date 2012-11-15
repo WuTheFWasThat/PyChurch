@@ -15,6 +15,8 @@ class XRP:
   ## SHOULD RETURN THE LOG PROBABILITY
   def prob(self, val, args = None):
     return 0
+  def is_mem_proc(self):
+    return False
   def is_mem(self):
     return False
   def __str__(self):

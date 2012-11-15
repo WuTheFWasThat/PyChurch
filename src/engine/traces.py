@@ -192,7 +192,7 @@ class EvalNode:
     assert self.active
     xrp = self.xrp
     args = self.args
-    if xrp.is_mem():
+    if xrp.is_mem_proc():
       xrp.remove_mem(self.val, args, self)
     else:
       xrp.remove(self.val, args)
@@ -207,7 +207,7 @@ class EvalNode:
     self.p = prob
     self.traces.eval_p += prob
     self.traces.p += prob
-    if xrp.is_mem():
+    if xrp.is_mem_proc():
       xrp.incorporate_mem(val, args, self)
     else:
       xrp.incorporate(val, args)
@@ -268,6 +268,7 @@ class EvalNode:
     #  val = self.evaluate_recurse(self.children[index.num] , self.env, 'child' + str(index.num), reflip)
     elif self.type == 'let':
       # TODO: this really is a let*
+      # Does environment stuff work properly?
       n = len(expr.vars)
       assert len(expr.expressions) == n
       values = []
@@ -279,7 +280,7 @@ class EvalNode:
         new_env.set(expr.vars[i], values[i])
         if val.type == 'procedure':
           val.env = new_env
-      new_body = expr.body.replace(new_env)
+      new_body = expr.body.replace(new_env, None, self)
       # TODO :  should probably be an applychild
       self.get_child('letbody', new_env, new_body).unevaluate()
       val = self.evaluate_recurse(new_body, new_env, 'letbody', reflip)
@@ -324,8 +325,11 @@ class EvalNode:
 
         elif xrp.deterministic or (not reflip):
           if self.active:
-            if self.xrp.is_mem():
+            if self.xrp.is_mem_proc():
               val = xrp.apply_mem(args, None, reflip)
+            elif self.xrp.is_mem():
+              val = self.val
+              # TODO: deal with mem'd function changing..
             elif self.args == args and self.xrp == xrp:
               val = self.val
             else:
@@ -348,16 +352,13 @@ class EvalNode:
 
       self.args = args
     elif self.type == 'function':
-      if self.val is not None:
-        val = self.val
-      else:
-        n = len(expr.vars)
-        new_env = self.env.spawn_child()
-        bound = {}
-        for i in range(n): # Bind variables
-          bound[expr.vars[i]] = True
-        procedure_body = expr.body.replace(new_env, bound)
-        val = Procedure(expr.vars, procedure_body, self.env)
+      n = len(expr.vars)
+      new_env = self.env.spawn_child()
+      bound = {}
+      for i in range(n): # Bind variables
+        bound[expr.vars[i]] = True
+      procedure_body = expr.body.replace(new_env, bound, self)
+      val = Procedure(expr.vars, procedure_body, self.env)
     elif self.type == '=':
       (val1, val2) = self.binary_op_evaluate(reflip)
       val = val1.__eq__(val2)

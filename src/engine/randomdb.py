@@ -202,7 +202,7 @@ class RandomDB(Engine):
         else:
           substack = stack + ['apply', addition]
           if not self.has(substack):
-            if op.xrp.is_mem():
+            if op.xrp.is_mem_proc():
               val = op.xrp.apply_mem(args, stack)
             else:
               val = op.xrp.apply(args)
@@ -210,7 +210,7 @@ class RandomDB(Engine):
           else:
             if reflip:
               self.remove(substack)
-              if op.xrp.is_mem():
+              if op.xrp.is_mem_proc():
                 val = op.xrp.apply_mem(args, stack)
               else:
                 val = op.xrp.apply(args)
@@ -343,7 +343,7 @@ class RandomDB(Engine):
     self.save()
   
     self.remove(stack)
-    if xrp.is_mem():
+    if xrp.is_mem_proc():
       new_val = xrp.apply(args, list(stack))
     else:
       new_val = xrp.apply(args)

@@ -26,7 +26,8 @@ class Expression:
     self.hashval = rrandom.random.randbelow()
     pass
 
-  def replace(self, env, bound = {}):
+  def replace(self, env, bound = {}, help = None):
+    # For traces and reduced traces, help is an evalnode
     pass
   def __eq__(self, other):
     return OpExpression('=', [self, other])
@@ -68,7 +69,7 @@ class ConstExpression(Expression):
     self.val = value
     self.type = 'value'
 
-  def replace(self, env, bound = {}):
+  def replace(self, env, bound = {}, help = None):
     return self
 
   def __str__(self):
@@ -80,14 +81,13 @@ class VarExpression(Expression):
     self.type = 'variable'
     self.name = name
 
-  def replace(self, env, bound = {}):
+  def replace(self, env, bound = {}, help = None):
     if self.name in bound:
       return self
     (val, lookup_env) = env.lookup(self.name)
-    if val is None:
-      return self
-    else:
-      return ConstExpression(val)
+    if help is not None:
+      lookup_env.add_lookup(self.name, help)
+    return ConstExpression(val)
   
   def __str__(self):
     return self.name
@@ -101,9 +101,9 @@ class ApplyExpression(Expression):
     if self.op.type == 'function' and len(self.op.vars) < len(self.children):
       raise RException('Applying function to too many arguments!')
 
-  def replace(self, env, bound = {}):
+  def replace(self, env, bound = {}, help = None):
     # TODO hmm .. replace non-bound things in op?  causes recursion to break...
-    children = [x.replace(env, bound) for x in self.children] 
+    children = [x.replace(env, bound, help) for x in self.children] 
     return ApplyExpression(self.op, children)
   
   def __str__(self):
@@ -116,10 +116,10 @@ class FunctionExpression(Expression):
     self.vars = vars
     self.body = body 
 
-  def replace(self, env, bound = {}):
+  def replace(self, env, bound = {}, help = None):
     for var in self.vars:
       bound[var] = True
-    body = self.body.replace(env, bound)
+    body = self.body.replace(env, bound, help)
     return FunctionExpression(self.vars, body) 
     
   def __str__(self):
@@ -133,10 +133,10 @@ class IfExpression(Expression):
     self.true = true
     self.false = false
 
-  def replace(self, env, bound = {}):
-    cond = self.cond.replace(env, bound)
-    true = self.true.replace(env, bound)
-    false = self.false.replace(env, bound)
+  def replace(self, env, bound = {}, help = None):
+    cond = self.cond.replace(env, bound, help)
+    true = self.true.replace(env, bound, help)
+    false = self.false.replace(env, bound, help)
     return IfExpression(cond, true, false)
   
   def __str__(self):
@@ -153,11 +153,11 @@ class LetExpression(Expression):
       self.expressions.append(expr)
     self.body = body
 
-  def replace(self, env, bound = {}):
-    expressions = [x.replace(env, bound) for x in self.expressions]
+  def replace(self, env, bound = {}, help = None):
+    expressions = [x.replace(env, bound, help) for x in self.expressions]
     for var in self.vars:
       bound[var] = True
-    body = self.body.replace(env, bound)
+    body = self.body.replace(env, bound, help)
     return LetExpression([(self.vars[i], expressions[i]) for i in range(len(expressions))], body) 
 
   def __str__(self):
@@ -169,8 +169,8 @@ class OpExpression(Expression):
     self.type = op
     self.children = children 
 
-  def replace(self, env, bound = {}):
-    children = [x.replace(env, bound) for x in self.children]
+  def replace(self, env, bound = {}, help = None):
+    children = [x.replace(env, bound, help) for x in self.children]
     return OpExpression(self.type, children)
   
   def __str__(self):

@@ -226,7 +226,7 @@ class ReducedEvalNode:
     return
 
   def remove_xrp(self, xrp, args):
-    if xrp.is_mem():
+    if xrp.is_mem_proc():
       xrp.remove_mem(self.val, args, self)
     else:
       xrp.remove(self.val, args)
@@ -239,7 +239,7 @@ class ReducedEvalNode:
     self.traces.eval_p += prob
     self.traces.p += prob
     self.p = prob
-    if xrp.is_mem():
+    if xrp.is_mem_proc():
       xrp.incorporate_mem(val, args, self)
     else:
       xrp.incorporate(val, args)
@@ -317,6 +317,7 @@ class ReducedEvalNode:
         val = self.evaluate_recurse(expr.false, env, hashval, 3)
     elif expr.type == 'let':
       # TODO: this really is a let*
+      # Does environment stuff work properly?
       n = len(expr.vars)
       assert len(expr.expressions) == n
       values = []
@@ -328,7 +329,7 @@ class ReducedEvalNode:
         new_env.set(expr.vars[i], values[i])
         if val.type == 'procedure':
           val.env = new_env
-      new_body = expr.body.replace(new_env)
+      new_body = expr.body.replace(new_env, None, self)
       val = self.evaluate_recurse(new_body, new_env, hashval, 1)
 
     elif expr.type == 'apply':
@@ -368,7 +369,7 @@ class ReducedEvalNode:
       bound = {}
       for i in range(n): # Bind variables
         bound[expr.vars[i]] = True
-      procedure_body = expr.body.replace(new_env, bound)
+      procedure_body = expr.body.replace(new_env, bound, self)
       val = Procedure(expr.vars, procedure_body, env)
     elif expr.type == '=':
       (val1, val2) = self.binary_op_evaluate(expr, env, hashval)

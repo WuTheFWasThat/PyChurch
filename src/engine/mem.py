@@ -104,7 +104,7 @@ class mem_proc_XRP(XRP):
         self.argsdict[addition] = (oldval, oldcount - 1)
   def prob(self, val, args = None):
     return 0 
-  def is_mem(self):
+  def is_mem_proc(self):
     return True
   def __str__(self):
     return 'Memoization of %s XRP' % str(self.procedure)
@@ -138,6 +138,8 @@ class mem_XRP(XRP):
     else:
       assert directives.engine_type == 'randomdb'
     del self.procmem[val.xrp]
+  def is_mem(self):
+    return True
   def prob(self, val, args = None):
     return 0 # correct since other flips will be added to db? 
   def __str__(self):
