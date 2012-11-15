@@ -147,13 +147,10 @@ def follow_prior(names, niter = 1000, burnin = 100, timer = True, printiters = 0
 
 def sample_prior(names, niter = 1000, timer = True, printiters = 0):
   dict = {}
-  evalnodes = {}
 
   for name in names:
     assert name not in ['TIME']
     dict[name] = []
-    (val, id) = predict(var(name))
-    evalnodes[name] = directives.engine.predicts[id]
 
   if timer:
     dict['TIME'] = []
@@ -164,7 +161,7 @@ def sample_prior(names, niter = 1000, timer = True, printiters = 0):
     t = time.time()
     rerun()
     for name in names:
-      val = evalnodes[name].val
+      (val, id) = predict(var(name))
       if val.type != 'procedure' and val.type != 'xrp': 
         dict[name].append(val)
     t = time.time() - t

@@ -69,7 +69,7 @@ class DirectivesMemory:
 
 memory = DirectivesMemory()
 
-engine_type = 'reduced traces'
+engine_type = 'traces'
 
 # The global environment. Has assignments of names to expressions, and parent pointer 
 
@@ -99,7 +99,7 @@ else:
 
 sys.setrecursionlimit(10000)
 
-def reset():
+def reset_helper():
   engine.reset()
 
   assume('bernoulli', xrp(bernoulli_args_XRP()), True)
@@ -139,6 +139,8 @@ def reset():
                       function(['args'], apply(var('restaurants'), [var('args')])))), 
          True) 
 
+def reset():
+  reset_helper()
   memory.reset()
 
 
@@ -166,7 +168,20 @@ def predict(expr):
 
 def rerun():
 # Class representing environments
-  engine.rerun()
+  reset_helper()
+  for id in range(len(memory.directives)):
+    if memory.directives[id] == 'assume':
+      (varname, expr) = memory.assumes[id]
+      engine.assume(varname, expr, id)
+    elif memory.directives[id] == 'observe':
+      (expr, val, active) = memory.observes[id]
+      if active:
+        engine.observe(expr, val, id)
+    else:
+      assert memory.directives[id] == 'predict'
+      (expr, active) = memory.predicts[id]
+      if active:
+        engine.predict(expr, id)
   
 def report_value(id):
   value = engine.report_value(id)
