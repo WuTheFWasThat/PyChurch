@@ -15,7 +15,7 @@ class mem_proc_XRP(XRP):
     self.hash = rrandom.random.randbelow()
   def apply(self, args = None):
     return self.apply_mem(args)
-  def apply_mem(self, args = None, help = None):
+  def apply_mem(self, args = None, help = None, reflip = False):
     assert len(args) == self.n
     addition = ','.join([x.str_hash for x in args])
     if directives.engine_type == 'reduced traces':
@@ -35,7 +35,7 @@ class mem_proc_XRP(XRP):
         self.argsdict[addition] = evalnode
       else:
         evalnode = self.argsdict[addition]
-      val = evalnode.evaluate(False)
+      val = evalnode.evaluate(reflip)
       return val
     else:
       assert directives.engine_type == 'randomdb'
@@ -49,6 +49,7 @@ class mem_proc_XRP(XRP):
     return self.incorporate_mem(val, args)
   def incorporate_mem(self, val, args = None, help = None):
     addition = ','.join([x.str_hash for x in args])
+    # TODO:  assert value is correct
     if directives.engine_type == 'reduced traces':
       # help is evalnode
       assert addition in self.argsdict

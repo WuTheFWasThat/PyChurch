@@ -664,32 +664,33 @@ def run_HMM(t, s, niters = 100, burnin = 100, countup = True):
 def run_topic_model(docsize, s, niters = 1000, burnin = 100, countup = True):
     reset()
     rrandom.random.seed(s)
-    ntopics = 5
-    nwords = 20
+    #ntopics = 5
+    #nwords = 20
 
-    assume('topics-dirichlet', apply(var('make-symmetric-dirichlet'), [nat_expr(ntopics), nat_expr(1)]))
-    assume('words-dirichlet', apply(var('make-symmetric-dirichlet'), [nat_expr(nwords), nat_expr(1)]))
+    #assume('topics-dirichlet', apply(var('make-symmetric-dirichlet'), [nat_expr(ntopics), nat_expr(1)]))
+    #assume('words-dirichlet', apply(var('make-symmetric-dirichlet'), [nat_expr(nwords), nat_expr(1)]))
 
-    assume('get-topic-dist', apply(var('topics-dirichlet'), []))
-    assume('get-topic-words-dist', apply(var('mem'), [function(['i'], apply(var('words-dirichlet'), []))]))
-    assume('sample-dirichlet', function(['prob_array'],
-                               let([('loop', 
-                                    function(['v', 'i'], 
-                                             let([('w', apply(var('prob_array'), [var('i')]))], 
-                                              ifelse(op('<', [var('v'), var('w')]), var('i'), apply(var('loop'), [op('-', [var('v'), var('w')]), op('+', [var('i'), nat_expr(1)])])))))
-                                   ], 
-                                   apply(var('loop'), [uniform(), nat_expr(0)]))))
-    assume('get-topic', apply(var('mem'), [function(['i'], apply(var('sample-dirichlet'), [var('get-topic-dist')]))]))
-    assume('get-word', apply(var('mem'), [function(['i'], apply(var('sample-dirichlet'), [apply(var('get-topic-words-dist'), [apply(var('get-topic'), [var('i')])])]))]))
+    #assume('get-topic-dist', apply(var('topics-dirichlet'), []))
+    #assume('get-topic-words-dist', apply(var('mem'), [function(['i'], apply(var('words-dirichlet'), []))]))
+    #assume('sample-dirichlet', function(['prob_array'],
+    #                           let([('loop', 
+    #                                function(['v', 'i'], 
+    #                                         let([('w', apply(var('prob_array'), [var('i')]))], 
+    #                                          ifelse(op('<', [var('v'), var('w')]), var('i'), apply(var('loop'), [op('-', [var('v'), var('w')]), op('+', [var('i'), nat_expr(1)])])))))
+    #                               ], 
+    #                               apply(var('loop'), [uniform(), nat_expr(0)]))))
+    #assume('get-topic', apply(var('mem'), [function(['i'], apply(var('sample-dirichlet'), [var('get-topic-dist')]))]))
+    #assume('get-word', apply(var('mem'), [function(['i'], apply(var('sample-dirichlet'), [apply(var('get-topic-words-dist'), [apply(var('get-topic'), [var('i')])])]))]))
 
-    for i in range(docsize):
-      assume('get-word' + str(i), apply(var('get-word'), [nat_expr(i)])) 
+    #for i in range(docsize):
+    #  assume('get-word' + str(i), apply(var('get-word'), [nat_expr(i)])) 
 
-    reset()
-    assume('f', function([], apply(var('uniform'), [nat_expr(20)])))
+    #reset()
+    #assume('f', function([], apply(var('uniform'), [nat_expr(20)])))
+    assume('f', apply(var('mem'), [function([], apply(var('uniform'), [nat_expr(20)]))]))
     assume('e', apply(var('f'), []))
 
-    a = test_prior(niters, burnin, countup, False)
+    a = test_prior(10, 1, countup, False)
 
     return a
 

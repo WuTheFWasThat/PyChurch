@@ -76,7 +76,7 @@ class Procedure(Value):
     self.hash = rrandom.random.randbelow()
     self.str_hash = str(self.hash)
   def __str__(self):
-    return 'procedure%s : %s' % (str(self.vars), str(self.body))
+    return '(lambda %s : %s)' % (str(self.vars), str(self.body))
   def __hash__(self):
     return self.hash
   def __eq__(self, other):
