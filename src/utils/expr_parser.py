@@ -1,6 +1,7 @@
 from engine.directives import *
 import utils.infertools as infertools 
 import utils.rrandom as rrandom
+from utils.rexceptions import RException
 from utils.format import table_to_string
 import time
 
@@ -27,7 +28,7 @@ def parse_integer(s, i):
   try:
     integer = int(token)
   except:
-    raise Exception("Expected integer, got %s" % token)
+    raise RException("Expected integer, got %s" % token)
   return (integer, i)
 
 def parse_expr_list(s, i):
@@ -59,30 +60,36 @@ def parse_apply(s, i):
 
 def parse_lambda(s, i):
     (token, i) = parse_token(s, i)
-    assert token == '('
+    if token != '(':
+        raise RException("Expected (, instead got %s" % token)
     vars_list = []
     (token, i) = parse_token(s, i)
     while token != ')':
       vars_list.append(token)
       (token, i) = parse_token(s, i)
-    assert token == ')'
+      if token != ')':
+        raise RException("Expected ), instead got %s" % token)
     (body_expr, i) = parse_expression(s, i)
     return (function(vars_list, body_expr), i)
 
 def parse_let(s, i):
     (token, i) = parse_token(s, i)
-    assert token == '('
+    if token != '(':
+        raise RException("Expected (, instead got %s" % token)
     letmap = []
     (token, i) = parse_token(s, i)
     while token != ')':
-      assert token == '('
+      if token != '(':
+        raise RException("Expected (, instead got %s" % token)
       (var, i) = parse_token(s, i)
       (expr, i) = parse_expression(s, i)
       letmap.append((var, expr))
       (token, i) = parse_token(s, i)
-      assert token == ')'
+      if token != ')':
+          raise RException("Expected ), instead got %s" % token)
       (token, i) = parse_token(s, i)
-    assert token == ')'
+    if token != ')':
+        raise RException("Expected ), instead got %s" % token)
     (body_expr, i) = parse_expression(s, i)
     return (let(letmap, body_expr), i)
 
@@ -115,7 +122,7 @@ def parse_value_token(token):
       elif token == 'True':
         val = BoolValue(True)
       else:
-        raise Exception("Invalid value (Note:  Procedures and XRPs not parseable)")
+        raise RException("Invalid value (Note:  Procedures and XRPs not parseable)")
   return val
 
 def parse_value(s, i):
@@ -125,7 +132,7 @@ def parse_value(s, i):
 def parse_expression(s, i):
     (token, i) = parse_token(s, i)
     if len(token) < 0:
-      raise Exception("No token")
+      raise RException("No token")
     if token == '(':
       (token, j) = parse_token(s, i)
       if token == 'if':
@@ -144,7 +151,8 @@ def parse_expression(s, i):
       else:
         (expr, i) = parse_apply(s, i)
       (token, i) = parse_token(s, i)
-      assert token == ')'
+      if token != ')':
+          raise RException("Expected ), instead got %s" % token)
     else:
       try:
         val = parse_value_token(token)
@@ -210,5 +218,5 @@ def parse_directive(s):
     directives_report = report_directives(directive_type)
     ret_str = table_to_string(directives_report, ['id', 'directive', 'value'])
   else:
-    raise Exception("Invalid directive")
+    raise RException("Invalid directive")
   return ret_str

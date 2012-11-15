@@ -223,11 +223,12 @@ def rerun():
       (expr, val, active) = memory.observes[id]
       if active:
         engine.observe(expr, val, id)
-    else:
-      assert memory.directives[id] == 'predict'
+    elif memory.directives[id] == 'predict':
       (expr, active) = memory.predicts[id]
       if active:
         engine.predict(expr, id)
+    else:
+      raise RException("Invalid directive")
   
 def report_value(id):
   value = engine.report_value(id)

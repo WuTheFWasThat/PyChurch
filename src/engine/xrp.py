@@ -214,7 +214,8 @@ class dirichlet_no_args_XRP(XRP):
       check_prob(prob)
 
     n = len(self.alphas)
-    assert len(probs) == n
+    if len(probs) != n:
+      raise RException("Number of probabilities should match number of alphas")
 
     return math.log(math_gamma(self.alpha)) + sum([(self.alphas[i] - 1) * math.log(probs[i]) for i in range(n)]) \
            - sum([math.log(math_gamma(self.alphas[i])) for i in range(n)])
@@ -405,7 +406,8 @@ class uniform_args_XRP(XRP):
     return NatValue(rrandom.random.randbelow(n))
   def prob(self, val, args = None):
     n = args[0].nat
-    assert 0 <= val.nat < n
+    if not 0 <= val.nat < n:
+      raise RException("uniform_args_XRP should return something between 0 and %d, not %d" % (n, val.nat))
     return -math.log(n)
   def __str__(self):
     return 'uniform'
@@ -422,7 +424,8 @@ class uniform_no_args_XRP(XRP):
   def prob(self, val, args = None):
     if args is not None and len(args) != 0:
       raise RException('uniform_no_args_XRP has no need to take in arguments %s' % str(args))
-    assert 0 <= val.nat < self.n
+    if not 0 <= val.nat < self.n:
+      raise RException("uniform_no_args_XRP should return something between 0 and %d, not %d" % (self.n, val.nat))
     return -math.log(self.n)
   def __str__(self):
     return 'uniform(%d)' % self.n
@@ -473,10 +476,12 @@ class beta_bernoulli_2(XRP):
       self.t += 1
   def remove(self, val, args = None):
     if val.num:
-      assert self.h > 0
+      if not self.h > 0:
+        raise RException("Removing too many heads from beta_bernoulli")
       self.h -= 1
     else:
-      assert self.t > 0
+      if not self.t > 0:
+        raise RException("Removing too many tails from beta_bernoulli")
       self.t -= 1
   def prob(self, val, args = None):
     if (self.h | self.t) == 0:
@@ -503,12 +508,15 @@ class topic_model_XRP(XRP):
     return
   def apply(self, args = None):
     topic = sample_categorical(self.topicdist)
-    assert 0 <= topic < self.ntopics
+    if not 0 <= topic < self.ntopics:
+      raise RException("Invalid topic %d.  There are only %d topics" % (topic, self.ntopics))
     word = sample_categorical(self.worddist[topic])
-    assert 0 <= word < self.nwords
+    if not 0 <= word < self.nwords:
+      raise RException("Invalid word %d.  There are only %d words" % (word, self.nwords))
     return IntValue(word)
   def prob(self, val, args = None):
-    assert 0 <= val.int <= self.nwords
+    if not 0 <= val.int <= self.nwords:
+      raise RException("Invalid word %d.  There are only %d words" % (val.int, self.nwords))
     return self.wordlogprobs[val.int]
   def __str__(self):
     return 'topic model'

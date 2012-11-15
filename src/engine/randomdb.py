@@ -2,6 +2,7 @@ from engine import *
 from expressions import *
 from environment import *
 from utils.random_choice_dict import RandomChoiceDict
+from utils.rexceptions import RException
 
 # TODO:  Use rolling hash for stack
 
@@ -37,7 +38,7 @@ class RandomDB(Engine):
 
   def observe(self, expr, obs_val, id):
     if expr.hashval in self.observes:
-      raise Exception('Already observed %s' % str(expr))
+      raise RException('Already observed %s' % str(expr))
     self.observes[id] = (expr, obs_val) 
     # bit of a hack, here, to make it recognize same things as with noisy_expr
     self.evaluate(expr, self.env, reflip = False, stack = [id], xrp_force_val = obs_val)
@@ -104,7 +105,7 @@ class RandomDB(Engine):
     elif stack in self.db_noise:
       return self.db_noise[stack]
     else:
-      raise Exception('Failed to get stack %s' % str(stack))
+      raise RException('Failed to get stack %s' % str(stack))
 
   def infer(self):
     try:
@@ -185,7 +186,7 @@ class RandomDB(Engine):
       if op.type == 'procedure':
         self.unevaluate(stack + ['apply'], addition)
         if n != len(op.vars):
-          raise Exception('Procedure should have %d arguments.  \nVars were \n%s\n, but children were \n%s.' % (n, op.vars, expr.children))
+          raise RException('Procedure should have %d arguments.  \nVars were \n%s\n, but children were \n%s.' % (n, op.vars, expr.children))
         new_env = op.env.spawn_child()
         for i in range(n):
           new_env.set(op.vars[i], args[i])
@@ -219,7 +220,7 @@ class RandomDB(Engine):
               (xrp, val, dbargs, is_obs_noise) = self.get(substack)
               assert not is_obs_noise
       else:
-        raise Exception('Must apply either a procedure or xrp.  Instead got expression %s' % str(op))
+        raise RException('Must apply either a procedure or xrp.  Instead got expression %s' % str(op))
     elif expr.type == 'function':
       n = len(expr.vars)
       new_env = env.spawn_child()
@@ -285,7 +286,7 @@ class RandomDB(Engine):
       val2 = self.evaluate_recurse(expr.children[1], env, reflip, stack , 'div1')
       val = val1.__div__(val2)
     else:
-      raise Exception('Invalid expression type %s' % expr.type)
+      raise RException('Invalid expression type %s' % expr.type)
     return val
 
 
