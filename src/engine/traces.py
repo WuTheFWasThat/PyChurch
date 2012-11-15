@@ -192,7 +192,7 @@ class EvalNode:
     assert self.active
     xrp = self.xrp
     args = self.args
-    if xrp.is_mem():
+    if xrp.is_mem_proc():
       xrp.remove_mem(self.val, args, self)
     else:
       xrp.remove(self.val, args)
@@ -207,7 +207,7 @@ class EvalNode:
     self.p = prob
     self.traces.eval_p += prob
     self.traces.p += prob
-    if xrp.is_mem():
+    if xrp.is_mem_proc():
       xrp.incorporate_mem(val, args, self)
     else:
       xrp.incorporate(val, args)
@@ -326,6 +326,8 @@ class EvalNode:
           if self.active:
             if self.args == args and self.xrp == xrp:
               val = self.val
+            elif xrp.is_mem():
+              val = self.val # TODO: THIS IS A HACK.  ARGS COULD CHANGE
             else:
               self.remove_xrp()
               val = xrp.apply(args)

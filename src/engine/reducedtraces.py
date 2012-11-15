@@ -212,12 +212,12 @@ class ReducedEvalNode:
       child.unevaluate()
     self.active_children = {}
 
-    for (xrp, args) in self.xrp_applies:
-      self.remove_xrp(xrp, args)
+    for (xrp, val, args) in self.xrp_applies:
+      self.remove_xrp(xrp, val, args)
     self.xrp_applies = []
       
     if self.random_xrp_apply:
-      self.remove_xrp(self.xrp, self.args)
+      self.remove_xrp(self.xrp, self.val, self.args)
       self.traces.remove_xrp(self)
     else:
       assert self.assume or self.predict or self.mem
@@ -225,12 +225,12 @@ class ReducedEvalNode:
     self.active = False
     return
 
-  def remove_xrp(self, xrp, args):
-    if xrp.is_mem():
-      xrp.remove_mem(self.val, args, self)
+  def remove_xrp(self, xrp, val, args):
+    if xrp.is_mem_proc():
+      xrp.remove_mem(val, args, self)
     else:
-      xrp.remove(self.val, args)
-    prob = xrp.prob(self.val, self.args)
+      xrp.remove(val, args)
+    prob = xrp.prob(val, args)
     self.traces.uneval_p += prob
     self.traces.p -= prob
 
@@ -239,7 +239,7 @@ class ReducedEvalNode:
     self.traces.eval_p += prob
     self.traces.p += prob
     self.p = prob
-    if xrp.is_mem():
+    if xrp.is_mem_proc():
       xrp.incorporate_mem(val, args, self)
     else:
       xrp.incorporate(val, args)
@@ -248,7 +248,7 @@ class ReducedEvalNode:
   def apply_random_xrp(self, xrp, args, xrp_force_val = None):
     assert self.random_xrp_apply
     if self.active:
-      self.remove_xrp(self.xrp, self.args)
+      self.remove_xrp(self.xrp, self.val, self.args)
       self.traces.remove_xrp(self)
 
     self.xrp = xrp
@@ -271,6 +271,10 @@ class ReducedEvalNode:
 
     if self.observed:
       xrp_force_val = self.observe_val
+
+    for (xrp, val, args) in self.xrp_applies:
+      self.remove_xrp(xrp, val, args)
+    self.xrp_applies = []
 
     val = self.evaluate_recurse(expr, env, 0, 0, xrp_force_val)
 
@@ -356,7 +360,8 @@ class ReducedEvalNode:
         else:
           val = xrp.apply(args)
           self.add_xrp(xrp, val, args)
-          self.xrp_applies.append((xrp,args))
+          if not xrp.is_mem_proc(): # NOTE: I think this is okay
+            self.xrp_applies.append((xrp, val, args))
         self.xrp = xrp
         assert val is not None
       else:
