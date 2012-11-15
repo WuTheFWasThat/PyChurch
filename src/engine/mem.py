@@ -26,7 +26,6 @@ class mem_proc_XRP(XRP):
         val = evalnode.evaluate()
       else:
         evalnode = self.argsdict[addition]
-        print "HEREEEEEE"
         val = evalnode.val
       return val
     elif directives.engine_type == 'traces':

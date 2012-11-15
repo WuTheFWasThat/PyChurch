@@ -60,7 +60,8 @@ class categorical_no_args_XRP(XRP):
     self.deterministic = False
     self.state = None
     self.probs = [check_prob(p) for p in probs]
-    assert .999 <= sum(self.probs) <= 1.001
+    if not .999 <= sum(self.probs) <= 1.001:
+      raise RException("Categorical probabilities must sum to 1")
     self.n = len(self.probs)
     return
   def apply(self, args = None):
@@ -71,11 +72,22 @@ class categorical_no_args_XRP(XRP):
   def prob(self, val, args = None):
     if args != None and len(args) != 0:
       raise RException("categorical_no_args_XRP has no need to take arguments")
-    assert 0 <= val.int < self.n
+    if not 0 <= val.int < self.n:
+      raise RException("Categorical should only return values between 0 and %d" % self.n)
     log_prob = math.log(self.probs[val.int])
     return log_prob
   def __str__(self):
     return 'categorical(%f, %f)' % (self.mu, self.sigma)
+
+class make_symmetric_categorical_XRP(XRP):
+  def __init__(self):
+    self.deterministic = True
+    return
+  def apply(self, args = None):
+    n = args[0].num
+    return XRPValue(categorical_no_args_XRP([1 / (n + 0.0)] * n)) 
+  def __str__(self):
+    return 'make_symmetric_categorical_XRP'
 
 class gaussian_args_XRP(XRP):
   def __init__(self):
@@ -119,7 +131,7 @@ class make_gaussian_XRP(XRP):
   def apply(self, args = None):
     (mu,sigma) = (args[0].num, args[1].num)
     check_pos(sigma)
-    return NumValue(gaussian_no_args_XRP(mu, sigma)) 
+    return XRPValue(gaussian_no_args_XRP(mu, sigma)) 
   def __str__(self):
     return 'gaussian_XRP'
 
@@ -130,15 +142,20 @@ class array_XRP(XRP):
     self.n = len(self.array)
     return
   def apply(self, args = None):
-    assert len(args) == 1
+    if len(args) != 1:
+      raise RException("Should have 1 argument, not %d" % len(args))
     i = args[0].nat
-    assert 0 <= i < self.n
+    if not 0 <= i < self.n:
+      raise RException("Index must from 0 to %d - 1" % self.n)
     return self.array[i]
   def prob(self, val, args = None):
-    assert len(args) == 1
+    if len(args) != 1:
+      raise RException("Should have 1 argument, not %d" % len(args))
     i = args[0].nat
-    assert 0 <= i < self.n
-    assert val == self.array[i]
+    if not 0 <= i < self.n:
+      raise RException("Index must from 0 to %d - 1" % self.n)
+    if val != self.array[i]:
+      raise RException("Array at index %d should've been %s" % (i, val.__str__()))
     return 0
   def __str__(self):
     return ('array(%s)' % str(self.array))
@@ -153,12 +170,14 @@ class dirichlet_args_XRP(XRP):
     probs = [NumValue(p) for p in dirichlet([arg.num for arg in args])]
     return XRPValue(array_XRP(probs))
   def prob(self, val, args = None):
-    assert val.type == 'xrp'
+    if val.type != 'xrp':
+      raise RException("Returned value should have been an XRP")
     probs = [x.num for x in val.xrp.state]
     for prob in probs:
       check_prob(prob)
     n = len(args)
-    assert len(probs) == n
+    if len(probs) != n:
+      raise RException("Number of arguments, %d, should've been the dimension %d" % (n, len(probs)))
 
     alpha = 0
     for alpha_i in args:
@@ -188,7 +207,8 @@ class dirichlet_no_args_XRP(XRP):
   def prob(self, val, args = None):
     if args is not None and len(args) != 0:
       raise RException('dirichlet_no_args_XRP has no need to take in arguments %s' % str(args))
-    assert val.type == 'xrp'
+    if val.type != 'xrp':
+      raise RException('dirichlet_no_args_XRP should return an XRP')
     probs = [x.num for x in val.xrp.array]
     for prob in probs:
       check_prob(prob)

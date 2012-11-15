@@ -5,49 +5,6 @@ from utils.random_choice_dict import RandomChoiceDict
 import utils.rhash as rhash
 from utils.rexceptions import RException
 
-try:
-  from pypy.rlib.jit import JitDriver
-  jitdriver = JitDriver(greens = [ \
-                                 ],  \
-                        reds   = [  \
-                                 # INTs
-                                 #'assume', \
-                                 #'observed', \
-                                 #'predict', \
-                                 #'active', \
-                                 #'mem', \
-                                 #'random_xrp_apply', \
-                                 ## REFs
-                                 #'traces', \
-                                 #'parent', \
-                                 #'mem_calls', \
-                                 #'env', \
-                                 #'assume_name', \
-                                 #'observe_val', \
-                                 #'expression', \
-                                 #'type', \
-                                 #'children', \
-                                 #'active_children', \
-                                 #'lookups', \
-                                 #'xrp_applies', \
-                                 #'xrp', \
-                                 #'args', \
-                                 #'val', \
-                                 'xrp_force_val', \
-                                 'self', \
-                                 # FLOATs
-                                 #'p' \
-                                 ])
-  def jitpolicy(driver):
-    from pypy.jit.codewriter.policy import JitPolicy
-    return JitPolicy()
-
-  use_jit = True
-except:
-  use_jit = False
-
-# THEN, in REFLIP:
-
 # Class representing environments
 class EnvironmentNode(Environment):
   def __init__(self, parent = None):
@@ -437,37 +394,6 @@ class ReducedEvalNode:
     return val
 
   def reflip(self, xrp_force_val = None):
-
-    if use_jit:
-      jitdriver.jit_merge_point( \
-                                 # INTs
-                                 #observed = self.observed, \
-                                 #assume = self.assume, \
-                                 #predict = self.predict, \
-                                 #active = self.active, \
-                                 #random_xrp_apply = self.random_xrp_apply, \
-                                 #mem = self.mem, \
-                                 ## REFs
-                                 #traces = self.traces, \
-                                 #parent = self.parent, \
-                                 #mem_calls = self.mem_calls, \
-                                 #env = self.env, \
-                                 #assume_name = self.assume_name, \
-                                 #observe_val = self.observe_val, \
-                                 #expression = self.expression, \
-                                 #type = self.type, \
-                                 #children = self.children, \
-                                 #active_children = self.active_children, \
-                                 #lookups = self.lookups, \
-                                 #xrp_applies = self.xrp_applies, \
-                                 #xrp = self.xrp, \
-                                 #args = self.args, \
-                                 #val = self.val, \
-                                 xrp_force_val = xrp_force_val, \
-                                 self = self, \
-                                 # FLOATs
-                                 #p = self.p
-                                 )
 
     assert self.active
     self.val = self.apply_random_xrp(self.xrp, self.args, xrp_force_val)

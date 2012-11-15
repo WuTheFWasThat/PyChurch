@@ -7,7 +7,53 @@ from randomdb import *
 from utils.format import table_to_string
 from utils.rexceptions import RException
 
+import time
 import sys
+
+try:
+  from pypy.rlib.jit import JitDriver
+  jitdriver = JitDriver(greens = [ \
+                                 ### INTs 
+                                 ### REFs 
+                                 ### FLOATs 
+                                 ],  \
+                        reds   = [  \
+                                 ### INTs 
+                                 #'assume', \
+                                 #'observed', \
+                                 #'predict', \
+                                 #'active', \
+                                 #'mem', \
+                                 #'random_xrp_apply', \
+
+                                 ### REFs 
+                                 #'traces', \
+                                 #'parent', \
+                                 #'mem_calls', \
+                                 #'env', \
+                                 #'assume_name', \
+                                 #'observe_val', \
+                                 #'expression', \
+                                 #'type', \
+                                 #'children', \
+                                 #'active_children', \
+                                 #'lookups', \
+                                 #'xrp_applies', \
+                                 #'xrp', \
+                                 #'args', \
+                                 #'val', \
+                                 #'xrp_force_val', \
+                                 'engine' \
+
+                                 ### FLOATs 
+                                 #'p' \
+                                 ])
+  def jitpolicy(driver):
+    from pypy.jit.codewriter.policy import JitPolicy
+    return JitPolicy()
+  use_jit = True
+except:
+  use_jit = False
 
 class DirectivesMemory:
   def __init__(self):
@@ -190,7 +236,47 @@ def report_value(id):
 def report_directives(directive_type = ""):
   return engine.report_directives(directive_type)
 
-def infer():
-  engine.infer()
+def infer(iters = 1):
+
+  t = time.time()
+
+  for i in range(iters):
+    if use_jit:
+      jitdriver.jit_merge_point( \
+                                 # INTs
+                                 #observed = evalnode.observed, \
+                                 #assume = evalnode.assume, \
+                                 #predict = evalnode.predict, \
+                                 #active = evalnode.active, \
+                                 #random_xrp_apply = evalnode.random_xrp_apply, \
+                                 #mem = evalnode.mem, \
+                                 ## REFs
+                                 #traces = evalnode.traces, \
+                                 #parent = evalnode.parent, \
+                                 #mem_calls = evalnode.mem_calls, \
+                                 #env = evalnode.env, \
+                                 #assume_name = evalnode.assume_name, \
+                                 #observe_val = evalnode.observe_val, \
+                                 #expression = evalnode.expression, \
+                                 #type = evalnode.type, \
+                                 #children = evalnode.children, \
+                                 #active_children = evalnode.active_children, \
+                                 #lookups = evalnode.lookups, \
+                                 #xrp_applies = evalnode.xrp_applies, \
+                                 #xrp = evalnode.xrp, \
+                                 #args = evalnode.args, \
+                                 #val = evalnode.val, \
+                                 engine = engine \
+                                 # FLOATs
+                                 #p = evalnode.p
+                                 )   
+    #node = engine.random_node()
+    ## evalnode if traces/reduced traces
+    ## stack if randomdb
+
+    engine.infer()
+
+  t = time.time() - t
+  return t
 
 reset()

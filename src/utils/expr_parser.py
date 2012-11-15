@@ -1,5 +1,6 @@
 from engine.directives import *
 import utils.infertools as infertools 
+import utils.rrandom as rrandom
 from utils.format import table_to_string
 import time
 
@@ -175,7 +176,15 @@ def parse_directive(s):
     forget(id)
     ret_str = 'forgotten'
   elif token == 'infer':
-    infer()
+    try:
+      (iters, i) = parse_integer(s, i)
+    except:
+      iters = 1
+    t = infer(iters)
+    ret_str = 'time: ' + str(t)
+  elif token == 'seed':
+    (seed, i) = parse_integer(s, i)
+    rrandom.random.seed(seed)
   elif token == 'infer_many':
     (expression, i) = parse_expression(s, i)
     (niters, i) = parse_integer(s, i)

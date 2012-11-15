@@ -99,8 +99,7 @@ def infer_many(expression, niter = 1000, burnin = 100, printiters = 0):
       print n, "iters"
 
     # re-draw from prior
-    for t in range(burnin):
-      infer()
+    infer(burnin)
 
     val = evalnode.val
     if val in dict:
@@ -115,8 +114,7 @@ def follow_prior(names, niter = 1000, burnin = 100, timer = True, printiters = 0
   dict = {}
   evalnodes = {}
 
-  for t in range(burnin):
-    infer()
+  infer(burnin)
 
   for name in names:
     assert name not in ['TIME']
