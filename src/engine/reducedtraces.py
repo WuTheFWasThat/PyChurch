@@ -583,24 +583,6 @@ class ReducedTraces(Engine):
     #del d[id]
     return
 
-  def rerun(self):
-    # TODO: fix this
-    self.db = RandomChoiceDict() 
-
-    self.uneval_p = 0
-    self.eval_p = 0
-    self.p = 0
-
-    for id in range(len(self.directives)):
-      node = self.get_directive_node(id)
-      if node.assume:
-        assert node.active
-      if node.active:
-        node.reset()
-        node.evaluate()
-      else:
-        node.reset()
-
   def report_value(self, id):
     node = self.get_directive_node(id)
     if not node.active:

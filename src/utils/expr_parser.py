@@ -195,7 +195,7 @@ def parse_directive(s):
     ret_str = 'cleared'
   elif token == 'report_value':
     (id, i) = parse_integer(s, i)
-    ret_str = 'value: ' + report_value(id)
+    ret_str = 'value: ' + report_value(id).__str__()
   elif token == 'report_directives':
     (directive_type, i) = parse_token(s, i)
     directives_report = report_directives(directive_type)

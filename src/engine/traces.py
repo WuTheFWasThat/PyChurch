@@ -534,14 +534,6 @@ class Traces(Engine):
     #del d[id]
     return
 
-  def rerun(self):
-    for id in range(len(self.directives)):
-      node = self.get_directive_node(id)
-      if node.assume:
-        assert node.active
-      if node.active:
-        node.evaluate(True)
-
   def report_value(self, id):
     node = self.get_directive_node(id)
     if not node.active:
