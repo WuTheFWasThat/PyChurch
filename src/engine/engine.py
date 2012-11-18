@@ -15,8 +15,6 @@ class Engine:
     raise RException("Not implemented")
   def infer(self):
     raise RException("Not implemented")
-  def rerun(self):
-    raise RException("Not implemented")
   def reset(self):
     raise RException("Not implemented")
   

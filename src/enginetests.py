@@ -667,6 +667,7 @@ def run_topic_model(docsize, s, niters = 1000, burnin = 100, countup = True):
     #ntopics = 5
     #nwords = 20
 
+<<<<<<< HEAD
     #assume('topics-dirichlet', apply(var('make-symmetric-dirichlet'), [nat_expr(ntopics), nat_expr(1)]))
     #assume('words-dirichlet', apply(var('make-symmetric-dirichlet'), [nat_expr(nwords), nat_expr(1)]))
 
@@ -687,6 +688,9 @@ def run_topic_model(docsize, s, niters = 1000, burnin = 100, countup = True):
 
     #reset()
     #assume('f', function([], apply(var('uniform'), [nat_expr(20)])))
+=======
+    reset()
+>>>>>>> 5bd017f
     assume('f', apply(var('mem'), [function([], apply(var('uniform'), [nat_expr(20)]))]))
     assume('e', apply(var('f'), []))
 

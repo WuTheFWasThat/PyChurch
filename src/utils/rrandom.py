@@ -4,12 +4,12 @@
 # https://bitbucket.org/pypy/pypy/src/default/pypy/rlib/rrandom.py
 
 try:
-    from pypy.rlib.rarithmetic import r_uint, intmask
+    from pypy.rlib.rarithmetic import r_uint
 except:
     def r_uint(x):
       return x
-    def intmask(x):
-      return x
+
+from utils.rexceptions import RException
 
 N = 624
 M = 397
@@ -108,7 +108,7 @@ class Random(object):
         y ^= (y << 7) & TEMPERING_MASK_A
         y ^= (y << 15) & TEMPERING_MASK_B
         y ^= (y >> 18)
-        return intmask(y)
+        return y
 
     def random(self):
         a = self.genrand32() >> 5
@@ -117,13 +117,12 @@ class Random(object):
         return r
 
     def randbelow(self, max = 0):
-        a = self.genrand32() >> 5
-        b = self.genrand32() >> 6
+        r = self.random()
         if max == 0:
-          r = (a * 67108864 + b)
-        else:
-          r = (a * 67108864 + b) % max
-        return intmask(r)
+          max = r_uint(9007199254740992)
+        elif max < 0:
+          raise RException("Randbelow got a negative argument")
+        return int(r * max)
 
     def randrange(self, start, stop=None, step=1):
         """Choose a random item from range(start, stop[, step]).

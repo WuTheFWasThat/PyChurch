@@ -1,5 +1,6 @@
 from engine.directives import *
 import time
+from utils.rexceptions import RException
 
 """ Dictionary -> distribution """
 
@@ -47,7 +48,6 @@ def merge_counts(d1, d2):
 
 # TODO: OUTDATED
 def reject_infer():
-  assert not directives.engine_type == 'traces'
   flag = False
   while not flag:
     rerun()
@@ -63,7 +63,6 @@ def reject_infer():
 
 # Rejection based inference
 def reject_infer_many(name, niter = 1000):
-  assert not directives.engine_type == 'traces'
   if name in directives.engine.vars:
     expr = directives.engine.vars[name]
   else:
@@ -99,8 +98,7 @@ def infer_many(expression, niter = 1000, burnin = 100, printiters = 0):
       print n, "iters"
 
     # re-draw from prior
-    for t in range(burnin):
-      infer()
+    infer(burnin)
 
     val = evalnode.val
     if val in dict:
@@ -115,11 +113,11 @@ def follow_prior(names, niter = 1000, burnin = 100, timer = True, printiters = 0
   dict = {}
   evalnodes = {}
 
-  for t in range(burnin):
-    infer()
+  infer(burnin)
 
   for name in names:
-    assert name not in ['TIME']
+    if name in ['TIME']:
+      raise RException("shouldn't have a variable called TIME")
     dict[name] = []
     (val, id) = predict(var(name))
     evalnodes[name] = directives.engine.predicts[id]
@@ -147,13 +145,11 @@ def follow_prior(names, niter = 1000, burnin = 100, timer = True, printiters = 0
 
 def sample_prior(names, niter = 1000, timer = True, printiters = 0):
   dict = {}
-  evalnodes = {}
 
   for name in names:
-    assert name not in ['TIME']
+    if name in ['TIME']:
+      raise RException("shouldn't have a variable called TIME")
     dict[name] = []
-    (val, id) = predict(var(name))
-    evalnodes[name] = directives.engine.predicts[id]
 
   if timer:
     dict['TIME'] = []
@@ -164,7 +160,7 @@ def sample_prior(names, niter = 1000, timer = True, printiters = 0):
     t = time.time()
     rerun()
     for name in names:
-      val = evalnodes[name].val
+      (val, id) = predict(var(name))
       if val.type != 'procedure' and val.type != 'xrp': 
         dict[name].append(val)
     t = time.time() - t
@@ -189,27 +185,31 @@ def test_prior(niter = 1000, burnin = 100, countup = True, timer = True):
   elif directives.engine_type == 'traces':
     for id in directives.engine.assumes:
       evalnode = directives.engine.assumes[id]
-      assert evalnode.assume_name not in ['TIME']
+      if evalnode.assume_name in ['TIME']:
+        raise RException("shouldn't have an assume_name called TIME")
       expressions.append(evalnode.expression)
       varnames.append(evalnode.assume_name)
   else:
     for (varname, expr) in directives.engine.assumes:
-      assert varname not in ['TIME']
+      if varname in ['TIME']:
+        raise RException("shouldn't have a varname called TIME")
       expressions.append(expr)
       varnames.append(varname)
 
-  d1 = sample_prior(varnames, niter, timer)
   d2 = follow_prior(varnames, niter, burnin, timer)
+  d1 = sample_prior(varnames, niter, timer)
 
   for i in range(len(varnames)):
     name = varnames[i]
     if name in d1:
-      assert name in d2
+      if name not in d2:
+        raise RException("sample_prior has varname that follow_prior doesn't: %s" % name)
       if countup:
         d1[name] = count_up(d1[name])
         d2[name] = count_up(d2[name])
     else:
-      assert name not in d2
+      if name in d2:
+        raise RException("follow_prior has varname that sample_prior doesn't: %s" % name)
   if countup and timer:
     d1['TIME'] = count_up(d1['TIME'])
     d2['TIME'] = count_up(d2['TIME'])
@@ -252,12 +252,11 @@ def get_cdf(valuedict, start, end, bucketsize, normalizebool = True):
   for i in range(numbuckets):
     cumulative.append(cumulative[-1] + density[i])
   if normalizebool:
-    assert 0.999 < cumulative[-1] < 1.001
+    if not 0.999 < cumulative[-1] < 1.001:
+      raise RException("Cumulative distribution should be 1, at the end")
   return cumulative
 
 def get_beta_cdf(a, b, bucketsize):
-  assert type(a) == type(b) == int
-
   coeffs = [math.gamma(a+b) / (math.gamma(i + 1) * math.gamma(a+b-i)) for i in range(a, a+b)]
 
   numbuckets = int(math.floor(1.0 / bucketsize))

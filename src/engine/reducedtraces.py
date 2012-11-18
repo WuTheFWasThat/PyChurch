@@ -5,48 +5,6 @@ from utils.random_choice_dict import RandomChoiceDict
 import utils.rhash as rhash
 from utils.rexceptions import RException
 
-try:
-  from pypy.rlib.jit import JitDriver
-  jitdriver = JitDriver(greens = [ \
-                                 ],  \
-                        reds   = [  \
-                                 # INTs
-                                 #'assume', \
-                                 #'observed', \
-                                 #'predict', \
-                                 #'active', \
-                                 #'mem', \
-                                 #'random_xrp_apply', \
-                                 ## REFs
-                                 #'traces', \
-                                 #'parent', \
-                                 #'mem_calls', \
-                                 #'env', \
-                                 #'assume_name', \
-                                 #'observe_val', \
-                                 #'expression', \
-                                 #'type', \
-                                 #'children', \
-                                 #'active_children', \
-                                 #'lookups', \
-                                 #'xrp_applies', \
-                                 #'xrp', \
-                                 #'args', \
-                                 #'val', \
-                                 'xrp_force_val', \
-                                 'self', \
-                                 # FLOATs
-                                 #'p' \
-                                 ])
-  def jitpolicy(driver):
-    from pypy.jit.codewriter.policy import JitPolicy
-    return JitPolicy()
-
-  use_jit = True
-except:
-  use_jit = False
-
-# THEN, in REFLIP:
 
 # Class representing environments
 class EnvironmentNode(Environment):
@@ -183,7 +141,7 @@ class ReducedEvalNode:
 
     if self.assume:
       assert self.parent is None
-      # lookups can be affected *while* propogating up. 
+      # lookups can be affected *while* propagating up. 
       lookup_nodes = []
       for evalnode in self.env.get_lookups(self.assume_name, self):
         lookup_nodes.append(evalnode)
@@ -193,7 +151,7 @@ class ReducedEvalNode:
       self.propagate_to(self.parent)
 
     if self.mem:
-      # self.mem_calls can be affected *while* propogating up.  However, if new links are created, they'll use the new value
+      # self.mem_calls can be affected *while* propagating up.  However, if new links are created, they'll use the new value
       for evalnode in self.mem_calls.keys():
         self.propagate_to(evalnode)
 
@@ -212,12 +170,12 @@ class ReducedEvalNode:
       child.unevaluate()
     self.active_children = {}
 
-    for (xrp, args) in self.xrp_applies:
-      self.remove_xrp(xrp, args)
+    for (xrp, val, args) in self.xrp_applies:
+      self.remove_xrp(xrp, val, args)
     self.xrp_applies = []
       
     if self.random_xrp_apply:
-      self.remove_xrp(self.xrp, self.args)
+      self.remove_xrp(self.xrp, self.val, self.args)
       self.traces.remove_xrp(self)
     else:
       assert self.assume or self.predict or self.mem
@@ -225,12 +183,18 @@ class ReducedEvalNode:
     self.active = False
     return
 
+<<<<<<< HEAD
   def remove_xrp(self, xrp, args):
     if xrp.is_mem_proc():
       xrp.remove_mem(self.val, args, self)
+=======
+  def remove_xrp(self, xrp, val, args):
+    if xrp.is_mem_proc():
+      xrp.remove_mem(val, args, self)
+>>>>>>> 5bd017f
     else:
-      xrp.remove(self.val, args)
-    prob = xrp.prob(self.val, self.args)
+      xrp.remove(val, args)
+    prob = xrp.prob(val, args)
     self.traces.uneval_p += prob
     self.traces.p -= prob
 
@@ -248,7 +212,7 @@ class ReducedEvalNode:
   def apply_random_xrp(self, xrp, args, xrp_force_val = None):
     assert self.random_xrp_apply
     if self.active:
-      self.remove_xrp(self.xrp, self.args)
+      self.remove_xrp(self.xrp, self.val, self.args)
       self.traces.remove_xrp(self)
 
     self.xrp = xrp
@@ -271,6 +235,10 @@ class ReducedEvalNode:
 
     if self.observed:
       xrp_force_val = self.observe_val
+
+    for (xrp, val, args) in self.xrp_applies:
+      self.remove_xrp(xrp, val, args)
+    self.xrp_applies = []
 
     val = self.evaluate_recurse(expr, env, 0, 0, xrp_force_val)
 
@@ -357,7 +325,8 @@ class ReducedEvalNode:
         else:
           val = xrp.apply(args)
           self.add_xrp(xrp, val, args)
-          self.xrp_applies.append((xrp,args))
+          if not xrp.is_mem_proc(): # NOTE: I think this is okay
+            self.xrp_applies.append((xrp, val, args))
         self.xrp = xrp
         assert val is not None
       else:
@@ -433,37 +402,6 @@ class ReducedEvalNode:
     return val
 
   def reflip(self, xrp_force_val = None):
-
-    if use_jit:
-      jitdriver.jit_merge_point( \
-                                 # INTs
-                                 #observed = self.observed, \
-                                 #assume = self.assume, \
-                                 #predict = self.predict, \
-                                 #active = self.active, \
-                                 #random_xrp_apply = self.random_xrp_apply, \
-                                 #mem = self.mem, \
-                                 ## REFs
-                                 #traces = self.traces, \
-                                 #parent = self.parent, \
-                                 #mem_calls = self.mem_calls, \
-                                 #env = self.env, \
-                                 #assume_name = self.assume_name, \
-                                 #observe_val = self.observe_val, \
-                                 #expression = self.expression, \
-                                 #type = self.type, \
-                                 #children = self.children, \
-                                 #active_children = self.active_children, \
-                                 #lookups = self.lookups, \
-                                 #xrp_applies = self.xrp_applies, \
-                                 #xrp = self.xrp, \
-                                 #args = self.args, \
-                                 #val = self.val, \
-                                 xrp_force_val = xrp_force_val, \
-                                 self = self, \
-                                 # FLOATs
-                                 #p = self.p
-                                 )
 
     assert self.active
     self.val = self.apply_random_xrp(self.xrp, self.args, xrp_force_val)
@@ -579,6 +517,7 @@ class ReducedTraces(Engine):
     #del d[id]
     return
 
+<<<<<<< HEAD
   def rerun(self):
     # TODO: do mems get reran?
     self.db = RandomChoiceDict() 
@@ -597,6 +536,8 @@ class ReducedTraces(Engine):
       else:
         node.reset()
 
+=======
+>>>>>>> 5bd017f
   def report_value(self, id):
     node = self.get_directive_node(id)
     if not node.active:

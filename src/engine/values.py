@@ -148,7 +148,7 @@ class NumValue(Value):
   def __mul__(self, other):
     return NumValue(self.num * other.num)
   def __div__(self, other):
-    return NumValue(self.num / other.num)
+    return NumValue(self.num / (other.num + 0.0))
   def __inv__(self):
     return NumValue(- self.num)
   def __nonzero__(self):

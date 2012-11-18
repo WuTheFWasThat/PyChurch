@@ -7,7 +7,8 @@ class Environment:
     return
 
   def reset(self):
-    assert self.parent is None
+    if self.parent is not None:
+      raise RException("Resetting non-root environment")
     self.__init__()
 
   def set(self, name, value):

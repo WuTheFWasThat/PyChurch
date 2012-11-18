@@ -104,12 +104,14 @@ class EvalNode:
       self.children[addition] = child
 
   def add_assume(self, name, env):
-    assert env == self.env
+    if not env is self.env:
+      raise RException("Adding to wrong environment")
     self.assume_name = name
     self.assume = True
 
   def setlookup(self, env):
-    assert self.expression.type == 'variable'
+    if not self.expression.type == 'variable':
+      raise RException("Setting lookup in a non-variable expression")
     self.lookup = env 
     env.add_lookup(self.expression.name, self)
 
@@ -118,7 +120,8 @@ class EvalNode:
     env.rem_lookup(name, self)
 
   def setargs(self, args):
-    assert self.type == 'apply'
+    if not self.type == 'apply':
+      raise RException("Setting args in a non-apply expression")
     self.args = args
 
   def propagate_up(self, start = False):
@@ -133,7 +136,8 @@ class EvalNode:
       if not start:
         oldval = self.val
         val = self.evaluate(reflip = 0.5, xrp_force_val = self.val)
-        assert val == oldval
+        if not val is oldval:
+          raise RException("Failed to forced val")
         return val
       else:
         val = self.val
@@ -141,8 +145,9 @@ class EvalNode:
       val = self.evaluate(reflip = 0.5, xrp_force_val = None)
 
     if self.assume:
-      assert self.parent is None
-      # lookups can be affected *while* propogating up. 
+      if not self.parent is None:
+        raise RException("Assume node should not have parent")
+      # lookups can be affected *while* propagating up. 
       lookup_nodes = []
       for evalnode in self.env.get_lookups(self.assume_name, self):
         lookup_nodes.append(evalnode)
@@ -152,7 +157,7 @@ class EvalNode:
       self.parent.propagate_up()
 
     if self.mem:
-      # self.mem_calls can be affected *while* propogating up.  However, if new links are created, they'll use the new value
+      # self.mem_calls can be affected *while* propagating up.  However, if new links are created, they'll use the new value
       for evalnode in self.mem_calls.keys():
         evalnode.propagate_up()
 
@@ -167,7 +172,8 @@ class EvalNode:
     expr = self.expression
     if self.type == 'variable':
       # Don't remove reference value.
-      assert self.lookup
+      if not self.lookup:
+        raise RException("Variable wasn't looked up")
       self.remlookup(expr.name, self.lookup)
     elif self.type == 'apply':
       n = len(expr.children)
@@ -176,10 +182,12 @@ class EvalNode:
       self.get_child('operator', self.env, expr.op).unevaluate()
       if self.procedure_apply: 
         addition = ','.join([x.str_hash for x in self.args])
-        assert addition in self.applychildren
+        if not addition in self.applychildren:
+          raise RException("Addition not in applychildren")
         self.applychildren[addition].unevaluate()
       else:
-        assert self.xrp_apply
+        if not self.xrp_apply:
+          raise RException("Apply is neither procedure nor xrp apply")
         self.remove_xrp()
     else:
       for x in self.children:
@@ -189,7 +197,8 @@ class EvalNode:
     return
 
   def remove_xrp(self):
-    assert self.active
+    if not self.active:
+      raise RException("Removing XRP from inactive node")
     xrp = self.xrp
     args = self.args
     if xrp.is_mem_proc():
@@ -234,7 +243,8 @@ class EvalNode:
   #          0 # reflip nothing
   def evaluate(self, reflip = False, xrp_force_val = None):
     if reflip == False and self.active:
-      assert self.val is not None
+      if self.val is None:
+        raise RException("Active node has no value")
       return self.val
 
     expr = self.expression
@@ -261,7 +271,8 @@ class EvalNode:
         val = self.evaluate_recurse(expr.false, self.env, 'false', reflip)
     #elif self.type == 'switch':
     #  index = self.evaluate_recurse(expr.index, self.env, 'index', reflip)
-    #  assert 0 <= index.num < expr.n
+    #  if not 0 <= index.num < expr.n:
+    #    raise RException("Invalid index for switch")
     #  for i in range(expr.n):
     #    if i != index.num:
     #      self.get_child('child' + str(i), self.env, expr.children[i]).unevaluate()
@@ -270,7 +281,8 @@ class EvalNode:
       # TODO: this really is a let*
       # Does environment stuff work properly?
       n = len(expr.vars)
-      assert len(expr.expressions) == n
+      if not len(expr.expressions) == n:
+        raise RException("Let has non-matching number of variables and expressions")
       values = []
       new_env = self.env
       for i in range(n): # Bind variables
@@ -314,7 +326,8 @@ class EvalNode:
           val = self.val
           self.add_xrp(self.xrp, self.val, self.args)
         elif xrp_force_val is not None:
-          assert reflip != True or self.observed
+          if reflip == True and not self.observed:
+            raise RException("Forcing value that is not observe, and wants reflip")
           if xrp.deterministic:
             raise RException("Forced XRP application should not be deterministic")
             
@@ -325,11 +338,16 @@ class EvalNode:
 
         elif xrp.deterministic or (not reflip):
           if self.active:
+<<<<<<< HEAD
             if self.xrp.is_mem_proc():
               val = xrp.apply_mem(args, None, reflip)
             elif self.xrp.is_mem():
               val = self.val
               # TODO: deal with mem'd function changing..
+=======
+            if xrp.is_mem_proc():
+              val = xrp.apply(args)
+>>>>>>> 5bd017f
             elif self.args == args and self.xrp == xrp:
               val = self.val
             else:
@@ -346,7 +364,8 @@ class EvalNode:
           self.add_xrp(xrp, val, args)
 
         self.xrp = xrp
-        assert val is not None
+        if val is None:
+          raise RException("Value is not set")
       else:
         raise RException('Must apply either a procedure or xrp.  Instead got expression %s' % str(op))
 
@@ -422,7 +441,8 @@ class EvalNode:
     self.active = True
 
     if self.assume:
-      assert self.parent is None
+      if self.parent is not None:
+        raise RException("Assume should not have a parent")
       self.env.set(self.assume_name, val) # Environment in which this was evaluated
 
     return val
@@ -431,7 +451,12 @@ class EvalNode:
     #if use_jit:
     #  jitdriver.jit_merge_point(node=self.val)
     self.evaluate(reflip = 0.5, xrp_force_val = force_val)
+<<<<<<< HEAD
     assert self.random_xrp_apply
+=======
+    if not self.random_xrp_apply:
+      raise RException("Reflipping something that isn't a random xrp apply")
+>>>>>>> 5bd017f
     self.propagate_up(True)
     return self.val
 
@@ -485,9 +510,10 @@ class Traces(Engine):
           directive_report.append([str(id), directive, self.assumes[id].val.__str__()])
         elif directive == 'observe':
           directive_report.append([str(id), directive, self.observes[id].val.__str__()])
-        else:
-          assert directive == 'predict'
+        elif directive == 'predict':
           directive_report.append([str(id), directive, self.predicts[id].val.__str__()])
+        else:
+          raise RException("Invalid directive %s" % directive_type)
     return directive_report
 
   def assume(self, name, expr, id):
@@ -495,7 +521,8 @@ class Traces(Engine):
 
     if id != -1:
       self.assumes[id] = evalnode
-      assert id == len(self.directives)
+      if id != len(self.directives):
+        raise RException("Id %d does not agree with directives length of %d" % (id, len(self.directives)))
       self.directives.append('assume')
 
     val = evalnode.evaluate()
@@ -507,7 +534,8 @@ class Traces(Engine):
   def predict(self, expr, id):
     evalnode = EvalNode(self, self.env, expr)
 
-    assert id == len(self.directives)
+    if id != len(self.directives):
+      raise RException("Id %d does not agree with directives length of %d" % (id, len(self.directives)))
     self.directives.append('predict')
     self.predicts[id] = evalnode
     val = evalnode.evaluate(False)
@@ -516,7 +544,8 @@ class Traces(Engine):
   def observe(self, expr, obs_val, id):
     evalnode = EvalNode(self, self.env, expr)
 
-    assert id == len(self.directives)
+    if id != len(self.directives):
+      raise RException("Id %d does not agree with directives length of %d" % (id, len(self.directives)))
     self.directives.append('observe')
     self.observes[id] = evalnode
 
@@ -538,14 +567,6 @@ class Traces(Engine):
     #del d[id]
     return
 
-  def rerun(self):
-    for id in range(len(self.directives)):
-      node = self.get_directive_node(id)
-      if node.assume:
-        assert node.active
-      if node.active:
-        node.evaluate(True)
-
   def report_value(self, id):
     node = self.get_directive_node(id)
     if not node.active:
@@ -558,9 +579,10 @@ class Traces(Engine):
       node = self.assumes[id]
     elif self.directives[id] == 'observe':
       node = self.observes[id]
-    else:
-      assert self.directives[id] == 'predict'
+    elif self.directives[id] == 'predict':
       node = self.predicts[id]
+    else:
+      raise RException("Invalid directive")
     return node
 
   def report_value(self, id):
@@ -570,10 +592,11 @@ class Traces(Engine):
     elif self.directives[id] == 'observe':
       observe_node = self.observes[id]
       val = observe_node.val
-    else:
-      assert self.directives[id] == 'predict'
+    elif self.directives[id] == 'predict':
       predict_node = self.predicts[id]
       val = predict_node.val
+    else:
+      raise RException("Invalid directive")
     return val 
 
   def reflip(self, reflip_node):
@@ -582,8 +605,10 @@ class Traces(Engine):
     if debug:
       old_self = self.__str__()
 
-    assert reflip_node.random_xrp_apply
-    assert reflip_node.val is not None
+    if not reflip_node.random_xrp_apply:
+      raise RException("Reflipping something which isn't a random xrp application")
+    if reflip_node.val is None:
+      raise RException("Reflipping something which previously had value None")
     
     self.eval_p = 0
     self.uneval_p = 0
@@ -642,11 +667,13 @@ class Traces(Engine):
   # Add an XRP application node to the db
   def add_xrp(self, args, evalnodecheck = None):
     evalnodecheck.setargs(args)
-    assert not self.db.__contains__(evalnodecheck)
+    if self.db.__contains__(evalnodecheck):
+      raise RException("DB already had this evalnode")
     self.db.__setitem__(evalnodecheck, True)
 
   def remove_xrp(self, evalnode):
-    assert self.db.__contains__(evalnode)
+    if not self.db.__contains__(evalnode):
+      raise RException("DB did not already have this evalnode")
     self.db.__delitem__(evalnode)
 
   def infer(self):
