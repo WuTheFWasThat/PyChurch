@@ -67,8 +67,8 @@ def parse_lambda(s, i):
     while token != ')':
       vars_list.append(token)
       (token, i) = parse_token(s, i)
-      if token != ')':
-        raise RException("Expected ), instead got %s" % token)
+    if token != ')':
+      raise RException("Expected ), instead got %s" % token)
     (body_expr, i) = parse_expression(s, i)
     return (function(vars_list, body_expr), i)
 

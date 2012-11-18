@@ -5,6 +5,7 @@ from utils.random_choice_dict import RandomChoiceDict
 import utils.rhash as rhash
 from utils.rexceptions import RException
 
+
 # Class representing environments
 class EnvironmentNode(Environment):
   def __init__(self, parent = None):
