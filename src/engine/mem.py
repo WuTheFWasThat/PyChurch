@@ -15,14 +15,9 @@ class mem_proc_XRP(XRP):
     self.hash = rrandom.random.randbelow()
   def apply(self, args = None):
     return self.apply_mem(args)
-<<<<<<< HEAD
-  def apply_mem(self, args = None, help = None, reflip = False):
-    assert len(args) == self.n
-=======
   def apply_mem(self, args = None, help = None):
     if len(args) != self.n:
       raise RException("Gave a mem'd procedure with %d arguments %d arguments instead" % (self.n, len(args)))
->>>>>>> 5bd017f
     addition = ','.join([x.str_hash for x in args])
     if directives.engine_type == 'reduced traces':
       if addition not in self.argsdict:

@@ -183,15 +183,9 @@ class ReducedEvalNode:
     self.active = False
     return
 
-<<<<<<< HEAD
-  def remove_xrp(self, xrp, args):
-    if xrp.is_mem_proc():
-      xrp.remove_mem(self.val, args, self)
-=======
   def remove_xrp(self, xrp, val, args):
     if xrp.is_mem_proc():
       xrp.remove_mem(val, args, self)
->>>>>>> 5bd017f
     else:
       xrp.remove(val, args)
     prob = xrp.prob(val, args)
@@ -517,27 +511,6 @@ class ReducedTraces(Engine):
     #del d[id]
     return
 
-<<<<<<< HEAD
-  def rerun(self):
-    # TODO: do mems get reran?
-    self.db = RandomChoiceDict() 
-
-    self.uneval_p = 0
-    self.eval_p = 0
-    self.p = 0
-
-    for id in range(len(self.directives)):
-      node = self.get_directive_node(id)
-      if node.assume:
-        assert node.active
-      if node.active:
-        node.reset()
-        node.evaluate()
-      else:
-        node.reset()
-
-=======
->>>>>>> 5bd017f
   def report_value(self, id):
     node = self.get_directive_node(id)
     if not node.active:

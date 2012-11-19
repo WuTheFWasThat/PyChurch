@@ -338,18 +338,11 @@ class EvalNode:
 
         elif xrp.deterministic or (not reflip):
           if self.active:
-<<<<<<< HEAD
-            if self.xrp.is_mem_proc():
-              val = xrp.apply_mem(args, None, reflip)
-            elif self.xrp.is_mem():
-              val = self.val
-              # TODO: deal with mem'd function changing..
-=======
             if xrp.is_mem_proc():
               val = xrp.apply(args)
->>>>>>> 5bd017f
             elif self.args == args and self.xrp == xrp:
               val = self.val
+              # TODO: deal with mem'd function changing..>
             else:
               self.remove_xrp()
               val = xrp.apply(args)
@@ -451,12 +444,8 @@ class EvalNode:
     #if use_jit:
     #  jitdriver.jit_merge_point(node=self.val)
     self.evaluate(reflip = 0.5, xrp_force_val = force_val)
-<<<<<<< HEAD
-    assert self.random_xrp_apply
-=======
     if not self.random_xrp_apply:
       raise RException("Reflipping something that isn't a random xrp apply")
->>>>>>> 5bd017f
     self.propagate_up(True)
     return self.val
 
