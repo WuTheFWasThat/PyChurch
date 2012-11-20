@@ -1,8 +1,9 @@
-import utils.expr_parser as parser
-from ripl import RIPL
 
-import os
+import sys
 import subprocess
+import socket
+
+from ripl import RIPL
 
 def expr_list_to_string(expr_list):
     if type(expr_list) is not list:
@@ -19,13 +20,15 @@ def expr_list_to_string(expr_list):
     string += ")"
     return string
 
-# TODO:  make DirectRIPL and SocketRIPL into same thing, which just takes a function from strings to strings
-# need to deal with the space pid thing though
+class SocketRIPL(RIPL):
 
-class DirectRIPL(RIPL):
-    
     def __init__(self, state_type = "traces", kernel_type = "MH"):
         
+        self.socket = socket.create_connection(('localhost', 2222))
+
+        self.bufsize = 1048576
+        self.socket.recv(self.bufsize)
+
         self.assumes = {}
         self.observes = {}
         self.predicts = {}
@@ -37,8 +40,8 @@ class DirectRIPL(RIPL):
     
     def assume(self, name_str, expr_lst):
         msg = "assume " + name_str + " " + expr_list_to_string(expr_lst)
-
-        msg = parser.parse_directive(msg)
+        self.socket.send(msg)
+        msg = self.socket.recv(self.bufsize)
         msgs = msg.split('\n')
         val = self.get_field(msgs[0], 'value: ')
         id = self.get_field(msgs[1], 'id: ')
@@ -55,8 +58,8 @@ class DirectRIPL(RIPL):
 
     def observe(self, expr_lst, literal_val):
         msg = "assume " + name_str + " " + expr_list_to_string(expr_lst)
-
-        msg = parser.parse_directive(msg)
+        self.socket.send(msg)
+        msg = self.socket.recv(self.bufsize)
         id = self.get_field(msg, 'id: ')
 
         observation = {}
@@ -70,8 +73,8 @@ class DirectRIPL(RIPL):
 
     def predict(self, expr_lst):
         msg = "predict " + expr_list_to_string(expr_lst)
-
-        msg = parser.parse_directive(msg)
+        self.socket.send(msg)
+        msg = self.socket.recv(self.bufsize)
         msgs = msg.split('\n')
         val = self.get_field(msgs[0], 'value: ')
         id = self.get_field(msgs[1], 'id: ')
@@ -87,32 +90,32 @@ class DirectRIPL(RIPL):
         
     def forget(self, directive_id):
         msg = "forget " + str(directive_id)
-
-        msg = parser.parse_directive(msg)
+        self.socket.send(msg)
+        msg = self.socket.recv(self.bufsize)
                  
     def clear(self):
         msg = "clear"
-
-        msg = parser.parse_directive(msg)
+        self.socket.send(msg)
+        msg = self.socket.recv(self.bufsize)
                  
     def logscore(self, directive_id=None):
         raise Exception("Not implemented yet")
 
     def seed(self, seed):
         msg = "seed " + str(seed)
-
-        msg = parser.parse_directive(msg)
+        self.socket.send(msg)
+        msg = self.socket.recv(self.bufsize)
 
     def space(self):
-        pid = os.getpid()
+        pid = 22139
         p = subprocess.Popen(["ps", "-o", "rss=", "-p", str(pid)], stdout=subprocess.PIPE)
         s = p.communicate()[0].strip()
         return s
 
     def infer(self, iters, infer_config=None):
         msg = "infer " + str(iters)
-
-        msg = parser.parse_directive(msg)
+        self.socket.send(msg)
+        msg = self.socket.recv(self.bufsize)
         
         msgs = msg.split('\n')
         t = self.get_field(msgs[0], 'time: ')
@@ -132,17 +135,16 @@ class DirectRIPL(RIPL):
 
     def report_value(self, directive_id):
         msg = "report_directives " + str(directive_id)
-
-        msg = parser.parse_directive(msg)
+        self.socket.send(msg)
+        msg = self.socket.recv(self.bufsize)
         return self.get_field(msg, 'value: ')
 
     def report_directives(self, directive_type=None):
         if directive_type is None:
             directive_type = ""
         msg = "report_directives " + directive_type
-
-        msg = parser.parse_directive(msg)
-
+        self.socket.send(msg)
+        msg = self.socket.recv(self.bufsize)
 
         out = {}
         if directive_type == "assume":
@@ -167,3 +169,4 @@ class DirectRIPL(RIPL):
 
         return out
             
+
