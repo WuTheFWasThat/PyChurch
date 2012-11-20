@@ -6,6 +6,7 @@ from engine.randomdb import *
 from ripl import RIPL
 
 
+import json
 import os
 import subprocess
 import sys
@@ -161,63 +162,17 @@ class DirectRIPL(RIPL):
         msg = self.directives.parse_and_run_command(msg)
         return self.get_field(msg, 'value: ')
 
-    def report_directives(self, directive_type=None):
-        if directive_type is None:
-            directive_type = ""
-        msg = "report_directives " + directive_type
-
-        msg = self.directives.parse_and_run_command(msg)
+    def report_directives(self, desired_directive_type=None):
+        if desired_directive_type is None:
+            desired_directive_type = ""
 
         directive_report = []
-        for id in range(len(self.directives)):
-          directive_type = self.directives[id]
+        for id in range(len(self.directive_list)):
+          directive_type = self.directive_list[id]
           if desired_directive_type in ["", directive_type]:
-            d = {}
-            d["directive-id"] = str(id)
-            if directive_type == 'assume':
-              (varname, expr) = self.assumes[id]
-              d["directive-type"] = "DIRECTIVE-ASSUME"
-              d["directive-expression"] = expr.__str__()
-              d["name"] = varname
-              d["value"] = self.report_value(id).__str__()
-              directive_report.append(d)
-            elif directive_type == 'observe':
-              (expr, val, active) = self.observes[id]
-              d["directive-type"] = "DIRECTIVE-OBSERVE"
-              d["directive-expression"] = expr.__str__()
-              #d["value"] = self.report_value(id).__str__()
-              directive_report.append(d)
-            elif directive_type == 'predict':
-              (expr, active) = self.predicts[id]
-              d["directive-type"] = "DIRECTIVE-PREDICT"
-              d["directive-expression"] = expr.__str__()
-              d["value"] = self.report_value(id).__str__()
-              directive_report.append(d)
-            else:
-              raise RException("Invalid directive %s" % directive_type)
-    return directive_report
+            d = self.directive_list[id] 
+            if directive_type in ['DIRECTIVE-ASSUME', 'DIRECTIVE-PREDICT']:
+              d["value"] = self.report_value(id)
+            directive_report.append(d)
+        return json.dumps(directive_report)
 
-
-        out = {}
-        if directive_type == "assume":
-            out.update(self.assumes)
-        elif directive_type == "observe":
-            out.update(self.observes)
-        elif directive_type == "predict":
-            out.update(self.predicts)
-        else:
-            out.update(self.assumes)
-            out.update(self.observes)
-            out.update(self.predicts)
-
-        rows = msg.split('\n')
-        rows = rows[3:-1]
-        for row in rows:
-            entries = row.split('|')
-            id = entries[1].strip()
-            val = entries[3].strip()
-            assert id in out
-            out[id]["val"] = val
-
-        return out
-            
