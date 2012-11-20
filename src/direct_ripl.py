@@ -66,7 +66,7 @@ class DirectRIPL(RIPL):
         id = self.get_field(msgs[1], 'id: ')
 
         directive = {}
-        directive["directive-id"] = int(id)
+        directive["directive-id"] = int(id) + 1
         directive["directive-type"] = "DIRECTIVE-ASSUME"
         directive["directive-expression"] = msg
         directive["value"] = val
@@ -83,7 +83,7 @@ class DirectRIPL(RIPL):
         id = self.get_field(recv_msg, 'id: ')
 
         directive = {}
-        directive["directive-id"] = int(id)
+        directive["directive-id"] = int(id) + 1
         directive["directive-type"] = "DIRECTIVE-OBSERVE"
         directive["directive-expression"] = msg
         #directive["value"] = literal_val
@@ -101,7 +101,7 @@ class DirectRIPL(RIPL):
         id = self.get_field(msgs[1], 'id: ')
 
         directive = {}
-        directive["directive-id"] = int(id)
+        directive["directive-id"] = int(id) + 1
         directive["directive-type"] = "DIRECTIVE-PREDICT"
         directive["directive-expression"] = msg
         directive["value"] = val
@@ -110,8 +110,8 @@ class DirectRIPL(RIPL):
         self.predicts[id] = directive
         return (id, val)
         
-    def forget(self, directive_id):
-        msg = "forget " + str(directive_id)
+    def forget(self, id):
+        msg = "forget " + str(id - 1)
         recv_msg = self.directives.parse_and_run_command(msg)
                  
     def clear(self):
@@ -152,8 +152,8 @@ class DirectRIPL(RIPL):
     def enumerate(self, truncation_config=None):
         raise Exception("Not implemented yet")
 
-    def report_value(self, directive_id):
-        msg = "report_directives " + str(directive_id)
+    def report_value(self, id):
+        msg = "report_directives " + str(id - 1)
 
         recv_msg = self.directives.parse_and_run_command(msg)
         return self.get_field(recv_msg, 'value: ')
@@ -163,10 +163,10 @@ class DirectRIPL(RIPL):
             desired_directive_type = ""
 
         directive_report = []
-        for id in range(len(self.directive_list)):
-          directive_type = self.directive_list[id]
+        for id in range(1, len(self.directive_list) + 1):
+          directive_type = self.directive_list[id-1]
           if desired_directive_type in ["", directive_type]:
-            d = self.directive_list[id] 
+            d = self.directive_list[id-1] 
             if directive_type in ['DIRECTIVE-ASSUME', 'DIRECTIVE-PREDICT']:
               d["value"] = self.report_value(id)
             directive_report.append(d)
