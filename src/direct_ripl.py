@@ -67,7 +67,7 @@ class DirectRIPL(RIPL):
         id = self.get_field(msgs[1], 'id: ')
 
         directive = {}
-        directive["id"] = id
+        directive["id"] = int(id)
         directive["directive-type"] = "DIRECTIVE-ASSUME"
         directive["directive-expression"] = msg
         directive["value"] = val
@@ -84,7 +84,7 @@ class DirectRIPL(RIPL):
         id = self.get_field(recv_msg, 'id: ')
 
         directive = {}
-        directive["id"] = id
+        directive["id"] = int(id)
         directive["directive-type"] = "DIRECTIVE-OBSERVE"
         directive["directive-expression"] = msg
         #directive["value"] = literal_val
@@ -102,7 +102,7 @@ class DirectRIPL(RIPL):
         id = self.get_field(msgs[1], 'id: ')
 
         directive = {}
-        directive["id"] = id
+        directive["id"] = int(id)
         directive["directive-type"] = "DIRECTIVE-PREDICT"
         directive["directive-expression"] = msg
         directive["value"] = val
@@ -174,5 +174,7 @@ class DirectRIPL(RIPL):
             if directive_type in ['DIRECTIVE-ASSUME', 'DIRECTIVE-PREDICT']:
               d["value"] = self.report_value(id)
             directive_report.append(d)
-        return json.dumps(directive_report)
+        x = json.dumps(directive_report)
+        print "DIRECTIVES_REPORT \n", x
+        return x
 
