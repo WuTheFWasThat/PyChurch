@@ -6,7 +6,6 @@ from engine.randomdb import *
 from ripl import RIPL
 
 
-import json
 import os
 import subprocess
 import sys
@@ -113,21 +112,18 @@ class DirectRIPL(RIPL):
         
     def forget(self, directive_id):
         msg = "forget " + str(directive_id)
-
-        msg = self.directives.parse_and_run_command(msg)
+        recv_msg = self.directives.parse_and_run_command(msg)
                  
     def clear(self):
         msg = "clear"
-
-        msg = self.directives.parse_and_run_command(msg)
+        recv_msg = self.directives.parse_and_run_command(msg)
                  
     def logscore(self, directive_id=None):
         raise Exception("Not implemented yet")
 
     def seed(self, seed):
         msg = "seed " + str(seed)
-
-        msg = self.directives.parse_and_run_command(msg)
+        recv_msg = self.directives.parse_and_run_command(msg)
 
     def space(self):
         pid = os.getpid()
@@ -138,9 +134,9 @@ class DirectRIPL(RIPL):
     def infer(self, iters, infer_config=None):
         msg = "infer " + str(iters)
 
-        msg = self.directives.parse_and_run_command(msg)
+        recv_msg = self.directives.parse_and_run_command(msg)
         
-        msgs = msg.split('\n')
+        msgs = recv_msg.split('\n')
         t = self.get_field(msgs[0], 'time: ')
         return t
     
@@ -159,8 +155,8 @@ class DirectRIPL(RIPL):
     def report_value(self, directive_id):
         msg = "report_directives " + str(directive_id)
 
-        msg = self.directives.parse_and_run_command(msg)
-        return self.get_field(msg, 'value: ')
+        recv_msg = self.directives.parse_and_run_command(msg)
+        return self.get_field(recv_msg, 'value: ')
 
     def report_directives(self, desired_directive_type=None):
         if desired_directive_type is None:
@@ -174,7 +170,5 @@ class DirectRIPL(RIPL):
             if directive_type in ['DIRECTIVE-ASSUME', 'DIRECTIVE-PREDICT']:
               d["value"] = self.report_value(id)
             directive_report.append(d)
-        x = json.dumps(directive_report)
-        print "DIRECTIVES_REPORT \n", x
-        return x
+        return directive_report
 
