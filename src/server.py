@@ -2,14 +2,12 @@ import flask
 from flask import request
 from flask import make_response
 
-
 import json
 
-#import socket_ripl
-#ripl = socket_ripl.SocketRIPL()
 
-import direct_ripl
-ripl = direct_ripl.DirectRIPL()
+import myripl
+#ripl = myripl.SocketRIPL()
+ripl = myripl.DirectRIPL()
 
 global app
 app = flask.Flask(__name__)
