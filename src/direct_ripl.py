@@ -63,10 +63,10 @@ class DirectRIPL(RIPL):
         recv_msg = self.directives.parse_and_run_command(msg)
         msgs = recv_msg.split('\n')
         val = self.get_field(msgs[0], 'value: ')
-        id = self.get_field(msgs[1], 'id: ')
+        id = int(self.get_field(msgs[1], 'id: ')) + 1
 
         directive = {}
-        directive["directive-id"] = int(id) + 1
+        directive["directive-id"] = id
         directive["directive-type"] = "DIRECTIVE-ASSUME"
         directive["directive-expression"] = msg
         directive["value"] = val
@@ -80,10 +80,10 @@ class DirectRIPL(RIPL):
         msg = "assume " + name_str + " " + expr_list_to_string(expr_lst)
 
         recv_msg = self.directives.parse_and_run_command(msg)
-        id = self.get_field(recv_msg, 'id: ')
+        id = int(self.get_field(recv_msg, 'id: ')) + 1
 
         directive = {}
-        directive["directive-id"] = int(id) + 1
+        directive["directive-id"] = id
         directive["directive-type"] = "DIRECTIVE-OBSERVE"
         directive["directive-expression"] = msg
         #directive["value"] = literal_val
@@ -98,10 +98,10 @@ class DirectRIPL(RIPL):
         recv_msg = self.directives.parse_and_run_command(msg)
         msgs = recv_msg.split('\n')
         val = self.get_field(msgs[0], 'value: ')
-        id = self.get_field(msgs[1], 'id: ')
+        id = int(self.get_field(msgs[1], 'id: ')) + 1
 
         directive = {}
-        directive["directive-id"] = int(id) + 1
+        directive["directive-id"] = id
         directive["directive-type"] = "DIRECTIVE-PREDICT"
         directive["directive-expression"] = msg
         directive["value"] = val
