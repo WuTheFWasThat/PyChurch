@@ -1,8 +1,16 @@
-import utils.expr_parser as parser
+from engine.directives import Directives
+from engine.traces import *
+from engine.reducedtraces import *
+from engine.randomdb import *
+
 from ripl import RIPL
+
 
 import os
 import subprocess
+import sys
+
+sys.setrecursionlimit(10000)
 
 def expr_list_to_string(expr_list):
     if type(expr_list) is not list:
@@ -22,15 +30,29 @@ def expr_list_to_string(expr_list):
 # TODO:  make DirectRIPL and SocketRIPL into same thing, which just takes a function from strings to strings
 # need to deal with the space pid thing though
 
+# TODO : Make directives do the stuff with report directives
+
 class DirectRIPL(RIPL):
     
-    def __init__(self, state_type = "traces", kernel_type = "MH"):
+    def __init__(self, engine_type = "traces", kernel_type = "MH"):
+        if engine_type == 'reduced traces':
+          engine = ReducedTraces()
+        elif engine_type == 'traces':
+          engine = Traces()
+        elif engine_type == 'randomdb':
+          engine = RandomDB()
+        else:
+          raise Exception("Engine %s is not implemented" % engine_type)
+        
+        self.directives = Directives(engine)
+
+        self.directive_list = []
         
         self.assumes = {}
         self.observes = {}
         self.predicts = {}
         
-        print "Constructing RIPL: " + str((state_type, kernel_type))
+        print "Constructing RIPL: " + str((engine_type, kernel_type))
 
     def get_field(self, msg, substring):
         return msg[msg.find(substring) + len(substring):]
@@ -38,62 +60,65 @@ class DirectRIPL(RIPL):
     def assume(self, name_str, expr_lst):
         msg = "assume " + name_str + " " + expr_list_to_string(expr_lst)
 
-        msg = parser.parse_directive(msg)
-        msgs = msg.split('\n')
+        recv_msg = self.directives.parse_and_run_command(msg)
+        msgs = recv_msg.split('\n')
         val = self.get_field(msgs[0], 'value: ')
         id = self.get_field(msgs[1], 'id: ')
 
-        assumption = {}
-        assumption["d_id"] = id
-        assumption["type"] = "assume"
-        assumption["val"] = val
-        assumption["name_str"] = name_str
-        assumption["expr_lst"] = expr_lst
-        self.assumes[id] = assumption
-        
+        directive = {}
+        directive["id"] = id
+        directive["directive-type"] = "DIRECTIVE-ASSUME"
+        directive["directive-expression"] = msg
+        directive["value"] = val
+        directive["name"] = name_str
+        self.directive_list.append(directive)
+
+        self.assumes[id] = directive
         return (id, val)
 
     def observe(self, expr_lst, literal_val):
         msg = "assume " + name_str + " " + expr_list_to_string(expr_lst)
 
-        msg = parser.parse_directive(msg)
-        id = self.get_field(msg, 'id: ')
+        recv_msg = self.directives.parse_and_run_command(msg)
+        id = self.get_field(recv_msg, 'id: ')
 
-        observation = {}
-        observation["d_id"] = id
-        observation["type"] = "observe"
-        observation["expr_lst"] = expr_lst
-        observation["literal_val"] = literal_val
-        self.observes[id] = observation
+        directive = {}
+        directive["id"] = id
+        directive["directive-type"] = "DIRECTIVE-OBSERVE"
+        directive["directive-expression"] = msg
+        #directive["value"] = literal_val
+        self.directive_list.append(directive)
         
+        self.observes[id] = directive
         return id
 
     def predict(self, expr_lst):
         msg = "predict " + expr_list_to_string(expr_lst)
 
-        msg = parser.parse_directive(msg)
-        msgs = msg.split('\n')
+        recv_msg = self.directives.parse_and_run_command(msg)
+        msgs = recv_msg.split('\n')
         val = self.get_field(msgs[0], 'value: ')
         id = self.get_field(msgs[1], 'id: ')
 
-        prediction = {}
-        prediction["d_id"] = id
-        prediction["type"] = "predict"
-        prediction["expr_lst"] = expr_lst
-        prediction["val"] = val
-        self.predicts[id] = prediction
-        
+        directive = {}
+        directive["id"] = id
+        directive["directive-type"] = "DIRECTIVE-PREDICT"
+        directive["directive-expression"] = msg
+        directive["value"] = val
+        self.directive_list.append(directive)
+
+        self.predicts[id] = directive
         return (id, val)
         
     def forget(self, directive_id):
         msg = "forget " + str(directive_id)
 
-        msg = parser.parse_directive(msg)
+        msg = self.directives.parse_and_run_command(msg)
                  
     def clear(self):
         msg = "clear"
 
-        msg = parser.parse_directive(msg)
+        msg = self.directives.parse_and_run_command(msg)
                  
     def logscore(self, directive_id=None):
         raise Exception("Not implemented yet")
@@ -101,7 +126,7 @@ class DirectRIPL(RIPL):
     def seed(self, seed):
         msg = "seed " + str(seed)
 
-        msg = parser.parse_directive(msg)
+        msg = self.directives.parse_and_run_command(msg)
 
     def space(self):
         pid = os.getpid()
@@ -112,7 +137,7 @@ class DirectRIPL(RIPL):
     def infer(self, iters, infer_config=None):
         msg = "infer " + str(iters)
 
-        msg = parser.parse_directive(msg)
+        msg = self.directives.parse_and_run_command(msg)
         
         msgs = msg.split('\n')
         t = self.get_field(msgs[0], 'time: ')
@@ -133,7 +158,7 @@ class DirectRIPL(RIPL):
     def report_value(self, directive_id):
         msg = "report_directives " + str(directive_id)
 
-        msg = parser.parse_directive(msg)
+        msg = self.directives.parse_and_run_command(msg)
         return self.get_field(msg, 'value: ')
 
     def report_directives(self, directive_type=None):
@@ -141,7 +166,36 @@ class DirectRIPL(RIPL):
             directive_type = ""
         msg = "report_directives " + directive_type
 
-        msg = parser.parse_directive(msg)
+        msg = self.directives.parse_and_run_command(msg)
+
+        directive_report = []
+        for id in range(len(self.directives)):
+          directive_type = self.directives[id]
+          if desired_directive_type in ["", directive_type]:
+            d = {}
+            d["directive-id"] = str(id)
+            if directive_type == 'assume':
+              (varname, expr) = self.assumes[id]
+              d["directive-type"] = "DIRECTIVE-ASSUME"
+              d["directive-expression"] = expr.__str__()
+              d["name"] = varname
+              d["value"] = self.report_value(id).__str__()
+              directive_report.append(d)
+            elif directive_type == 'observe':
+              (expr, val, active) = self.observes[id]
+              d["directive-type"] = "DIRECTIVE-OBSERVE"
+              d["directive-expression"] = expr.__str__()
+              #d["value"] = self.report_value(id).__str__()
+              directive_report.append(d)
+            elif directive_type == 'predict':
+              (expr, active) = self.predicts[id]
+              d["directive-type"] = "DIRECTIVE-PREDICT"
+              d["directive-expression"] = expr.__str__()
+              d["value"] = self.report_value(id).__str__()
+              directive_report.append(d)
+            else:
+              raise RException("Invalid directive %s" % directive_type)
+    return directive_report
 
 
         out = {}

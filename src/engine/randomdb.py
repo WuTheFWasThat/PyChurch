@@ -1,8 +1,11 @@
 from engine import *
 from expressions import *
-from environment import *
+from environment import Environment 
 from utils.random_choice_dict import RandomChoiceDict
 from utils.rexceptions import RException
+
+# The Randomdb datastructure
+# Essentially a table storing a list of (xrp, value, probability) tuples
 
 # TODO:  Use rolling hash for stack
 
@@ -18,8 +21,7 @@ class RandomDB(Engine):
     self.eval_p = 0
     self.p = 0 
 
-    env.reset()
-    self.env = env
+    self.env = Environment()
 
     self.assumes = {}
     self.observes = {}

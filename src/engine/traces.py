@@ -4,6 +4,12 @@ from environment import *
 from utils.random_choice_dict import RandomChoiceDict
 from utils.rexceptions import RException
 
+# The traces datastructure. 
+# DAG of two interlinked trees: 
+#   1. eval (with subcases: IF, symbollookup, combination, lambda) + apply
+#   2. environments
+# crosslinked by symbol lookup nodes and by the env argument to eval
+
 try:
   from pypy.rlib.jit import JitDriver
   jitdriver = JitDriver(greens = [], reds=['node'])
@@ -474,7 +480,7 @@ class EvalNode:
       return ("EvalNode %s" % (self.assume_name))
 
 class Traces(Engine):
-  def __init__(self, env):
+  def __init__(self):
     self.assumes = {} # id -> evalnode
     self.observes = {} # id -> evalnode
     self.predicts = {} # id -> evalnode
@@ -482,28 +488,12 @@ class Traces(Engine):
 
     self.db = RandomChoiceDict() 
 
-    env.reset()
-    self.env = env
+    self.env = EnvironmentNode()
 
     self.uneval_p = 0
     self.eval_p = 0
     self.p = 0
     return
-
-  def report_directives(self, directive_type = ""):
-    directive_report = []
-    for id in range(len(self.directives)):
-      directive = self.directives[id]
-      if directive_type in ["", directive]:
-        if directive == 'assume':
-          directive_report.append([str(id), directive, self.assumes[id].val.__str__()])
-        elif directive == 'observe':
-          directive_report.append([str(id), directive, self.observes[id].val.__str__()])
-        elif directive == 'predict':
-          directive_report.append([str(id), directive, self.predicts[id].val.__str__()])
-        else:
-          raise RException("Invalid directive %s" % directive_type)
-    return directive_report
 
   def assume(self, name, expr, id):
     evalnode = EvalNode(self, self.env, expr)
@@ -674,7 +664,7 @@ class Traces(Engine):
     self.reflip(evalnode)
 
   def reset(self):
-    self.__init__(self.env)
+    self.__init__()
     
   def __str__(self):
     string = "EvalNodeTree:"

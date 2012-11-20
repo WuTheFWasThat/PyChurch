@@ -1,9 +1,5 @@
-from engine.directives import *
-import utils.infertools as infertools 
-import utils.rrandom as rrandom
 from utils.rexceptions import RException
-from utils.format import table_to_string
-import time
+from engine.expressions import *
 
 def parse_token(s, i = 0):
     delim = ['(', ')', '[', ']', ',']
@@ -161,62 +157,3 @@ def parse_expression(s, i):
         expr = var(token)
     return (expr, i)
 
-
-def parse_directive(s):
-  ret_str = 'done'
-  (token, i) = parse_token(s, 0)
-  if token == 'assume':
-    (var, i) = parse_token(s, i)
-    (expr, i) = parse_expression(s, i)
-    (val, id) = assume(var, expr)
-    ret_str = 'value: ' + val.__str__() + '\nid: ' + str(id)
-  elif token == 'observe':
-    (expr, i) = parse_expression(s, i)
-    (val, i) = parse_value(s, i)
-    id = observe(expr, val)
-    ret_str = 'id: ' + str(id)
-  elif token == 'predict':
-    (expr, i) = parse_expression(s, i)
-    (val, id) = predict(expr)
-    ret_str = 'value: ' + val.__str__() + '\nid: ' + str(id)
-  elif token == 'forget':
-    (id, i) = parse_integer(s, i)
-    forget(id)
-    ret_str = 'forgotten'
-  elif token == 'infer':
-    try:
-      (iters, i) = parse_integer(s, i)
-    except:
-      iters = 1
-    t = infer(iters)
-    ret_str = 'time: ' + str(t)
-  elif token == 'seed':
-    (seed, i) = parse_integer(s, i)
-    rrandom.random.seed(seed)
-  elif token == 'infer_many':
-    (expression, i) = parse_expression(s, i)
-    (niters, i) = parse_integer(s, i)
-    (burnin, i) = parse_integer(s, i)
-    t = time.time()
-    d = infertools.infer_many(expression, niters, burnin)
-    t = time.time() - t
-    ret_str = '\n'
-    table = []
-    for val in d:
-      p = d[val]
-      table.append([val.__str__(), str(p)])
-    ret_str = table_to_string(table, ['Value', 'Count'])
-    ret_str += '\nTime taken (seconds): ' + str(t)
-  elif token == 'clear':
-    reset()
-    ret_str = 'cleared'
-  elif token == 'report_value':
-    (id, i) = parse_integer(s, i)
-    ret_str = 'value: ' + report_value(id).__str__()
-  elif token == 'report_directives':
-    (directive_type, i) = parse_token(s, i)
-    directives_report = report_directives(directive_type)
-    ret_str = table_to_string(directives_report, ['id', 'directive', 'value'])
-  else:
-    raise RException("Invalid directive")
-  return ret_str

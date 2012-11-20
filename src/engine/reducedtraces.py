@@ -5,6 +5,7 @@ from utils.random_choice_dict import RandomChoiceDict
 import utils.rhash as rhash
 from utils.rexceptions import RException
 
+# The reduced traces datastructure. 
 
 # Class representing environments
 class EnvironmentNode(Environment):
@@ -430,7 +431,7 @@ class ReducedEvalNode:
       return ("EvalNode %s" % (self.assume_name))
 
 class ReducedTraces(Engine):
-  def __init__(self, env):
+  def __init__(self):
     self.assumes = {} # id -> evalnode
     self.observes = {} # id -> evalnode
     self.predicts = {} # id -> evalnode
@@ -438,30 +439,12 @@ class ReducedTraces(Engine):
 
     self.db = RandomChoiceDict() 
 
-    env.reset()
-    self.env = env
+    self.env = EnvironmentNode()
 
     self.uneval_p = 0
     self.eval_p = 0
     self.p = 0
     return
-
-  def report_directives(self, directive_type = ""):
-    directive_report = []
-
-    # full list would be: ID, type, name, expression, obs value, value
-
-    for id in range(len(self.directives)):
-      directive = self.directives[id]
-      if directive_type in ["", directive]:
-        if directive == 'assume':
-          directive_report.append([str(id), directive, self.assumes[id].val.__str__()])
-        elif directive == 'observe':
-          directive_report.append([str(id), directive, self.observes[id].val.__str__()])
-        else:
-          assert directive == 'predict'
-          directive_report.append([str(id), directive, self.predicts[id].val.__str__()])
-    return directive_report
 
   def assume(self, name, expr, id = -1):
     evalnode = ReducedEvalNode(self, self.env, expr)
@@ -610,7 +593,7 @@ class ReducedTraces(Engine):
     self.reflip(evalnode)
 
   def reset(self):
-    self.__init__(self.env)
+    self.__init__()
     
   def __str__(self):
     string = "EvalNodeTree:"
