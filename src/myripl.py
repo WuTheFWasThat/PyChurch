@@ -73,7 +73,7 @@ class MyRIPL(RIPL):
 
         recv_msg = self.get_recv_msg(msg)
         msgs = recv_msg.split('\n')
-        val = self.get_field(msgs[0], 'value: ')
+        val = self.string_to_value(self.get_field(msgs[0], 'value: '))
         id = int(self.get_field(msgs[1], 'id: ')) + 1
 
         directive = {}
@@ -108,7 +108,7 @@ class MyRIPL(RIPL):
 
         recv_msg = self.get_recv_msg(msg)
         msgs = recv_msg.split('\n')
-        val = self.get_field(msgs[0], 'value: ')
+        val = self.string_to_value(self.get_field(msgs[0], 'value: '))
         id = int(self.get_field(msgs[1], 'id: ')) + 1
 
         directive = {}
@@ -124,19 +124,14 @@ class MyRIPL(RIPL):
     def forget(self, id):
         msg = "forget " + str(id - 1)
 
-        #directive = self.directive_list[id - 1]
-        #if directive["directive-type"] == "DIRECTIVE-OBSERVE":
-        #elif directive["directive-type"] == "DIRECTIVE-PREDICT":
-        #directive = {}
-        #directive["directive-id"] = id
-        #directive["directive-type"] = "DIRECTIVE-ASSUME"
-        #directive["directive-expression"] = msg
-        #directive["value"] = val
-        #directive["name"] = name_str
+        directive = self.directive_list[id - 1]
+        if directive["directive-type"] == "DIRECTIVE-OBSERVE":
+          directive["directive-type"] = "FORGOTTEN-OBSERVE"
+        elif directive["directive-type"] == "DIRECTIVE-PREDICT":
+          directive["directive-type"] = "FORGOTTEN-PREDICT"
+        else:
+          raise Exception("Can only forget non-forgotten observes and predicts")
 
-        #self.directive_list.append(directive)
-
-        #self.assumes[id] = directive
         recv_msg = self.get_recv_msg(msg)
                  
     def clear(self):
@@ -188,7 +183,24 @@ class MyRIPL(RIPL):
         msg = "report_directives " + str(id - 1)
 
         recv_msg = self.get_recv_msg(msg)
-        return self.get_field(recv_msg, 'value: ')
+        string_val = self.get_field(recv_msg, 'value: ')
+        return self.string_to_value(string_val)
+
+    def string_to_value(self, string_val):
+        if string_val == 'True':
+          return True
+        elif string_val == 'False':
+          return False
+        else:
+          try:
+            intval = int(string_val)
+            return intval
+          except:
+            try:
+              floatval = float(string_val)
+              return floatval
+            except:
+              return string_val
 
     def report_directives(self, desired_directive_type=None):
         if desired_directive_type is None:
@@ -203,6 +215,22 @@ class MyRIPL(RIPL):
               d["value"] = self.report_value(id)
             directive_report.append(d)
         return directive_report
+
+    #def report_directives(self, desired_directive_type=None):
+    #    if desired_directive_type is None:
+    #        directive_types = ["DIRECTIVE-ASSUME", "DIRECTIVE-PREDICT", "DIRECTIVE-OBSERVE"]
+    #    else:
+    #        directive_types = [desired_directive_type]
+
+    #    directive_report = []
+    #    for id in range(1, len(self.directive_list) + 1):
+    #      directive_type = self.directive_list[id-1]
+    #      if directive_type in directive_types:
+    #        d = self.directive_list[id-1] 
+    #        if directive_type in ['DIRECTIVE-ASSUME', 'DIRECTIVE-PREDICT']:
+    #          d["value"] = self.report_value(id)
+    #        directive_report.append(d)
+    #    return directive_report
 
 
 class DirectRIPL(MyRIPL):
