@@ -27,11 +27,6 @@ def expr_list_to_string(expr_list):
     string += ")"
     return string
 
-# TODO:  make DirectRIPL and SocketRIPL into same thing, which just takes a function from strings to strings
-# need to deal with the space pid thing though
-
-# TODO : Make directives do the stuff with report directives
-
 class MyRIPL(RIPL):
     
     def __init__(self, engine_type = "traces", kernel_type = "MH"):
@@ -88,7 +83,7 @@ class MyRIPL(RIPL):
         return (id, val)
 
     def observe(self, expr_lst, literal_val):
-        msg = "assume " + name_str + " " + expr_list_to_string(expr_lst)
+        msg = "observe " + expr_list_to_string(expr_lst) + ' ' + str(literal_val)
 
         recv_msg = self.get_recv_msg(msg)
         id = int(self.get_field(recv_msg, 'id: ')) + 1
@@ -216,7 +211,6 @@ class MyRIPL(RIPL):
               d["value"] = self.report_value(id)
             directive_report.append(d)
         return directive_report
-
 
 class DirectRIPL(MyRIPL):
     def init_help(self):
