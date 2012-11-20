@@ -178,9 +178,8 @@ class MyRIPL(RIPL):
     def enumerate(self, truncation_config=None):
         raise Exception("Not implemented yet")
 
-
     def report_value(self, id):
-        msg = "report_directives " + str(id - 1)
+        msg = "report_value " + str(id - 1)
 
         recv_msg = self.get_recv_msg(msg)
         string_val = self.get_field(recv_msg, 'value: ')
@@ -204,33 +203,19 @@ class MyRIPL(RIPL):
 
     def report_directives(self, desired_directive_type=None):
         if desired_directive_type is None:
-            desired_directive_type = ""
+            directive_types = ["DIRECTIVE-ASSUME", "DIRECTIVE-PREDICT", "DIRECTIVE-OBSERVE"]
+        else:
+            directive_types = [desired_directive_type]
 
         directive_report = []
         for id in range(1, len(self.directive_list) + 1):
-          directive_type = self.directive_list[id-1]
-          if desired_directive_type in ["", directive_type]:
-            d = self.directive_list[id-1] 
+          d = self.directive_list[id-1] 
+          directive_type = d['directive-type']
+          if directive_type in directive_types:
             if directive_type in ['DIRECTIVE-ASSUME', 'DIRECTIVE-PREDICT']:
               d["value"] = self.report_value(id)
             directive_report.append(d)
         return directive_report
-
-    #def report_directives(self, desired_directive_type=None):
-    #    if desired_directive_type is None:
-    #        directive_types = ["DIRECTIVE-ASSUME", "DIRECTIVE-PREDICT", "DIRECTIVE-OBSERVE"]
-    #    else:
-    #        directive_types = [desired_directive_type]
-
-    #    directive_report = []
-    #    for id in range(1, len(self.directive_list) + 1):
-    #      directive_type = self.directive_list[id-1]
-    #      if directive_type in directive_types:
-    #        d = self.directive_list[id-1] 
-    #        if directive_type in ['DIRECTIVE-ASSUME', 'DIRECTIVE-PREDICT']:
-    #          d["value"] = self.report_value(id)
-    #        directive_report.append(d)
-    #    return directive_report
 
 
 class DirectRIPL(MyRIPL):
@@ -242,7 +227,6 @@ class DirectRIPL(MyRIPL):
 
     def get_recv_msg(self, msg):
         return self.directives.parse_and_run_command(msg)
-
 
 class SocketRIPL(MyRIPL):
     def init_help(self):
