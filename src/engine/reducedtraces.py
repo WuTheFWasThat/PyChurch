@@ -186,7 +186,7 @@ class ReducedEvalNode:
 
   def remove_xrp(self, xrp, val, args):
     if xrp.is_mem_proc():
-      xrp.remove_mem(val, args, self)
+      xrp.remove_mem(val, args, self.traces, self)
     else:
       xrp.remove(val, args)
     prob = xrp.prob(val, args)
@@ -199,7 +199,7 @@ class ReducedEvalNode:
     self.traces.p += prob
     self.p = prob
     if xrp.is_mem_proc():
-      xrp.incorporate_mem(val, args, self)
+      xrp.incorporate_mem(val, args, self.traces, self)
     else:
       xrp.incorporate(val, args)
 
@@ -318,7 +318,10 @@ class ReducedEvalNode:
             child = self.get_child(hashval, env, expr)
             val = child.val
         else:
-          val = xrp.apply(args)
+          if xrp.is_mem_proc():
+            val = xrp.apply_mem(args, self.traces)
+          else:
+            val = xrp.apply(args)
           self.add_xrp(xrp, val, args)
           if not xrp.is_mem_proc(): # NOTE: I think this is okay
             self.xrp_applies.append((xrp, val, args))
@@ -432,6 +435,8 @@ class ReducedEvalNode:
 
 class ReducedTraces(Engine):
   def __init__(self):
+    self.engine_type = 'reduced traces'
+
     self.assumes = {} # id -> evalnode
     self.observes = {} # id -> evalnode
     self.predicts = {} # id -> evalnode

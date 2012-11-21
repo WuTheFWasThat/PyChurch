@@ -208,7 +208,7 @@ class EvalNode:
     xrp = self.xrp
     args = self.args
     if xrp.is_mem_proc():
-      xrp.remove_mem(self.val, args, self)
+      xrp.remove_mem(self.val, args, self.traces, self)
     else:
       xrp.remove(self.val, args)
     prob = xrp.prob(self.val, self.args)
@@ -223,7 +223,7 @@ class EvalNode:
     self.traces.eval_p += prob
     self.traces.p += prob
     if xrp.is_mem_proc():
-      xrp.incorporate_mem(val, args, self)
+      xrp.incorporate_mem(val, args, self.traces, self)
     else:
       xrp.incorporate(val, args)
 
@@ -345,7 +345,7 @@ class EvalNode:
         elif xrp.deterministic or (not reflip):
           if self.active:
             if xrp.is_mem_proc():
-              val = xrp.apply(args)
+              val = xrp.apply_mem(args, self.traces)
             elif self.args == args and self.xrp == xrp:
               val = self.val
               # TODO: deal with mem'd function changing..>
@@ -481,6 +481,8 @@ class EvalNode:
 
 class Traces(Engine):
   def __init__(self):
+    self.engine_type = 'traces'
+
     self.assumes = {} # id -> evalnode
     self.observes = {} # id -> evalnode
     self.predicts = {} # id -> evalnode

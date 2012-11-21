@@ -1,4 +1,3 @@
-from engine.directives import *
 import time
 from utils.rexceptions import RException
 
@@ -82,30 +81,6 @@ def reject_infer_many(name, niter = 1000):
   z = sum([dict[val] for val in dict])
   for val in dict:
     dict[val] = dict[val] / (z + 0.0) 
-  return dict 
-
-def infer_many(expression, niter = 1000, burnin = 100, printiters = 0):
-
-  if directives.engine_type == 'traces':
-    rerun()
-  dict = {}
-
-  (val, id) = predict(expression)
-  evalnode = directives.engine.predicts[id]
-
-  for n in range(niter):
-    if printiters > 0 and n % printiters == 0: 
-      print n, "iters"
-
-    # re-draw from prior
-    infer(burnin)
-
-    val = evalnode.val
-    if val in dict:
-      dict[val] += 1
-    else:
-      dict[val] = 1 
-
   return dict 
 
 def follow_prior(names, niter = 1000, burnin = 100, timer = True, printiters = 0):

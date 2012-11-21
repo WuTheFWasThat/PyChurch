@@ -118,15 +118,30 @@ class Directives:
     self.assume('gamma', xrp(gamma_args_XRP()), True)
     self.assume('gaussian', xrp(gaussian_args_XRP()), True)
     self.assume('normal', var('gaussian'), True)
-    self.assume('uniform', xrp(uniform_args_XRP()), True)
+    self.assume('randbelow', xrp(uniform_args_XRP()), True)
     self.assume('rand', function([], apply(var('beta'), [num_expr(1), num_expr(1)])), True)
+
+    self.assume('uniform-discrete', function(['min-inclusive', 'max-inclusive'],
+                                    op('+', [apply(var('randbelow'), [op('+', [op('-', [var('max-inclusive'), var('min-inclusive')]), nat_expr(1)])]), var('min-inclusive')])),
+                True)
+    self.assume('uniform-continuous', function(['min-inclusive', 'max-inclusive'],
+                                      op('+', [op('*', [apply(var('rand'), []), op('-', [var('max-inclusive'), var('min-inclusive')])]), var('min-inclusive')])),
+                True)
   
     self.assume('make-symmetric-dirichlet', xrp(make_symmetric_dirichlet_XRP()), True)
   
     self.assume('mem', xrp(mem_XRP()), True)
   
-    self.assume('make-CRP', xrp(gen_CRP_XRP()), True)
+    self.assume('CRP/make', xrp(gen_CRP_XRP()), True)
   
+    self.assume('noisy', function(['expr', 'noise'],  \
+                         ifelse(apply(var('bernoulli'), [var('noise')]), negation(var('expr')), var('expr'))),  \
+                 True) 
+
+    self.assume('noise-negate', function(['expr', 'noise'],  \
+                         apply(var('bernoulli'), [ifelse(var('expr'), num_expr(1), var('noise'))])),  \
+                 True) 
+
     """DEFINITION OF DP"""
     self.assume('DP_uncollapsed', \
            function(['concentration', 'basemeasure'], \
@@ -255,6 +270,25 @@ class Directives:
     t = time.time() - t
     return t
 
+  def infer_many(self, expression, niter = 1000, burnin = 100, printiters = 0): 
+    self.rerun()
+    dict = {}
+    (val, id) = self.predict(expression)
+  
+    for n in range(niter):
+      if printiters > 0 and n % printiters == 0:  
+        print n, "iters"
+  
+      self.infer(burnin)
+  
+      val = self.report_value(id)
+      if val in dict:
+        dict[val] += 1
+      else:
+        dict[val] = 1 
+  
+    return dict 
+
   def parse_and_run_command(self, s):
     ret_str = 'done'
     (token, i) = parse_token(s, 0)
@@ -292,7 +326,7 @@ class Directives:
       (niters, i) = parse_integer(s, i)
       (burnin, i) = parse_integer(s, i)
       t = time.time()
-      d = infertools.infer_many(expression, niters, burnin)
+      d = self.infer_many(expression, niters, burnin)
       t = time.time() - t
       ret_str = '\n'
       table = []
@@ -307,10 +341,10 @@ class Directives:
     elif token == 'report_value':
       (id, i) = parse_integer(s, i)
       ret_str = 'value: ' + self.report_value(id).__str__()
-    elif token == 'report_directives':
-      (directive_type, i) = parse_token(s, i)
-      directives_report = self.report_directives(directive_type)
-      ret_str = table_to_string(directives_report, ['id', 'directive', 'value'])
+    #elif token == 'report_directives':
+    #  (directive_type, i) = parse_token(s, i)
+    #  directives_report = self.report_directives(directive_type)
+    #  ret_str = table_to_string(directives_report, ['id', 'directive', 'value'])
     else:
       raise RException("Invalid directive")
     return ret_str

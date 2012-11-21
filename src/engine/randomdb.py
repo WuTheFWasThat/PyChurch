@@ -13,6 +13,7 @@ from utils.rexceptions import RException
 class RandomDB(Engine):
   def __init__(self, env):
     #self.db = {} 
+    self.engine_type = 'randomdb'
     self.db = RandomChoiceDict() 
     self.db_noise = {}
     self.log = []

@@ -1,11 +1,19 @@
-import utils.expr_parser as parser
+from engine.directives import Directives 
+from engine.traces import *
+from engine.reducedtraces import *
+from engine.randomdb import *
 
-try:
-  from pypy.rlib import rsocket
-  use_pypy = True
-except:
-  import socket as rsocket
-  use_pypy = False
+engine_type = 'reduced traces'
+if engine_type == 'reduced traces':
+  engine = ReducedTraces()
+elif engine_type == 'traces':
+  engine = Traces()
+elif engine_type == 'randomdb':
+  engine = RandomDB()
+else:
+  raise RException("Engine %s is not implemented" % engine_type)
+
+directives = Directives(engine)
 
 if __name__ == "__main__":
   while True:
@@ -26,12 +34,9 @@ if __name__ == "__main__":
     if msg == 'exit':
       break
     try:
-      ret_msg = parser.parse_directive(msg)
+      ret_msg = directives.parse_and_run_command(msg)
     except Exception as e:
-      if use_pypy:
-        ret_msg = "Error occured"
-      else:
-        ret_msg = e.message
+      ret_msg = e.message
     print
     print ret_msg 
     print
