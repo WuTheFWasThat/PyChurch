@@ -171,7 +171,7 @@ class dirichlet_args_XRP(XRP):
     return XRPValue(array_XRP(probs))
   def prob(self, val, args = None):
     if val.type != 'xrp':
-      raise RException("Returned value should have been an XRP")
+      raise RException("Returned value should have been an array XRP")
     probs = [x.num for x in val.xrp.state]
     for prob in probs:
       check_prob(prob)
@@ -222,6 +222,31 @@ class dirichlet_no_args_XRP(XRP):
   def __str__(self):
     return 'dirichlet(%s)' % str(self.alphas)
 
+class symmetric_dirichlet_args_XRP(XRP):
+  def __init__(self):
+    self.deterministic = False
+    return
+  def apply(self, args = None):
+    (alpha, n) = (args[0], args[1])
+    probs = [NumValue(p) for p in dirichlet([alpha.num] * n.nat)]
+    return XRPValue(array_XRP(probs))
+  def prob(self, val, args = None):
+    (alpha, n) = (args[0], args[1])
+    if val.type != 'xrp':
+      raise RException("Returned value should have been an array XRP")
+    probs = [x.num for x in val.xrp.state]
+    for prob in probs:
+      check_prob(prob)
+    if n.nat != len(args):
+      raise RException("Number of arguments, %d, should've been the dimension %d" % (len(args), n.nat))
+    if len(probs) != n.nat:
+      raise RException("Number of arguments, %d, should've been the dimension %d" % (n.nat, len(probs)))
+
+    alpha = alpha.num * n.nat 
+
+    return math.log(math_gamma(alpha.num * n.nat)) + (alpha.num - 1) * sum([math.log(probs[i]) for i in range(n.num)]) \
+           - n.nat * math.log(math_gamma(alpha.num))
+
 class make_symmetric_dirichlet_XRP(XRP):
   def __init__(self):
     self.deterministic = True
@@ -229,7 +254,7 @@ class make_symmetric_dirichlet_XRP(XRP):
   def apply(self, args = None):
     if len(args) != 2:
       raise RException("Symmetric dirichlet generator takes two arguments, n and alpha")
-    (n, alpha) = (args[0], args[1])
+    (alpha, n) = (args[0], args[1])
     return XRPValue(dirichlet_no_args_XRP([alpha.num] * n.nat)) 
   def __str__(self):
     return 'dirichlet_XRP'
@@ -493,6 +518,16 @@ class beta_bernoulli_2(XRP):
         return math.log(self.t) - math.log(self.h + self.t)
   def __str__(self):
     return 'beta_bernoulli'
+
+class make_beta_bernoulli_XRP(XRP):
+  def __init__(self):
+    self.deterministic = True
+    return
+  def apply(self, args = None):
+    (h, t) = (args[0].nat, args[1].nat)
+    return XRPValue(beta_bernoulli_1((h, t))) 
+  def __str__(self):
+    return 'beta_bernoulli_make_XRP'
 
 ### TOPIC MODELS
 

@@ -5,6 +5,12 @@ from engine.randomdb import *
 
 from ripl import RIPL
 
+try:
+  from pypy.rlib import rsocket as socket
+  use_pypy = True
+except:
+  import socket
+  use_pypy = False
 
 import os
 import subprocess

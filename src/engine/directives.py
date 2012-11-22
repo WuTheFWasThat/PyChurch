@@ -128,11 +128,13 @@ class Directives:
                                       op('+', [op('*', [apply(var('rand'), []), op('-', [var('max-inclusive'), var('min-inclusive')])]), var('min-inclusive')])),
                 True)
   
-    self.assume('make-symmetric-dirichlet', xrp(make_symmetric_dirichlet_XRP()), True)
+    self.assume('symmetric-dirichlet-multinomial/make', xrp(make_symmetric_dirichlet_XRP()), True)
+    self.assume('symmetric-dirichlet', xrp(symmetric_dirichlet_args_XRP()), True)
   
     self.assume('mem', xrp(mem_XRP()), True)
   
     self.assume('CRP/make', xrp(gen_CRP_XRP()), True)
+    self.assume('beta-binomial/make', xrp(make_beta_bernoulli_XRP()), True)
   
     self.assume('noisy', function(['expr', 'noise'],  \
                          ifelse(apply(var('bernoulli'), [var('noise')]), negation(var('expr')), var('expr'))),  \

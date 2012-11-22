@@ -15,10 +15,10 @@ from engine.reducedtraces import *
 from engine.randomdb import *
 
 try:
-  from pypy.rlib import rsocket
+  from pypy.rlib import rsocket as socket
   use_pypy = True
 except:
-  import socket as rsocket
+  import socket
   use_pypy = False
 
 engine_type = 'reduced traces'
@@ -38,13 +38,13 @@ sys.setrecursionlimit(10000)
 
 def run(fp):
 
-    hostip = rsocket.gethostbyname('localhost')
+    hostip = socket.gethostbyname('localhost')
     if use_pypy:
-      host = rsocket.INETAddress(hostip.get_host(), 2222)
-      socket = rsocket.RSocket(rsocket.AF_INET, rsocket.SOCK_STREAM)
+      host = socket.INETAddress(hostip.get_host(), 2222)
+      socket = socket.RSocket(socket.AF_INET, socket.SOCK_STREAM)
     else:
       host = (hostip, 2222)
-      socket = rsocket.socket(rsocket.AF_INET, rsocket.SOCK_STREAM)
+      socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     
     socket.bind(host)
     socket.listen(1)
@@ -53,7 +53,7 @@ def run(fp):
     while True:
       if use_pypy:
         (client_sock_fd, client_addr) = socket.accept()
-        client_sock = rsocket.fromfd(client_sock_fd, rsocket.AF_INET, rsocket.SOCK_STREAM)
+        client_sock = socket.fromfd(client_sock_fd, socket.AF_INET, socket.SOCK_STREAM)
       else:
         (client_sock, client_addr) = socket.accept()
       client_sock.send("Server ready!\n")

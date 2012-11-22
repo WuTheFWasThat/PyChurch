@@ -6,8 +6,8 @@ from flask import make_response
 import json
 
 import myripl
-ripl = myripl.DirectRIPL()
-#ripl = myripl.SocketRIPL()
+#ripl = myripl.DirectRIPL()
+ripl = myripl.SocketRIPL()
 
 global app
 app = flask.Flask(__name__)

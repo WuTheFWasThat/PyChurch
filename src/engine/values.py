@@ -162,23 +162,6 @@ class IntValue(NumValue):
     self.str_hash = str(self.int)
   def __hash__(self):
     return self.int
-  #def __add__(self, other):
-  #  if other.type == 'int':
-  #    return IntValue(self.int + other.int)
-  #  else:
-  #    return NumValue(self.num + other.num)
-  #def __sub__(self, other):
-  #  if other.type == 'int':
-  #    return IntValue(self.int - other.int)
-  #  else:
-  #    return NumValue(self.num - other.num)
-  #def __mul__(self, other):
-  #  if other.type == 'int':
-  #    return IntValue(self.int * other.int)
-  #  else:
-  #    return NumValue(self.num * other.num)
-  #def __inv__(self):
-  #  return IntValue(- self.int)
   def __add__(self, other):
     if other.type == 'int' or other.type == 'nat':
       intval = self.int + other.int
@@ -218,19 +201,4 @@ class NatValue(IntValue):
     self.int = num
     self.num = num
     self.str_hash = str(self.int)
- # def __add__(self, other):
- #   if other.type == 'nat':
- #     return NatValue(self.nat + other.nat)
- #   elif other.type == 'int':
- #     return IntValue(self.int + other.int)
- #   else:
- #     return NumValue(self.num + other.num)
- # def __mul__(self, other):
- #   if other.type == 'nat':
- #     return NatValue(self.nat * other.nat)
- #   elif other.type == 'int':
- #     return IntValue(self.int * other.int)
- #   else:
- #     return NumValue(self.num * other.num)
- #
 
