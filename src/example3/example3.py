@@ -19,20 +19,16 @@ except ImportError:
         def jit_merge_point(self,**kw): pass
         def can_enter_jit(self,**kw): pass
 
-jitdriver = JitDriver(greens=['pc', 'program', 'bracket_map'], reds = ['tape', 't'])
+jitdriver1 = JitDriver(greens=['pc', 'program', 'bracket_map'], reds = ['tape'])
 
 def mainloop(program, bracket_map):
     pc = 0
     tape = Tape()
     t = time.time()
     
-    while pc < len(program):
-        if pc != 31423:
-          jitdriver.jit_merge_point(pc=pc, tape=tape, program=program, t = t,
-                  bracket_map=bracket_map)
-          pc = tape.loop(program, pc, bracket_map)
-        else:
-          print "DERP"
+    jitdriver1.jit_merge_point(pc=pc, tape=tape, program=program,
+            bracket_map=bracket_map)
+    tape.loop(program, pc, bracket_map)
     print "TIME"
     print time.time() -t
 
@@ -57,38 +53,41 @@ class Tape(object):
         self.position -= 1
 
     def loop(self, program, pc, bracket_map):
+        jitdriver2 = JitDriver(greens=['pc', 'program', 'bracket_map'], reds = ['tape'])
+        while pc < len(program):
+            jitdriver2.jit_merge_point(pc=pc, tape=self, program=program, bracket_map=bracket_map)
 
-        code = program[pc]
+            code = program[pc]
 
-        if code == ">":
-            self.advance()
+            if code == ">":
+                self.advance()
 
-        elif code == "<":
-            self.devance()
+            elif code == "<":
+                self.devance()
 
-        elif code == "+":
-            self.inc()
+            elif code == "+":
+                self.inc()
 
-        elif code == "-":
-            self.dec()
-        
-        elif code == ".":
-            # print
-            os.write(1, chr(self.get()))
-        
-        elif code == ",":
-            # read from stdin
-            self.set(ord(os.read(0, 1)[0]))
-
-        elif code == "[" and self.get() == 0:
-            # Skip forward to the matching ]
-            pc = bracket_map[pc]
+            elif code == "-":
+                self.dec()
             
-        elif code == "]" and self.get() != 0:
-            # Skip back to the matching [
-            pc = bracket_map[pc]
+            elif code == ".":
+                # print
+                os.write(1, chr(self.get()))
+            
+            elif code == ",":
+                # read from stdin
+                self.set(ord(os.read(0, 1)[0]))
 
-        pc += 1
+            elif code == "[" and self.get() == 0:
+                # Skip forward to the matching ]
+                pc = bracket_map[pc]
+                
+            elif code == "]" and self.get() != 0:
+                # Skip back to the matching [
+                pc = bracket_map[pc]
+
+            pc += 1
         return pc
 
 def parse(program):

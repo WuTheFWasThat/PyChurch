@@ -21,6 +21,27 @@ except:
   import socket as rsocket
   use_pypy = False
 
+try:
+  from pypy.rlib.jit import JitDriver
+  jitdriver = JitDriver(greens = [ \
+                                 ### INTs 
+                                 ### REFs 
+                                     'msg'
+                                 ### FLOATs 
+                                 ],  \
+                        reds   = [  \
+                                 ### INTs 
+                                 ### REFs 
+                                     'client_sock'
+                                 ### FLOATs 
+                                 ])
+  def jitpolicy(driver):
+    from pypy.jit.codewriter.policy import JitPolicy
+    return JitPolicy()
+  use_jit = True
+except:
+  use_jit = False
+
 engine_type = 'reduced traces'
 if engine_type == 'reduced traces':
   engine = ReducedTraces()
@@ -60,6 +81,16 @@ def run(fp):
       print 'Client contacted'
       while True:
         msg = client_sock.recv(bufsize)
+
+        if use_jit:
+          jitdriver.jit_merge_point( \
+                                     # INTs
+                                     ## REFs
+                                     msg = msg,
+                                     client_sock = client_sock
+                                     # FLOATs
+                                     )
+
         if not msg:
           client_sock.close()
           break;

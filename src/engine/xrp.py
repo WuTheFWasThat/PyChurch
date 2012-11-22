@@ -89,7 +89,7 @@ class make_symmetric_categorical_XRP(XRP):
   def __str__(self):
     return 'make_symmetric_categorical_XRP'
 
-class gaussian_args_XRP(XRP):
+class gaussian_XRP(XRP):
   def __init__(self):
     self.deterministic = False
     return
@@ -104,36 +104,6 @@ class gaussian_args_XRP(XRP):
     return log_prob
   def __str__(self):
     return 'normal'
-
-class gaussian_no_args_XRP(XRP):
-  def __init__(self, mu, sigma):
-    self.deterministic = False
-    check_pos(sigma)
-    (self.mu , self.sigma) = (mu, sigma + 0.0)
-    self.prob_help = - math.log(sigma) - math.log(2 * math.pi) / 2.0
-    return
-  def apply(self, args = None):
-    if args is not None and len(args) != 0:
-      raise RException('gaussian_no_args_XRP has no need to take in arguments %s' % str(args))
-    return NumValue(rrandom.random.normalvariate(self.mu, self.sigma))
-  def prob(self, val, args = None):
-    if args is not None and len(args) != 0:
-      raise RException('gaussian_no_args_XRP has no need to take in arguments %s' % str(args))
-    log_prob = self.prob_help - math.pow((val.num - self.mu) / self.sigma, 2) / 2.0 
-    return log_prob
-  def __str__(self):
-    return 'gaussian(%f, %f)' % (self.mu, self.sigma)
-
-class make_gaussian_XRP(XRP):
-  def __init__(self):
-    self.deterministic = True
-    return
-  def apply(self, args = None):
-    (mu,sigma) = (args[0].num, args[1].num)
-    check_pos(sigma)
-    return XRPValue(gaussian_no_args_XRP(mu, sigma)) 
-  def __str__(self):
-    return 'gaussian_XRP'
 
 class array_XRP(XRP):
   def __init__(self, array):
@@ -160,112 +130,7 @@ class array_XRP(XRP):
   def __str__(self):
     return ('array(%s)' % str(self.array))
 
-class dirichlet_args_XRP(XRP):
-  def __init__(self):
-    self.deterministic = False
-    return
-  def apply(self, args = None):
-    for arg in args:
-      check_pos(arg.num)
-    probs = [NumValue(p) for p in dirichlet([arg.num for arg in args])]
-    return XRPValue(array_XRP(probs))
-  def prob(self, val, args = None):
-    if val.type != 'xrp':
-      raise RException("Returned value should have been an array XRP")
-    probs = [x.num for x in val.xrp.array]
-    for prob in probs:
-      check_prob(prob)
-    n = len(args)
-    if len(probs) != n:
-      raise RException("Number of arguments, %d, should've been the dimension %d" % (n, len(probs)))
-
-    alpha = 0
-    for alpha_i in args:
-      check_pos(alpha_i.num)
-      alpha += alpha_i.num
-
-    return math.log(math_gamma(alpha)) + sum([(args[i].num - 1) * math.log(probs[i]) for i in range(n)]) \
-           - sum([math.log(math_gamma(args[i].num)) for i in range(n)])
-
-  def __str__(self):
-    return 'dirichlet'
-
-class dirichlet_no_args_XRP(XRP):
-  def __init__(self, args):
-    self.deterministic = False
-    self.alphas = args
-    self.alpha = 0
-    for alpha_i in self.alphas:
-      check_pos(alpha_i)
-      self.alpha += alpha_i
-    return
-  def apply(self, args = None):
-    if args is not None and len(args) != 0:
-      raise RException('dirichlet_no_args_XRP has no need to take in arguments %s' % str(args))
-    probs = [NumValue(p) for p in dirichlet(self.alphas)]
-    return XRPValue(array_XRP(probs))
-  def prob(self, val, args = None):
-    if args is not None and len(args) != 0:
-      raise RException('dirichlet_no_args_XRP has no need to take in arguments %s' % str(args))
-    if val.type != 'xrp':
-      raise RException('dirichlet_no_args_XRP should return an XRP')
-    probs = [x.num for x in val.xrp.array]
-    for prob in probs:
-      check_prob(prob)
-
-    n = len(self.alphas)
-    if len(probs) != n:
-      raise RException("Number of probabilities should match number of alphas")
-
-    return math.log(math_gamma(self.alpha)) + sum([(self.alphas[i] - 1) * math.log(probs[i]) for i in range(n)]) \
-           - sum([math.log(math_gamma(self.alphas[i])) for i in range(n)])
-  def __str__(self):
-    return 'dirichlet(%s)' % str(self.alphas)
-
-class symmetric_dirichlet_args_XRP(XRP):
-  def __init__(self):
-    self.deterministic = False
-    return
-  def apply(self, args = None):
-    (alpha, n) = (args[0], args[1])
-    probs = [NumValue(p) for p in dirichlet([alpha.num] * n.nat)]
-    return XRPValue(array_XRP(probs))
-  def prob(self, val, args = None):
-    (alpha, n) = (args[0], args[1])
-    if val.type != 'xrp':
-      raise RException("Returned value should have been an array XRP")
-    probs = [x.num for x in val.xrp.array]
-    for prob in probs:
-      check_prob(prob)
-    if n.nat != len(args):
-      raise RException("Number of arguments, %d, should've been the dimension %d" % (len(args), n.nat))
-    if len(probs) != n.nat:
-      raise RException("Number of arguments, %d, should've been the dimension %d" % (n.nat, len(probs)))
-    return math.log(math_gamma(alpha.num * n.nat)) + (alpha.num - 1) * sum([math.log(probs[i]) for i in range(n.num)]) \
-           - n.nat * math.log(math_gamma(alpha.num))
-
-class make_symmetric_dirichlet_XRP(XRP):
-  def __init__(self):
-    self.deterministic = True
-    return
-  def apply(self, args = None):
-    if len(args) != 2:
-      raise RException("Symmetric dirichlet generator takes two arguments, n and alpha")
-    (alpha, n) = (args[0], args[1])
-    return XRPValue(dirichlet_no_args_XRP([alpha.num] * n.nat)) 
-  def __str__(self):
-    return 'dirichlet_XRP'
-
-class make_dirichlet_XRP(XRP):
-  def __init__(self):
-    self.deterministic = True
-    return
-  def apply(self, args = None):
-    return XRPValue(dirichlet_no_args_XRP([arg.num for arg in args])) 
-  def __str__(self):
-    return 'dirichlet_XRP'
-
-class beta_args_XRP(XRP):
+class beta_XRP(XRP):
   def __init__(self):
     self.deterministic = False
     return
@@ -284,39 +149,7 @@ class beta_args_XRP(XRP):
   def __str__(self):
     return 'beta'
 
-class beta_no_args_XRP(XRP):
-  def __init__(self, a, b):
-    self.deterministic = False
-    check_pos(a)
-    check_pos(b)
-    self.a, self.b = a, b 
-    self.prob_help = math.log(math_gamma(a + b)) - math.log(math_gamma(a)) - math.log(math_gamma(b))
-    return
-  def apply(self, args = None):
-    if args is not None and len(args) != 0:
-      raise RException('beta_no_args_XRP has no need to take in arguments %s' % str(args))
-    return NumValue(rrandom.random.betavariate(self.a, self.b))
-  def prob(self, val, args = None):
-    if args is not None and len(args) != 0:
-      raise RException('beta_no_args_XRP has no need to take in arguments %s' % str(args))
-    v = check_prob(val.num)
-    return self.prob_help + (self.a - 1) * math.log(v) + (self.b - 1) * math.log(1 - v) 
-  def __str__(self):
-    return 'beta(%d, %d)' % (self.a, self.b)
-
-class make_beta_XRP(XRP):
-  def __init__(self):
-    self.deterministic = True
-    return
-  def apply(self, args = None):
-    (a,b) = (args[0].num, args[1].num)
-    check_pos(a)
-    check_pos(b)
-    return XRPValue(beta_no_args_XRP(a, b)) 
-  def __str__(self):
-    return 'beta_XRP'
-
-class gamma_args_XRP(XRP):
+class gamma_XRP(XRP):
   def __init__(self):
     self.deterministic = False
     return
@@ -336,41 +169,7 @@ class gamma_args_XRP(XRP):
   def __str__(self):
     return 'gamma'
 
-class gamma_no_args_XRP(XRP):
-  def __init__(self, a, b):
-    self.deterministic = False
-    check_pos(a)
-    check_pos(b)
-    self.a, self.b = a, b 
-    self.prob_help = - math.log(math_gamma(a)) - a * math.log(b)
-    return
-  def apply(self, args = None):
-    if args is not None and len(args) != 0:
-      raise RException('gamma_no_args_XRP has no need to take in arguments %s' % str(args))
-    return NumValue(rrandom.random.gammavariate(self.a, self.b))
-  def prob(self, val, args = None):
-    if args is not None and len(args) != 0:
-      raise RException('gamma_no_args_XRP has no need to take in arguments %s' % str(args))
-    check_pos(val.num)
-    if val.num == 0:
-      val.num = .0000000000000001
-    return self.prob_help + (self.a - 1) * math.log(val.num) - ((val.num + 0.0) / self.b)
-  def __str__(self):
-    return 'gamma(%d, %d)' % (self.a, self.b)
-
-class make_gamma_XRP(XRP):
-  def __init__(self):
-    self.deterministic = True
-    return
-  def apply(self, args = None):
-    (a,b) = (args[0].num, args[1].num)
-    check_pos(a)
-    check_pos(b)
-    return XRPValue(gamma_no_args_XRP(a, b)) 
-  def __str__(self):
-    return 'gamma_XRP'
-
-class bernoulli_args_XRP(XRP):
+class bernoulli_XRP(XRP):
   def __init__(self):
     self.deterministic = False
     return
@@ -388,38 +187,7 @@ class bernoulli_args_XRP(XRP):
   def __str__(self):
     return 'bernoulli'
 
-class bernoulli_no_args_XRP(XRP):
-  def __init__(self, p):
-    self.deterministic = False
-    self.p = p
-    p = check_prob(p)
-    return
-  def apply(self, args = None):
-    if args is not None and len(args) != 0:
-      raise RException('bernoulli_no_args_XRP has no need to take in arguments %s' % str(args))
-    return BoolValue(rrandom.random.random() < self.p)
-  def prob(self, val, args = None):
-    if args is not None and len(args) != 0:
-      raise RException('bernoulli_no_args_XRP has no need to take in arguments %s' % str(args))
-    if val.bool:
-      return math.log(self.p)
-    else:
-      return math.log(1.0 - self.p)
-  def __str__(self):
-    return 'bernoulli(%f)' % self.p
-
-class make_bernoulli_XRP(XRP):
-  def __init__(self):
-    self.deterministic = True
-    return
-  def apply(self, args = None):
-    p = args[0].num
-    p = check_prob(p)
-    return XRPValue(bernoulli_no_args_XRP(p)) 
-  def __str__(self):
-    return 'bernoulli_XRP'
-
-class uniform_args_XRP(XRP):
+class uniform_discrete_XRP(XRP):
   def __init__(self):
     self.deterministic = False
     return
@@ -434,54 +202,9 @@ class uniform_args_XRP(XRP):
   def __str__(self):
     return 'uniform'
 
-class uniform_no_args_XRP(XRP):
-  def __init__(self, n):
-    self.deterministic = False
-    self.n = n
-    return
-  def apply(self, args = None):
-    if args is not None and len(args) != 0:
-      raise RException('uniform_no_args_XRP has no need to take in arguments %s' % str(args))
-    return NatValue(rrandom.random.randbelow(self.n))
-  def prob(self, val, args = None):
-    if args is not None and len(args) != 0:
-      raise RException('uniform_no_args_XRP has no need to take in arguments %s' % str(args))
-    if not 0 <= val.nat < self.n:
-      raise RException("uniform_no_args_XRP should return something between 0 and %d, not %d" % (self.n, val.nat))
-    return -math.log(self.n)
-  def __str__(self):
-    return 'uniform(%d)' % self.n
-
-class make_uniform_XRP(XRP):
-  def __init__(self):
-    self.deterministic = True
-    return
-  def apply(self, args = None):
-    n = args[0].nat
-    return XRPValue(uniform_no_args_XRP(n)) 
-  def __str__(self):
-    return 'uniform_XRP'
-
 ### MORE SPECIFIC XRPs
 
-class beta_bernoulli_1(XRP):
-  def __init__(self, start_state = (1, 1)):
-    self.deterministic = False
-    (a, b) = start_state
-    self.p = check_prob(rrandom.random.betavariate(a, b))
-    self.true_log_p = math.log(self.p)
-    self.false_log_p = math.log(1.0 - self.p)
-  def apply(self, args = None):
-    return BoolValue((rrandom.random.random() < self.p))
-  def prob(self, val, args = None):
-    if val.bool:
-      return self.true_log_p
-    else:
-      return self.false_log_p
-  def __str__(self):
-    return 'beta_bernoulli'
-
-class beta_bernoulli_2(XRP):
+class beta_bernoulli_XRP(XRP):
   def __init__(self, start_state = (1, 1)):
     self.deterministic = False
     (self.h, self.t) = start_state
@@ -522,114 +245,103 @@ class make_beta_bernoulli_XRP(XRP):
     return
   def apply(self, args = None):
     (h, t) = (args[0].nat, args[1].nat)
-    return XRPValue(beta_bernoulli_1((h, t))) 
+    return XRPValue(beta_bernoulli_XRP((h, t))) 
   def __str__(self):
     return 'beta_bernoulli_make_XRP'
 
-### TOPIC MODELS
-
-# fully collapsed topic model
-class topic_model_XRP(XRP):
-  def __init__(self, ntopics, alpha_topics, nwords, alpha_words):
-    self.deterministic = False
-    self.state = None
-    (self.ntopics, self.alpha_topics, self.nwords, self.alpha_words) = (ntopics, alpha_topics, nwords, alpha_words)
-    self.topicdist = sample_dirichlet([alpha_topics] * ntopics)
-    self.worddist = [sample_dirichlet([alpha_words] * nwords) for i in range(ntopics)]
-    self.wordlogprobs = [sum(self.topicdist[j] * self.worddist[j][i] for j in range(ntopics)) for i in xrange(nwords)]
-    return
-  def apply(self, args = None):
-    topic = sample_categorical(self.topicdist)
-    if not 0 <= topic < self.ntopics:
-      raise RException("Invalid topic %d.  There are only %d topics" % (topic, self.ntopics))
-    word = sample_categorical(self.worddist[topic])
-    if not 0 <= word < self.nwords:
-      raise RException("Invalid word %d.  There are only %d words" % (word, self.nwords))
-    return IntValue(word)
-  def prob(self, val, args = None):
-    if not 0 <= val.int <= self.nwords:
-      raise RException("Invalid word %d.  There are only %d words" % (val.int, self.nwords))
-    return self.wordlogprobs[val.int]
-  def __str__(self):
-    return 'topic model'
-
-class make_topic_model_XRP(XRP):
+class dirichlet_XRP(XRP):
   def __init__(self):
-    self.deterministic = False # params chosen in the constructor
-    self.state = None
+    self.deterministic = False
     return
   def apply(self, args = None):
-    (ntopics, alpha_topics, nwords, alpha_words) = args
-    return XRPValue(topic_model_XRP(ntopics.int, alpha_topics.float, nwords.int, alpha_words.float)) 
+    for arg in args:
+      check_pos(arg.num)
+    probs = [NumValue(p) for p in dirichlet([arg.num for arg in args])]
+    return XRPValue(array_XRP(probs))
   def prob(self, val, args = None):
-    return 0
-  def __str__(self):
-    return 'make_topic_model_XRP'
+    if val.type != 'xrp':
+      raise RException("Returned value should have been an array XRP")
+    probs = [x.num for x in val.xrp.array]
+    for prob in probs:
+      check_prob(prob)
+    n = len(args)
+    if len(probs) != n:
+      raise RException("Number of arguments, %d, should've been the dimension %d" % (n, len(probs)))
 
-# half collapsed topic model
-#class word_dist_XRP(XRP):
-#  def __init__(self, ntopics, alpha_topics, nwords, alpha_words):
-#    self.deterministic = False
-#    self.state = None
-#    (self.ntopics, self.alpha_topics, self.nwords, self.alpha_words) = (ntopics, alpha_topics, nwords, alpha_words)
-#    self.topicdist = sample_dirichlet([alpha_topics] * ntopics)
-#    self.worddist = [sample_dirichlet([alpha_words] * nwords) for i in range(ntopics)]
-#    self.wordlogprobs = [sum(self.topicdist[j] * self.worddist[j][i] for j in range(ntopics)) for i in xrange(nwords)]
-#    return
-#  def apply(self, args = None):
-#    topic = sample_categorical(self.topicdist)
-#    assert 0 <= topic < self.ntopics
-#    word = sample_categorical(self.worddist[topic])
-#    assert 0 <= word < self.nwords
-#    return IntValue(word)
-#  def prob(self, val, args = None):
-#    assert 0 <= val.val <= self.nwords
-#    return self.wordlogprobs[val.val]
-#  def __str__(self):
-#    return 'topic model'
-#
-#class make_word_dist_XRP(XRP):
-#  def __init__(self):
-#    self.deterministic = False # params chosen in the constructor
-#    self.state = None
-#    return
-#  def apply(self, args = None):
-#    (nwords, alpha_words) = args
-#    return XRPValue(word_dist_XRP(nwords.val, alpha_words.val)) 
-#  def prob(self, val, args = None):
-#    return 0
-#  def __str__(self):
-#    return 'make_word_dist_XRP'
-#
-#class topic_dist_XRP(XRP):
-#  def __init__(self, ntopics, alpha_topics):
-#    self.deterministic = False
-#    self.state = None
-#    (self.ntopics, self.alpha_topics) = (ntopics, alpha_topics)
-#    self.topicdist = sample_dirichlet([alpha_topics] * ntopics)
-#    return
-#  def apply(self, args = None):
-#    topic = sample_categorical(self.topicdist)
-#    assert 0 <= topic < self.ntopics
-#    word = sample_categorical(self.worddist[topic])
-#    assert 0 <= word < self.nwords
-#    return IntValue(word)
-#  def prob(self, val, args = None):
-#    assert 0 <= val.val <= self.nwords
-#    return self.wordlogprobs[val.val]
-#  def __str__(self):
-#    return 'topic_dist_XRP'
-#
-#class make_topic_dist_XRP(XRP):
-#  def __init__(self):
-#    self.deterministic = False # params chosen in the constructor
-#    self.state = None
-#    return
-#  def apply(self, args = None):
-#    (ntopics, alpha_topics) = args
-#    return XRPValue(topic_dist_XRP(ntopics.val, alpha_topics.val)) 
-#  def prob(self, val, args = None):
-#    return 0
-#  def __str__(self):
-#    return 'make_topic_dist_XRP'
-#
+    alpha = 0
+    for alpha_i in args:
+      check_pos(alpha_i.num)
+      alpha += alpha_i.num
+
+    return math.log(math_gamma(alpha)) + sum([(args[i].num - 1) * math.log(probs[i]) for i in range(n)]) \
+           - sum([math.log(math_gamma(args[i].num)) for i in range(n)])
+
+  def __str__(self):
+    return 'dirichlet'
+
+class dirichlet_multinomial_XRP(XRP):
+  def __init__(self, args):
+    self.deterministic = False
+    self.alphas = args
+    self.n = len(self.alphas)
+    self.alpha = 0
+    for alpha_i in self.alphas:
+      check_pos(alpha_i)
+      self.alpha += alpha_i
+    return
+  def apply(self, args = None):
+    if args is not None and len(args) != 0:
+      raise RException('dirichlet_no_args_XRP has no need to take in arguments %s' % str(args))
+    probs = [x / (self.alpha + 0.0) for x in self.alphas]
+    return NatValue(sample_categorical(probs))
+  def incorporate(self, val, args = None):
+    if args is not None and len(args) != 0:
+      raise RException('dirichlet_multinomial has no need to take in arguments %s' % str(args))
+    if val.int < 0 or val.int >= self.n:
+      raise RException('dirichlet_multinomial should return something in [0, ..., %d], not %d' % (self.n - 1, val.int))
+    self.alphas[val.int] += 1
+    self.alpha += 1
+  def prob(self, val, args = None):
+    if args is not None and len(args) != 0:
+      raise RException('dirichlet_multinomial has no need to take in arguments %s' % str(args))
+    if val.int < 0 or val.int >= self.n:
+      raise RException('dirichlet_multinomial should return something in [0, ..., %d], not %d' % (self.n - 1, val.int))
+
+    return math.log(self.alphas[val.int]) - math.log(self.alpha)
+  def __str__(self):
+    return 'dirichlet_multinomial(%s)' % str(self.alphas)
+
+class symmetric_dirichlet_XRP(XRP):
+  def __init__(self):
+    self.deterministic = False
+    return
+  def apply(self, args = None):
+    (alpha, n) = (args[0], args[1])
+    probs = [NumValue(p) for p in dirichlet([alpha.num] * n.nat)]
+    return XRPValue(array_XRP(probs))
+  def prob(self, val, args = None):
+    (alpha, n) = (args[0], args[1])
+    if val.type != 'xrp':
+      raise RException("Returned value should have been an array XRP")
+    probs = [x.num for x in val.xrp.array]
+    for prob in probs:
+      check_prob(prob)
+    if n.nat != len(args):
+      raise RException("Number of arguments, %d, should've been the dimension %d" % (len(args), n.nat))
+    if len(probs) != n.nat:
+      raise RException("Number of arguments, %d, should've been the dimension %d" % (n.nat, len(probs)))
+    return math.log(math_gamma(alpha.num * n.nat)) + (alpha.num - 1) * sum([math.log(probs[i]) for i in range(n.num)]) \
+           - n.nat * math.log(math_gamma(alpha.num))
+
+class make_symmetric_dirichlet_multinomial_XRP(XRP):
+  def __init__(self):
+    self.deterministic = True
+    return
+  def apply(self, args = None):
+    if len(args) != 2:
+      raise RException("Symmetric dirichlet generator takes two arguments, alpha and n")
+    (alpha, n) = (args[0], args[1])
+    return XRPValue(dirichlet_multinomial_XRP([alpha.num] * n.nat)) 
+  def __str__(self):
+    return 'symmetric_dirichlet_multinomial_make_XRP'
+

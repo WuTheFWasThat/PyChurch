@@ -236,26 +236,26 @@ def xrp(xrp):
 
 ### DISTRIBUTIONS ### 
 
-bernoulli_args_xrp = ConstExpression(XRPValue(bernoulli_args_XRP()))
+bernoulli_xrp = ConstExpression(XRPValue(bernoulli_XRP()))
 def bernoulli(p):
-  return ApplyExpression(bernoulli_args_xrp, [p])
+  return ApplyExpression(bernoulli_xrp, [p])
 
-beta_args_xrp = ConstExpression(XRPValue(beta_args_XRP()))
+beta_xrp = ConstExpression(XRPValue(beta_XRP()))
 def beta(a, b): 
-  return ApplyExpression(beta_args_xrp, [a, b])
+  return ApplyExpression(beta_xrp, [a, b])
 
-gamma_args_xrp = ConstExpression(XRPValue(gamma_args_XRP()))
+gamma_xrp = ConstExpression(XRPValue(gamma_XRP()))
 def gamma(a, b): 
-  return ApplyExpression(gamma_args_xrp, [a, b])
+  return ApplyExpression(gamma_xrp, [a, b])
 
-uniform_args_xrp = ConstExpression(XRPValue(uniform_args_XRP()))
+uniform_xrp = ConstExpression(XRPValue(uniform_discrete_XRP()))
 def uniform(n = None):
   if n is None:
     return beta(int_expr(1), int_expr(1))
   else:
-    return ApplyExpression(uniform_args_xrp, [n])
+    return ApplyExpression(uniform_xrp, [n])
 
-gaussian_args_xrp = ConstExpression(XRPValue(gaussian_args_XRP()))
+gaussian_xrp = ConstExpression(XRPValue(gaussian_XRP()))
 def gaussian(mu, sigma):
-  return ApplyExpression(gaussian_args_xrp, [mu, sigma])
+  return ApplyExpression(gaussian_xrp, [mu, sigma])
 

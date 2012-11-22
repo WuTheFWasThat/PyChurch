@@ -112,13 +112,13 @@ class Directives:
   def reset_engine(self):
     self.engine.reset()
   
-    self.assume('bernoulli', xrp(bernoulli_args_XRP()), True)
+    self.assume('bernoulli', xrp(bernoulli_XRP()), True)
     self.assume('flip', var('bernoulli'), True)
-    self.assume('beta', xrp(beta_args_XRP()), True)
-    self.assume('gamma', xrp(gamma_args_XRP()), True)
-    self.assume('gaussian', xrp(gaussian_args_XRP()), True)
+    self.assume('beta', xrp(beta_XRP()), True)
+    self.assume('gamma', xrp(gamma_XRP()), True)
+    self.assume('gaussian', xrp(gaussian_XRP()), True)
     self.assume('normal', var('gaussian'), True)
-    self.assume('randbelow', xrp(uniform_args_XRP()), True)
+    self.assume('randbelow', xrp(uniform_discrete_XRP()), True)
     self.assume('rand', function([], apply(var('beta'), [num_expr(1), num_expr(1)])), True)
 
     self.assume('uniform-discrete', function(['min-inclusive', 'max-inclusive'],
@@ -128,8 +128,10 @@ class Directives:
                                       op('+', [op('*', [apply(var('rand'), []), op('-', [var('max-inclusive'), var('min-inclusive')])]), var('min-inclusive')])),
                 True)
   
-    self.assume('symmetric-dirichlet-multinomial/make', xrp(make_symmetric_dirichlet_XRP()), True)
-    self.assume('symmetric-dirichlet', xrp(symmetric_dirichlet_args_XRP()), True)
+    #self.assume('dirichlet-multinomial/make', xrp(make_symmetric_dirichlet_XRP()), True)
+    #self.assume('dirichlet', xrp(symmetric_dirichlet_args_XRP()), True)
+    self.assume('symmetric-dirichlet-multinomial/make', xrp(make_symmetric_dirichlet_multinomial_XRP()), True)
+    self.assume('symmetric-dirichlet', xrp(symmetric_dirichlet_XRP()), True)
   
     self.assume('mem', xrp(mem_XRP()), True)
   
@@ -283,7 +285,7 @@ class Directives:
   
       self.infer(burnin)
   
-      val = self.report_value(id)
+      val = self.report_value(id).__hash__()
       if val in dict:
         dict[val] += 1
       else:
@@ -334,7 +336,7 @@ class Directives:
       table = []
       for val in d:
         p = d[val]
-        table.append([val.__str__(), str(p)])
+        table.append([str(val), str(p)])
       ret_str = table_to_string(table, ['Value', 'Count'])
       ret_str += '\nTime taken (seconds): ' + str(t)
     elif token == 'clear':
