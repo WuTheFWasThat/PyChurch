@@ -5,7 +5,6 @@ Parts copied from http://www.smipple.net/snippet/Shibukawa%20Yoshi/RPython%20ech
 
 import os
 import sys
-import utils.expr_parser as parser
 from utils.rexceptions import RException
 
 
@@ -34,7 +33,6 @@ else:
 directives = Directives(engine)
 
 sys.setrecursionlimit(10000)
-
 
 def run(fp):
 

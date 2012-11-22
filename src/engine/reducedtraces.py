@@ -292,7 +292,7 @@ class ReducedEvalNode:
         new_env.set(expr.vars[i], values[i])
         if val.type == 'procedure':
           val.env = new_env
-      new_body = expr.body.replace(new_env, None, self)
+      new_body = expr.body.replace(new_env, {}, self)
       val = self.evaluate_recurse(new_body, new_env, hashval, 1)
 
     elif expr.type == 'apply':

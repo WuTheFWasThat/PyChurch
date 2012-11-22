@@ -1,8 +1,8 @@
 assume ntopics 5
 assume nwords 20
 
-assume topics-dirichlet (make-symmetric-dirichlet ntopics 1)
-assume words-dirichlet (make-symmetric-dirichlet nwords 1)
+assume topics-dirichlet (symmetric-dirichlet-multinomial/make 1 ntopics)
+assume words-dirichlet (symmetric-dirichlet-multinomial/make 1 nwords)
 
 assume get-topic-dist (topics-dirichlet)
 
