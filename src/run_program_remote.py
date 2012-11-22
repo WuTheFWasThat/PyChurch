@@ -3,7 +3,7 @@ import time
 import sys
 
 if __name__ == "__main__":
-  a = socket.create_connection(('localhost', 5000))
+  a = socket.create_connection(('localhost', 2222))
   print a.recv(1024)
 
   t = time.time()

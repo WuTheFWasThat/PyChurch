@@ -6,8 +6,8 @@ infer_many sprinkler 1000 5
 
 observe (noisy sprinkler 0.01) True
 
-infer_many cloudy 1000 10 
-infer_many sprinkler 1000 10 
+infer_many cloudy 1000 10
+infer_many sprinkler 1000 10
 
-report_directives assume
-report_directives observe
+report_directives DIRECTIVES-ASSUME
+report_directives DIRECTIVES-OBSERVE

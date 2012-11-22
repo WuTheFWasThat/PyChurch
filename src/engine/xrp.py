@@ -172,7 +172,7 @@ class dirichlet_args_XRP(XRP):
   def prob(self, val, args = None):
     if val.type != 'xrp':
       raise RException("Returned value should have been an array XRP")
-    probs = [x.num for x in val.xrp.state]
+    probs = [x.num for x in val.xrp.array]
     for prob in probs:
       check_prob(prob)
     n = len(args)
@@ -234,16 +234,13 @@ class symmetric_dirichlet_args_XRP(XRP):
     (alpha, n) = (args[0], args[1])
     if val.type != 'xrp':
       raise RException("Returned value should have been an array XRP")
-    probs = [x.num for x in val.xrp.state]
+    probs = [x.num for x in val.xrp.array]
     for prob in probs:
       check_prob(prob)
     if n.nat != len(args):
       raise RException("Number of arguments, %d, should've been the dimension %d" % (len(args), n.nat))
     if len(probs) != n.nat:
       raise RException("Number of arguments, %d, should've been the dimension %d" % (n.nat, len(probs)))
-
-    alpha = alpha.num * n.nat 
-
     return math.log(math_gamma(alpha.num * n.nat)) + (alpha.num - 1) * sum([math.log(probs[i]) for i in range(n.num)]) \
            - n.nat * math.log(math_gamma(alpha.num))
 
