@@ -14,10 +14,11 @@ except:
   use_pypy = False
   
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description='Engine of Church implementation.  Use socket ripl to connect.')
+  parser = argparse.ArgumentParser(description='Engine of Church implementation.')
   parser.add_argument('-e', default='traces', dest = 'engine',
                      help='Type of engine (db, traces, reduced_trace)')
-  parser.add_argument('program', action = "store", help='Program to run')
+  parser.add_argument('-p', dest = 'program', 
+                      action = "store", help='Program to run (if any)')
   
   args = parser.parse_args()
   
@@ -33,12 +34,23 @@ if __name__ == "__main__":
   
   directives = Directives(engine)
 
+  run_shell = (args.program is None)
+
   t = time.time()
-  f = open(args.program, 'r')
-  line = f.readline()
-  while line:
-    line = line.rstrip("\n")
-    print ">>>", line
+  if not run_shell:
+    f = open(args.program, 'r')
+
+  while True:
+    if run_shell:
+      line = raw_input(">>> ")
+    else:
+      line = f.readline()
+      if not line:
+        run_shell = True
+        f.close()
+        continue
+      line = line.rstrip("\n")
+      print ">>>", line
 
     msg = ""
     i = line.find(',')
@@ -48,9 +60,12 @@ if __name__ == "__main__":
           print "Warning:  Characters after ',' ignored"
           break
       msg += line[:i] + ' ' 
-      line = f.readline()
-      line = line.rstrip("\n")
-      print "...", line
+      if run_shell:
+        line = raw_input("... ")
+      else:
+        line = f.readline()
+        line = line.rstrip("\n")
+        print "...", line
       i = line.find(',')
 
     msg += line
@@ -68,8 +83,9 @@ if __name__ == "__main__":
       print
       print ret_msg
       print
-    line = f.readline()
     
-  f.close()
+  if not run_shell:
+    f.close()
   t = time.time() - t
-  print "Time (seconds):  ", t
+
+  print "\nTime connected:\n    ", t, " seconds"

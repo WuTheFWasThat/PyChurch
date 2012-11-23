@@ -11,3 +11,5 @@ infer_many sprinkler 1000 10
 
 report_directives DIRECTIVES-ASSUME
 report_directives DIRECTIVES-OBSERVE
+
+exit

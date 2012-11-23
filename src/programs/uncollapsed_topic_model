@@ -26,3 +26,5 @@ assume word2 (get-word 2)
 assume word3 (get-word 3)
 
 infer_many word0 100 100
+
+exit
