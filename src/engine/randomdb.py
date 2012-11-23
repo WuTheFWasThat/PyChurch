@@ -11,7 +11,7 @@ from utils.rexceptions import RException
 
 # Class representing random db
 class RandomDB(Engine):
-  def __init__(self, env):
+  def __init__(self):
     #self.db = {} 
     self.engine_type = 'randomdb'
     self.db = RandomChoiceDict() 
@@ -382,9 +382,6 @@ class RandomDB(Engine):
     if debug:
       print "new db", self
       print "\n-----------------------------------------\n"
-
-  def reset(self):
-    self.__init__(self.env)
 
   def __str__(self):
     string = 'DB with state:'

@@ -243,8 +243,9 @@ class make_beta_bernoulli_XRP(XRP):
   def __init__(self):
     self.deterministic = True
     return
+  # TODO: decide convention on heads/tails
   def apply(self, args = None):
-    (h, t) = (args[0].nat, args[1].nat)
+    (t, h) = (args[0].nat, args[1].nat)
     return XRPValue(beta_bernoulli_XRP((h, t))) 
   def __str__(self):
     return 'beta_bernoulli_make_XRP'

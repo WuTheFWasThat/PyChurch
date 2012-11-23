@@ -8,6 +8,7 @@ import sys
 import utils.expr_parser as parser
 from utils.rexceptions import RException
 
+import argparse
 
 from engine.directives import Directives 
 from engine.traces import *
@@ -42,22 +43,10 @@ try:
 except:
   use_jit = False
 
-engine_type = 'reduced traces'
-if engine_type == 'reduced traces':
-  engine = ReducedTraces()
-elif engine_type == 'traces':
-  engine = Traces()
-elif engine_type == 'randomdb':
-  engine = RandomDB()
-else:
-  raise RException("Engine %s is not implemented" % engine_type)
-
-directives = Directives(engine)
-
 sys.setrecursionlimit(10000)
 
 
-def run(fp):
+def run(directives):
 
     hostip = rsocket.gethostbyname('localhost')
     if use_pypy:
@@ -124,8 +113,25 @@ def read(fp):
     return program
 
 def entry_point(argv):
+    parser = argparse.ArgumentParser(description='Engine of Church implementation.  Use socket ripl to connect.')
+    parser.add_argument('--e', default='traces', dest = 'engine',
+                       help='Type of engine (db, traces, reduced_trace)')
+    
+    args = parser.parse_args()
+    print args
 
-    #run(os.open(filename, os.O_RDONLY, 0777))
+    engine_type = args.engine
+    if engine_type in ['rt', 'reduced', 'reduced_trace', 'reduced_traces', 'reducedtrace', 'reducedtraces']:
+      engine = ReducedTraces()
+    elif engine_type in ['t', 'trace', 'traces']:
+      engine = Traces()
+    elif engine_type in ['r', 'db', 'randomdb']:
+      engine = RandomDB()
+    else:
+      raise RException("Engine %s is not implemented" % engine_type)
+    
+    directives = Directives(engine)
+
     run(10)
     
     return 0

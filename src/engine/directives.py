@@ -112,6 +112,8 @@ class Directives:
   def reset_engine(self):
     self.engine.reset()
   
+    # BASIC DISTRIBUTIONS
+
     self.assume('bernoulli', xrp(bernoulli_XRP()), True)
     self.assume('flip', var('bernoulli'), True)
     self.assume('beta', xrp(beta_XRP()), True)
@@ -127,17 +129,9 @@ class Directives:
     self.assume('uniform-continuous', function(['min-inclusive', 'max-inclusive'],
                                       op('+', [op('*', [apply(var('rand'), []), op('-', [var('max-inclusive'), var('min-inclusive')])]), var('min-inclusive')])),
                 True)
-  
-    #self.assume('dirichlet-multinomial/make', xrp(make_symmetric_dirichlet_XRP()), True)
-    #self.assume('dirichlet', xrp(symmetric_dirichlet_args_XRP()), True)
-    self.assume('symmetric-dirichlet-multinomial/make', xrp(make_symmetric_dirichlet_multinomial_XRP()), True)
-    self.assume('symmetric-dirichlet', xrp(symmetric_dirichlet_XRP()), True)
-  
-    self.assume('mem', xrp(mem_XRP()), True)
-  
-    self.assume('CRP/make', xrp(gen_CRP_XRP()), True)
-    self.assume('beta-binomial/make', xrp(make_beta_bernoulli_XRP()), True)
-  
+   
+    # FOR OBSERVES
+
     self.assume('noisy', function(['expr', 'noise'],  \
                          ifelse(apply(var('bernoulli'), [var('noise')]), negation(var('expr')), var('expr'))),  \
                  True) 
@@ -145,6 +139,18 @@ class Directives:
     self.assume('noise-negate', function(['expr', 'noise'],  \
                          apply(var('bernoulli'), [ifelse(var('expr'), num_expr(1), var('noise'))])),  \
                  True) 
+
+    # MORE COMPLICATED PROCESSES
+
+    #self.assume('dirichlet-multinomial/make', xrp(make_symmetric_dirichlet_XRP()), True)
+    #self.assume('dirichlet', xrp(symmetric_dirichlet_args_XRP()), True)
+    self.assume('symmetric-dirichlet-multinomial/make', xrp(make_symmetric_dirichlet_multinomial_XRP()), True)
+    self.assume('symmetric-dirichlet', xrp(symmetric_dirichlet_XRP()), True)
+  
+    self.assume('CRP/make', xrp(gen_CRP_XRP()), True)
+    self.assume('beta-binomial/make', xrp(make_beta_bernoulli_XRP()), True)
+  
+    self.assume('mem', xrp(mem_XRP()), True)
 
     """DEFINITION OF DP"""
     self.assume('DP_uncollapsed', \
