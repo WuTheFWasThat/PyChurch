@@ -566,20 +566,6 @@ class Traces(Engine):
       raise RException("Invalid directive")
     return node
 
-  def report_value(self, id):
-    if self.directives[id] == 'assume':
-      assume_node = self.assumes[id]
-      val = assume_node.val
-    elif self.directives[id] == 'observe':
-      observe_node = self.observes[id]
-      val = observe_node.val
-    elif self.directives[id] == 'predict':
-      predict_node = self.predicts[id]
-      val = predict_node.val
-    else:
-      raise RException("Invalid directive")
-    return val 
-
   def reflip(self, reflip_node):
     debug = False
 

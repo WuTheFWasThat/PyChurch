@@ -184,7 +184,10 @@ class MyRIPL(RIPL):
 
         recv_msg = self.get_recv_msg(msg)
         string_val = self.get_field(recv_msg, 'value: ')
-        return self.string_to_value(string_val)
+
+        d = self.directive_list[id-1] 
+        d["value"] = self.string_to_value(string_val)
+        return d
 
     def string_to_value(self, string_val):
         if string_val == 'True':
@@ -214,7 +217,7 @@ class MyRIPL(RIPL):
           directive_type = d['directive-type']
           if directive_type in directive_types:
             if directive_type in ['DIRECTIVE-ASSUME', 'DIRECTIVE-PREDICT']:
-              d["value"] = self.report_value(id)
+              d = self.report_value(id)
             directive_report.append(d)
         return directive_report
 

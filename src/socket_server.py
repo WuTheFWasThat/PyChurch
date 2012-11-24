@@ -8,8 +8,6 @@ import sys
 import utils.expr_parser as parser
 from utils.rexceptions import RException
 
-import argparse
-
 from engine.directives import Directives 
 from engine.traces import *
 from engine.reducedtraces import *
@@ -113,14 +111,8 @@ def read(fp):
     return program
 
 def entry_point(argv):
-    parser = argparse.ArgumentParser(description='Engine of Church implementation.  Use socket ripl to connect.')
-    parser.add_argument('--e', default='traces', dest = 'engine',
-                       help='Type of engine (db, traces, reduced_trace)')
-    
-    args = parser.parse_args()
-    print args
+    engine_type = 'traces'
 
-    engine_type = args.engine
     if engine_type in ['rt', 'reduced', 'reduced_trace', 'reduced_traces', 'reducedtrace', 'reducedtraces']:
       engine = ReducedTraces()
     elif engine_type in ['t', 'trace', 'traces']:
@@ -132,7 +124,7 @@ def entry_point(argv):
     
     directives = Directives(engine)
 
-    run(10)
+    run(directives)
     
     return 0
 

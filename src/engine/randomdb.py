@@ -26,7 +26,7 @@ class RandomDB(Engine):
 
     self.assumes = {}
     self.observes = {}
-    self.predict = {}
+    self.predicts = {}
     self.vars = {}
 
   def reset(self):
@@ -50,15 +50,6 @@ class RandomDB(Engine):
   def predict(self, expr, id):
     self.predicts[id] = expr
     return self.evaluate(expr, self.env, True, [id])
-
-  def rerun(self):
-    for id in self.assumes:
-      (varname, expr) = self.assumes[id]
-      value = self.evaluate(expr, self.env, reflip = True, stack = [id])
-      self.env.set(varname, value)
-    for id in self.observes:
-      (expr, obs_val) = self.observes[id]
-      self.evaluate(expr, self.env, reflip = True, stack = [id], xrp_force_val = obs_val)
 
   def forget(self, id):
     self.remove(['obs', id])
@@ -122,19 +113,17 @@ class RandomDB(Engine):
     return key
 
   def evaluate_recurse(self, subexpr, env, reflip, stack, addition):
-    if type(addition) != list:
-      val = self.evaluate(subexpr, env, reflip, stack + [addition])
-    else:
-      val = self.evaluate(subexpr, env, reflip, stack + addition)
+    newstack = [s for s in stack].extend(addition)
+    val = self.evaluate(subexpr, env, reflip, newstack)
     return val
       
   def binary_op_evaluate(self, expr, env, reflip, stack):
-    val1 = self.evaluate_recurse(expr.children[0], env, reflip, stack, 'operand0')
-    val2 = self.evaluate_recurse(expr.children[1], env, reflip, stack, 'operand1')
+    val1 = self.evaluate_recurse(expr.children[0], env, reflip, stack, ['operand0'])
+    val2 = self.evaluate_recurse(expr.children[1], env, reflip, stack, ['operand1'])
     return (val1 , val2)
   
   def children_evaluate(self, expr, env, reflip, stack):
-    return [self.evaluate_recurse(expr.children[i], env, reflip, stack, 'child' + str(i)) for i in range(len(expr.children))]
+    return [self.evaluate_recurse(expr.children[i], env, reflip, stack, ['child' + str(i)]) for i in range(len(expr.children))]
 
   # Draws a sample value (without re-sampling other values) given its parents, and sets it
   def evaluate(self, expr, env = None, reflip = False, stack = [], xrp_force_val = None):
@@ -150,20 +139,20 @@ class RandomDB(Engine):
       var = expr.name
       (val, lookup_env) = env.lookup(var)
     elif expr.type == 'if':
-      cond = self.evaluate_recurse(expr.cond, env, reflip, stack , 'cond')
+      cond = self.evaluate_recurse(expr.cond, env, reflip, stack , ['cond'])
       if cond.bool: 
         self.unevaluate(stack + ['false'])
-        val = self.evaluate_recurse(expr.true, env, reflip, stack , 'true')
+        val = self.evaluate_recurse(expr.true, env, reflip, stack , ['true'])
       else:
         self.unevaluate(stack + ['true'])
-        val = self.evaluate_recurse(expr.false, env, reflip, stack , 'false')
+        val = self.evaluate_recurse(expr.false, env, reflip, stack , ['false'])
     #elif expr.type == 'switch':
-    #  index = self.evaluate_recurse(expr.index, env, reflip, stack , 'index')
+    #  index = self.evaluate_recurse(expr.index, env, reflip, stack , ['index'])
     #  assert 0 <= index.num < expr.n
     #  for i in range(expr.n):
     #    if i != index.num:
     #      self.unevaluate(stack + ['child' + str(i)])
-    #  val = self.evaluate_recurse(expr.children[index.num], env, reflip, stack, 'child' + str(index.num))
+    #  val = self.evaluate_recurse(expr.children[index.num], env, reflip, stack, ['child' + str(index.num)])
     elif expr.type == 'let':
       # NOTE: this really is a let*
 
@@ -173,17 +162,17 @@ class RandomDB(Engine):
       new_env = env
       for i in range(n): # Bind variables
         new_env = new_env.spawn_child()
-        val = self.evaluate_recurse(expr.expressions[i], new_env, reflip, stack, 'let' + str(i))
+        val = self.evaluate_recurse(expr.expressions[i], new_env, reflip, stack, ['let' + str(i)])
         values.append(val)
         new_env.set(expr.vars[i], values[i])
         if val.type == 'procedure':
           val.env = new_env
       new_body = expr.body.replace(new_env)
-      val = self.evaluate_recurse(new_body, new_env, reflip, stack, 'body')
+      val = self.evaluate_recurse(new_body, new_env, reflip, stack, ['body'])
     elif expr.type == 'apply':
       n = len(expr.children)
-      args = [self.evaluate_recurse(expr.children[i], env, reflip, stack, 'arg' + str(i)) for i in range(n)]
-      op = self.evaluate_recurse(expr.op, env, reflip, stack , 'operator')
+      args = [self.evaluate_recurse(expr.children[i], env, reflip, stack, ['arg' + str(i)]) for i in range(n)]
+      op = self.evaluate_recurse(expr.op, env, reflip, stack , ['operator'])
 
       addition = ','.join([x.str_hash for x in args])
       if op.type == 'procedure':
@@ -193,7 +182,7 @@ class RandomDB(Engine):
         new_env = op.env.spawn_child()
         for i in range(n):
           new_env.set(op.vars[i], args[i])
-        val = self.evaluate_recurse(op.body, new_env, reflip, stack, ('apply', addition))
+        val = self.evaluate_recurse(op.body, new_env, reflip, stack, ['apply', addition])
       elif op.type == 'xrp':
         self.unevaluate(stack + ['apply'], addition)
   
@@ -207,7 +196,7 @@ class RandomDB(Engine):
           substack = stack + ['apply', addition]
           if not self.has(substack):
             if op.xrp.is_mem_proc():
-              val = op.xrp.apply_mem(args, stack)
+              val = op.xrp.apply_mem(args, self, stack)
             else:
               val = op.xrp.apply(args)
             self.insert(substack, op.xrp, val, args)
@@ -215,7 +204,7 @@ class RandomDB(Engine):
             if reflip:
               self.remove(substack)
               if op.xrp.is_mem_proc():
-                val = op.xrp.apply_mem(args, stack)
+                val = op.xrp.apply_mem(args, self, stack)
               else:
                 val = op.xrp.apply(args)
               self.insert(substack, op.xrp, val, args)
@@ -266,7 +255,7 @@ class RandomDB(Engine):
         orval = orval.__or__(x.bool)
       val = orval
     elif expr.type == '~':
-      negval = self.evaluate_recurse(expr.children[0], env, reflip, stack, 'neg').bool
+      negval = self.evaluate_recurse(expr.children[0], env, reflip, stack, ['neg'])
       val = negval.__inv__()
     elif expr.type == '+':
       vals = self.children_evaluate(expr, env, reflip, stack)
@@ -275,8 +264,8 @@ class RandomDB(Engine):
         sum_val = sum_val.__add__(x)
       val = sum_val
     elif expr.type == '-':
-      val1 = self.evaluate_recurse(expr.children[0], env, reflip, stack , 'sub0')
-      val2 = self.evaluate_recurse(expr.children[1], env, reflip, stack , 'sub1')
+      val1 = self.evaluate_recurse(expr.children[0], env, reflip, stack , ['sub0'])
+      val2 = self.evaluate_recurse(expr.children[1], env, reflip, stack , ['sub1'])
       val = val1.__sub__(val2)
     elif expr.type == '*':
       vals = self.children_evaluate(expr, env, reflip, stack)
@@ -285,8 +274,8 @@ class RandomDB(Engine):
         prod_val = prod_val.__mul__(x)
       val = prod_val
     elif expr.type == '/':
-      val1 = self.evaluate_recurse(expr.children[0], env, reflip, stack , 'div0')
-      val2 = self.evaluate_recurse(expr.children[1], env, reflip, stack , 'div1')
+      val1 = self.evaluate_recurse(expr.children[0], env, reflip, stack , ['div0'])
+      val2 = self.evaluate_recurse(expr.children[1], env, reflip, stack , ['div1'])
       val = val1.__div__(val2)
     else:
       raise RException('Invalid expression type %s' % expr.type)

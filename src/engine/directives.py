@@ -240,6 +240,9 @@ class Directives:
         raise RException("Invalid directive")
     
   def report_value(self, id):
+    if self.directives[id] not in ['assume', 'predict']:
+      raise RException("Can only report values of assumes and predicts")
+    # TODO: forgotten predicts, throw error?
     value = self.engine.report_value(id)
     return value
   

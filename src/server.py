@@ -35,16 +35,11 @@ def forget(did):
 
 @app.route('/<int:did>', methods=['GET'])
 def report_value(did):
-    # FIXME: Make this threadsafe, and pass better reporting
-    #        through the LocalRIPL caching layer
-    if did in ripl.assumes:
-        return json.dumps(ripl.assumes[did])
-    elif did in ripl.observes:
-        return json.dumps(ripl.observes[did])
-    elif did in ripl.predicts:
-        return json.dumps(ripl.predicts[did])
-    else:
-        raise Exception("requested invalid")
+    print "REPORTED VALUE"
+    print "did: ", did
+    d = ripl.report_value(did)
+    print d
+    return json.dumps(d)
 
 @app.route('/space', methods=['GET'])
 def space():
