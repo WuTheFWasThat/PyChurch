@@ -132,11 +132,11 @@ class Directives:
    
     # FOR OBSERVES
 
-    self.assume('noisy', function(['expr', 'noise'],  \
+    self.assume('noise-negate', function(['expr', 'noise'],  \
                          ifelse(apply(var('bernoulli'), [var('noise')]), negation(var('expr')), var('expr'))),  \
                  True) 
 
-    self.assume('noise-negate', function(['expr', 'noise'],  \
+    self.assume('noisy', function(['expr', 'noise'],  \
                          apply(var('bernoulli'), [ifelse(var('expr'), num_expr(1), var('noise'))])),  \
                  True) 
 
@@ -302,6 +302,14 @@ class Directives:
   
     return dict 
 
+  def log_score(self, id = -1):
+    if (id != -1) and (self.directives[id] != 'observe'): 
+      raise RException("Can only get log score for observes")
+    return self.engine.get_log_score(id)
+
+  def random_choices(self):
+    return self.engine.random_choices()
+
   def parse_and_run_command(self, s):
     ret_str = 'done'
     (token, i) = parse_token(s, 0)
@@ -354,6 +362,37 @@ class Directives:
     elif token == 'report_value':
       (id, i) = parse_integer(s, i)
       ret_str = 'value: ' + self.report_value(id).__str__()
+    elif token == 'log_score':
+      try:
+        (id, i) = parse_integer(s, i)
+      except:
+        id = -1
+      ret_str = 'logp: ' + str(self.log_score(id))
+    elif token == 'entropy':
+      ret_str = 'entropy: ' + str(self.random_choices())
+    elif token == 'mhstats':
+      (detail, i) = parse_token(s, i)
+      if detail == 'aggregated':
+        d = self.engine.mhstats_aggregated()
+        ret_str = 'made-proposals: ' + str(d['made-proposals'])
+        ret_str += '\naccepted-proposals: ' + str(d['accepted-proposals'])
+      elif detail == 'on':
+        self.engine.mhstats_on()
+        ret_str = 'mhstats details: on'
+      elif detail == 'off':
+        self.engine.mhstats_off()
+        ret_str = 'mhstats details: off'
+      else:
+        if detail != 'detailed':
+          raise RException("Invalid mhstats query")
+        d = self.engine.mhstats_detailed()
+        ret_str = ''
+        for key in d:
+          ret_str += 'node: ' + str(key)
+          ret_str += '\n  made-proposals: ' + str(d[key]['made-proposals'])
+          ret_str += '\n  accepted-proposals: ' + str(d[key]['accepted-proposals'])
+          ret_str += '\n'
+
     #elif token == 'report_directives':
     #  (directive_type, i) = parse_token(s, i)
     #  directives_report = self.report_directives(directive_type)

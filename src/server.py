@@ -12,6 +12,11 @@ ripl = myripl.DirectRIPL()
 global app
 app = flask.Flask(__name__)
 
+def get_response(string):
+  resp = make_response(string)
+  resp.headers['Access-Control-Allow-Origin'] = '*'
+  return resp
+
 @app.route('/', methods=['GET'])
 def index():
     #resp = make_response()
@@ -20,18 +25,18 @@ def index():
     #return resp
 
     directives = ripl.report_directives()
-    return json.dumps(directives)
+    return get_response(json.dumps(directives))
 
 @app.route('/', methods=['DELETE'])
 def clear():
     ripl.clear()
     print "CLEARED"
-    return "Cleared"
+    return get_response("Cleared")
 
 @app.route('/<int:did>', methods=['DELETE'])
 def forget(did):
     ripl.forget(did)
-    return "Deleted"
+    return get_response("Deleted")
 
 @app.route('/<int:did>', methods=['GET'])
 def report_value(did):
@@ -39,22 +44,22 @@ def report_value(did):
     print "did: ", did
     d = ripl.report_value(did)
     print d
-    return json.dumps(d)
+    return get_response(json.dumps(d))
 
 @app.route('/space', methods=['GET'])
 def space():
     s = ripl.space()
-    return json.dumps({"space": s})
+    return get_response(json.dumps({"space": s}))
 
-@app.route('/seed', methods=['PUT'])
+@app.route('/seed', methods=['POST'])
 def seed():
     seed = json.loads(request.form["seed"])
     print "SEED REQUEST"
     print "seed: ", seed
     ripl.seed(seed)
-    return "Seeded with %s" % str(seed)
+    return get_response("Seeded with %s" % str(seed))
 
-@app.route('/infer', methods=['PUT'])
+@app.route('/infer', methods=['POST'])
 def infer():
     # FIXME: Define and support a proper config
     MHiterations = json.loads(request.form["MHiterations"])
@@ -62,9 +67,9 @@ def infer():
     print "iterations: " + str(MHiterations)
     t = ripl.infer(MHiterations)
     print "time: ", t
-    return json.dumps({"time": t})
+    return get_response(json.dumps({"time": t}))
 
-@app.route('/assume', methods=['PUT'])
+@app.route('/assume', methods=['POST'])
 def assume():
     name_str = json.loads(request.form["name_str"])
     expr_lst = json.loads(request.form["expr_lst"])
@@ -74,10 +79,10 @@ def assume():
     (d_id, val) = ripl.assume(name_str, expr_lst)
     print "d_id: " + str(d_id)
     print "val: " + str(val)
-    return json.dumps({"d_id": d_id,
-                       "val": val})
+    return get_response(json.dumps({"d_id": d_id,
+                       "val": val}))
 
-@app.route('/observe', methods=['PUT'])
+@app.route('/observe', methods=['POST'])
 def observe():
     expr_lst = json.loads(request.form["expr_lst"])
     literal_val = json.loads(request.form["literal_val"])
@@ -87,7 +92,7 @@ def observe():
     print "d_id: " + str(d_id)
     return json.dumps({"d_id": d_id})
 
-@app.route('/predict', methods=['PUT'])
+@app.route('/predict', methods=['POST'])
 def predict():
     expr_lst = json.loads(request.form["expr_lst"])
     print "PREDICT"
@@ -95,7 +100,7 @@ def predict():
     (d_id, val) = ripl.predict(expr_lst)
     print "d_id: " + str(d_id)
     print "val: " + str(val)
-    return json.dumps({"d_id": d_id, "val": val})
+    return get_response(json.dumps({"d_id": d_id, "val": val}))
 
 if __name__ == '__main__':
     #ripl.set_continuous_inference(enable=True)

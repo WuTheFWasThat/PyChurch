@@ -90,6 +90,8 @@ class EvalNode:
     self.type = expression.type
 
     self.val = None
+
+    self.hashval = rrandom.random.randbelow()
     return
 
   def get_child(self, addition, env, subexpr, is_apply = False):
@@ -233,7 +235,7 @@ class EvalNode:
 
   def evaluate_recurse(self, subexpr, env, addition, reflip, is_apply = False):
     child = self.get_child(addition, env, subexpr, is_apply)
-    val = child.evaluate(reflip == True)
+    val = child.evaluate(reflip == True, None)
     return val
   
   def binary_op_evaluate(self, reflip):
@@ -270,7 +272,9 @@ class EvalNode:
     elif self.type == 'if':
       cond = self.evaluate_recurse(expr.cond, self.env, 'cond', reflip)
       if cond.bool:
-        self.get_child('false', self.env, expr.false).unevaluate()
+        false_child = self.get_child('false', self.env, expr.false);
+        if false_child.active:
+          false_child.unevaluate()
         val = self.evaluate_recurse(expr.true, self.env, 'true', reflip)
       else:
         self.get_child('true', self.env, expr.true).unevaluate()
@@ -298,7 +302,7 @@ class EvalNode:
         new_env.set(expr.vars[i], values[i])
         if val.type == 'procedure':
           val.env = new_env
-      new_body = expr.body.replace(new_env, None, self)
+      new_body = expr.body.replace(new_env, {}, self)
       # TODO :  should probably be an applychild
       self.get_child('letbody', new_env, new_body).unevaluate()
       val = self.evaluate_recurse(new_body, new_env, 'letbody', reflip)
@@ -495,7 +499,37 @@ class Traces(Engine):
     self.uneval_p = 0
     self.eval_p = 0
     self.p = 0
+
+    self.made_proposals = 0
+    self.accepted_proposals = 0
+
+    self.mhstats_details = False
+    self.mhstats = {}
     return
+
+  def mhstats_on(self):
+    self.mhstats_details = True
+
+  def mhstats_off(self):
+    self.mhstats_details = False
+
+  def mhstats_aggregated(self):
+    d = {}
+    d['made-proposals'] = self.made_proposals
+    d['accepted-proposals'] = self.accepted_proposals
+    return d
+
+  def mhstats_detailed(self):
+    return self.mhstats
+
+  def get_log_score(self, id):
+    if id == -1:
+      return self.p
+    else:
+      return self.observes[id].p
+
+  def random_choices(self):
+    return self.db.__len__()
 
   def assume(self, name, expr, id):
     evalnode = EvalNode(self, self.env, expr)
@@ -583,9 +617,9 @@ class Traces(Engine):
     old_p = self.p
     old_val = reflip_node.val
     new_to_old_q = reflip_node.p
-    old_to_new_q = - math.log(self.db.__len__())
+    old_to_new_q = - math.log(self.random_choices())
     new_val = reflip_node.reflip()
-    new_to_old_q -= math.log(self.db.__len__())
+    new_to_old_q -= math.log(self.random_choices())
     old_to_new_q += reflip_node.p
 
     if debug:
@@ -594,8 +628,8 @@ class Traces(Engine):
       print "\nCHANGING ", reflip_node, "\n  FROM  :  ", old_val, "\n  TO   :  ", new_val, "\n"
       if old_val == new_val:
         print "SAME VAL"
-        print "new:\n", self
-        return
+        # print "new:\n", self
+        # return
   
     new_p = self.p
     eval_p = self.eval_p
@@ -628,6 +662,23 @@ class Traces(Engine):
       #assert self.uneval_p == eval_p
       #assert self.eval_p == uneval_p
       # May not be true, because sometimes things get removed then incorporated
+    else:
+      if self.mhstats_details:
+        if reflip_node.hashval in self.mhstats:
+          self.mhstats[reflip_node.hashval]['accepted-proposals'] += 1
+        else:
+          self.mhstats[reflip_node.hashval] = {}
+          self.mhstats[reflip_node.hashval]['accepted-proposals'] = 1
+          self.mhstats[reflip_node.hashval]['made-proposals'] = 0
+      self.accepted_proposals += 1
+    if self.mhstats_details:
+      if reflip_node.hashval in self.mhstats:
+        self.mhstats[reflip_node.hashval]['made-proposals'] += 1 
+      else:
+        self.mhstats[reflip_node.hashval] = {}
+        self.mhstats[reflip_node.hashval]['made-proposals'] = 1 
+        self.mhstats[reflip_node.hashval]['accepted-proposals'] = 0
+    self.made_proposals += 1
     if debug:
       print "new:\n", self
 
