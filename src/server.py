@@ -27,16 +27,16 @@ def index():
     directives = ripl.report_directives()
     return get_response(json.dumps(directives))
 
-@app.route('/', methods=['DELETE'])
+@app.route('/', methods=['POST'])
 def clear():
     ripl.clear()
     print "CLEARED"
-    return get_response("Cleared")
+    return get_response(json.dumps({"DELETE": "yes", "MESSAGE": "Cleared"}))
 
-@app.route('/<int:did>', methods=['DELETE'])
+@app.route('/<int:did>', methods=['POST'])
 def forget(did):
     ripl.forget(did)
-    return get_response("Deleted")
+    return get_response(json.dumps({"DELETE": "yes", "MESSAGE": "Forgotten"}))
 
 @app.route('/<int:did>', methods=['GET'])
 def report_value(did):
@@ -46,10 +46,45 @@ def report_value(did):
     print d
     return get_response(json.dumps(d))
 
-@app.route('/space', methods=['GET'])
-def space():
-    s = ripl.space()
-    return get_response(json.dumps({"space": s}))
+@app.route('/memory', methods=['GET'])
+def memory():
+    s = ripl.memory()
+    return get_response(json.dumps({"memory": s}))
+
+@app.route('/entropy', methods=['GET'])
+def entropy():
+    h = ripl.entropy()
+    return get_response(json.dumps({"random_choices": h}))
+
+@app.route('/mhstats/aggregated', methods=['GET'])
+def mhstats_aggregated():
+    d = ripl.mhstats_aggregated()
+    return get_response(json.dumps(d))
+
+@app.route('/mhstats/detailed', methods=['GET'])
+def mhstats_detailed():
+    d = ripl.mhstats_detailed()
+    return get_response(json.dumps(d))
+
+@app.route('/mhstats/detailed/on', methods=['POST'])
+def mhstats_on(did):
+    ripl.mhstats_on(did)
+    return get_response(json.dumps({"MESSAGE": "Mhstats On"}))
+
+@app.route('/mhstats/detailed/off', methods=['POST'])
+def mhstats_off(did):
+    ripl.mhstats_off(did)
+    return get_response(json.dumps({"MESSAGE": "Mhstats Off"}))
+
+@app.route('/logscore', methods=['GET'])
+def logscore():
+    p = ripl.logscore()
+    return get_response(json.dumps({"directive_logscore": p}))
+
+@app.route('/logscore/<int:did>', methods=['GET'])
+def logscore_observe(did):
+    p = ripl.logscore(did)
+    return get_response(json.dumps({"directive_logscore": p}))
 
 @app.route('/seed', methods=['POST'])
 def seed():

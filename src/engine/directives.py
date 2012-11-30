@@ -362,7 +362,7 @@ class Directives:
     elif token == 'report_value':
       (id, i) = parse_integer(s, i)
       ret_str = 'value: ' + self.report_value(id).__str__()
-    elif token == 'log_score':
+    elif token == 'logscore':
       try:
         (id, i) = parse_integer(s, i)
       except:

@@ -146,13 +146,59 @@ class MyRIPL(RIPL):
         self.predicts = {}
                  
     def logscore(self, directive_id=None):
-        raise Exception("Not implemented yet")
+        if directive_id is None:
+          msg = "logscore" 
+        else:
+          msg = "logscore" + str(directive_id)
+
+        recv_msg = self.get_recv_msg(msg)
+
+        msgs = recv_msg.split('\n')
+        score = self.get_field(msgs[0], 'logp: ')
+        return score
+
+    def entropy(self):
+        msg = "entropy" 
+        recv_msg = self.get_recv_msg(msg)
+        msgs = recv_msg.split('\n')
+        entropy = self.get_field(msgs[0], 'entropy: ')
+        return entropy
+
+    def mhstats_aggregated(self):
+        msg = "mhstats aggregated"
+        recv_msg = self.get_recv_msg(msg)
+
+        msgs = recv_msg.split('\n')
+        made = self.get_field(msgs[0], 'made-proposals: ')
+        accepted = self.get_field(msgs[1], 'accepted-proposals: ')
+        return {'made-proposals': made, 'accepted-proposals': accepted}
+
+    def mhstats_detailed(self):
+        msg = "mhstats detailed"
+        recv_msg = self.get_recv_msg(msg)
+
+        msgs = recv_msg.split('\n')
+        d = {}
+        for i in range(len(msgs) / 3):
+          node = self.get_field(msgs[3 * i], 'node: ')
+          made = self.get_field(msgs[3 * i + 1], '  made-proposals: ')
+          accepted = self.get_field(msgs[3 * i + 2], '  accepted-proposals: ')
+          d[node] = {'made-proposals': made, 'accepted-proposals': accepted}
+        return d
+
+    def mhstats_on(self):
+        msg = "mhstats on"
+        recv_msg = self.get_recv_msg(msg)
+
+    def mhstats_off(self):
+        msg = "mhstats off"
+        recv_msg = self.get_recv_msg(msg)
 
     def seed(self, seed):
         msg = "seed " + str(seed)
         recv_msg = self.get_recv_msg(msg)
 
-    def space(self):
+    def memory(self):
         pid = self.get_pid() 
         p = subprocess.Popen(["ps", "-o", "rss=", "-p", str(pid)], stdout=subprocess.PIPE)
         s = p.communicate()[0].strip()
