@@ -130,16 +130,6 @@ class Directives:
                                       op('+', [op('*', [apply(var('rand'), []), op('-', [var('max-inclusive'), var('min-inclusive')])]), var('min-inclusive')])),
                 True)
    
-    # FOR OBSERVES
-
-    self.assume('noise-negate', function(['expr', 'noise'],  \
-                         ifelse(apply(var('bernoulli'), [var('noise')]), negation(var('expr')), var('expr'))),  \
-                 True) 
-
-    self.assume('noisy', function(['expr', 'noise'],  \
-                         apply(var('bernoulli'), [ifelse(var('expr'), num_expr(1), var('noise'))])),  \
-                 True) 
-
     # MORE COMPLICATED PROCESSES
 
     #self.assume('dirichlet-multinomial/make', xrp(make_symmetric_dirichlet_XRP()), True)

@@ -43,6 +43,12 @@ def parse_if(s, i):
     expr = ifelse(cond_expr, true_expr, false_expr)
     return (expr, i)
 
+def parse_noise_negate(s, i):
+    (expression, i) = parse_expression(s, i)
+    (noise, i) = parse_expression(s, i)
+    expr = ifelse(apply(var('bernoulli'), [noise]), negation(expression), expression)
+    return (expr, i)
+
 def parse_noisy(s, i):
     (observation, i) = parse_expression(s, i)
     (noise, i) = parse_expression(s, i)
@@ -142,6 +148,8 @@ def parse_expression(s, i):
                      'and', 'or', 'xor', 'not', \
                      '=', '<', '<=', '>', '>=']:
         (expr, i) = parse_op(s, j, token)
+      elif token == 'noise-negate':
+        (expr, i) = parse_noise_negate(s, j)
       elif token == 'noisy':
         (expr, i) = parse_noisy(s, j)
       else:

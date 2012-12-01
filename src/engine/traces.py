@@ -564,8 +564,8 @@ class Traces(Engine):
     self.directives.append('observe')
     self.observes[id] = evalnode
 
-    self.observed = True
-    self.observe_val = obs_val
+    evalnode.observed = True
+    evalnode.observe_val = obs_val
 
     val = evalnode.evaluate()
     return val
@@ -708,5 +708,9 @@ class Traces(Engine):
   def __str__(self):
     string = "EvalNodeTree:"
     for evalnode in self.assumes.values():
+      string += evalnode.str_helper()
+    for evalnode in self.observes.values():
+      string += evalnode.str_helper()
+    for evalnode in self.predicts.values():
       string += evalnode.str_helper()
     return string
