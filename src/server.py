@@ -13,30 +13,30 @@ global app
 app = flask.Flask(__name__)
 
 def get_response(string):
-  resp = make_response(string)
-  resp.headers['Access-Control-Allow-Origin'] = '*'
-  return resp
+    resp = make_response(string)
+    #resp.status_code = 201
+    #resp.data = json.dumps(directives)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
 
 @app.route('/', methods=['GET'])
 def index():
-    #resp = make_response()
-    #resp.status_code = 201
-    #resp.data = json.dumps(directives)
-    #return resp
-
     directives = ripl.report_directives()
     return get_response(json.dumps(directives))
 
 @app.route('/', methods=['POST'])
+# DELETE
 def clear():
     ripl.clear()
     print "CLEARED"
-    return get_response(json.dumps({"DELETE": "yes", "MESSAGE": "Cleared"}))
+    return get_response(json.dumps({}))
 
 @app.route('/<int:did>', methods=['POST'])
+# DELETE
 def forget(did):
     ripl.forget(did)
-    return get_response(json.dumps({"DELETE": "yes", "MESSAGE": "Forgotten"}))
+    print "FORGOTTEN"
+    return get_response(json.dumps({}))
 
 @app.route('/<int:did>', methods=['GET'])
 def report_value(did):
