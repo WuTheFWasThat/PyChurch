@@ -66,6 +66,7 @@ class EvalNode:
 
     self.parent = None 
     self.children = {} 
+    # TODO: get rid of this?
     self.applychildren = {} 
     self.applychild = None
 
@@ -382,7 +383,10 @@ class EvalNode:
               val = xrp.apply(args)
               self.add_xrp(xrp, val, args)
           else:
-            val = xrp.apply(args)
+            if xrp.is_mem_proc():
+              val = xrp.apply_mem(args, self.traces)
+            else:
+              val = xrp.apply(args)
             self.add_xrp(xrp, val, args)
         else: # not deterministic, needs reflipping
           if self.active:
