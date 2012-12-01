@@ -67,6 +67,7 @@ class EvalNode:
     self.parent = None 
     self.children = {} 
     self.applychildren = {} 
+    self.applychild = None
 
     self.mem = False # Whether this is the root of a mem'd procedure's application
     self.mem_calls = {} # just a set
@@ -317,6 +318,7 @@ class EvalNode:
           val.env = new_env
       new_body = expr.body.replace(new_env, {}, self)
       # TODO :  should probably be an applychild
+      # this doesnt work properly.  needs to be analagous to apply
       self.get_child('letbody', new_env, new_body).unevaluate()
       val = self.evaluate_recurse(new_body, new_env, 'letbody', reflip)
 
@@ -331,16 +333,25 @@ class EvalNode:
 
       if op.type == 'procedure':
         self.procedure_apply = True
-        for x in self.applychildren:
-          self.applychildren[x].unevaluate()
-
+        
         if n != len(op.vars):
           raise RException('Procedure should have %d arguments.  \nVars were \n%s\n, but had %d children.' % (n, op.vars, len(expr.children)))
         new_env = op.env.spawn_child()
         for i in range(n):
           new_env.set(op.vars[i], args[i])
         addition = ','.join([x.str_hash for x in args])
-        val = self.evaluate_recurse(op.body, new_env, addition, reflip, True)
+
+        applychild = self.get_child(addition, new_env, op.body, True)
+
+        if self.applychild is applychild:
+          val = self.evaluate_recurse(op.body, new_env, addition, reflip, True)
+        else:
+          if self.applychild is not None:
+            self.applychild.unevaluate()
+          if reflip == 0.5:
+            reflip = not restore
+          val = self.evaluate_recurse(op.body, new_env, addition, reflip, True)
+        self.applychild = applychild
       elif op.type == 'xrp':
         self.xrp_apply = True
         xrp = op.xrp
