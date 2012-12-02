@@ -382,6 +382,9 @@ class ReducedEvalNode:
     elif expr.type == '~':
       negval = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
       val = negval.__inv__()
+    elif expr.type == 'abs':
+      orig_val = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
+      val = orig_val.__abs__()
     elif expr.type == '+':
       vals = self.children_evaluate(expr, env, hashval, restore)
       sum_val = NatValue(0)

@@ -446,6 +446,9 @@ class EvalNode:
     elif self.type == '~':
       negval = self.evaluate_recurse(expr.children[0] , self.env, 'neg', reflip)
       val = negval.__inv__()
+    elif self.type == 'abs':
+      orig_val = self.evaluate_recurse(expr.children[0] , self.env, 'abs', reflip)
+      val = orig_val.__abs__()
     elif self.type == '+':
       vals = self.children_evaluate(reflip)
       sum_val = NatValue(0)

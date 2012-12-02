@@ -65,6 +65,8 @@ class Value:
     raise RException("Invalid operation")
   def __inv__(self):
     raise RException("Invalid operation")
+  def __abs__(self):
+    raise RException("Invalid operation")
   def __nonzero__(self):
     return BoolValue((self.num > 0))
   pass 
@@ -152,6 +154,8 @@ class NumValue(Value):
     return NumValue(self.num / (other.num + 0.0))
   def __inv__(self):
     return NumValue(- self.num)
+  def __abs__(self):
+    return NumValue(abs(self.num))
   def __nonzero__(self):
     return BoolValue((self.num > 0))
 
@@ -193,6 +197,8 @@ class IntValue(NumValue):
       return NumValue(self.num * other.num)
   def __mod__(self, other):
     return NumValue(self.int % other.nat)
+  def __abs__(self):
+    return NatValue(abs(self.int))
   def __inv__(self):
     return IntValue(- self.int)
 

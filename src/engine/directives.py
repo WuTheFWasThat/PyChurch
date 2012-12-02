@@ -114,6 +114,12 @@ class Directives:
   
     # BASIC OPERATIONS
 
+    self.assume('inc', function(['x'], op('+', [var('x'), nat_expr(1)])), True)
+    self.assume('dec', function(['x'], op('-', [var('x'), nat_expr(1)])), True)
+    self.assume('abs', function(['x'], op('abs', [var('x')])), True)
+
+    #self.assume('power', function(['x'], op('**', [var('x')])), True)
+
     #self.assume('=', function(['x', 'y'], op('=', [var('x'), var('y')])))
     #self.assume('<', function(['x', 'y'], op('<', [var('x'), var('y')])))
     #self.assume('<=', function(['x', 'y'], op('<=', [var('x'), var('y')])))
@@ -151,7 +157,7 @@ class Directives:
                                       op('+', [op('*', [apply(var('rand'), []), op('-', [var('max-inclusive'), var('min-inclusive')])]), var('min-inclusive')])),
                 True)
    
-    # XRPs
+    # OTHER SIMPLE XRPs
 
     self.assume('list', xrp(make_array_XRP()), True)
     self.assume('repeat', xrp(make_symmetric_array_XRP()), True)
