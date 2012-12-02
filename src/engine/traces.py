@@ -465,6 +465,10 @@ class EvalNode:
       val1 = self.evaluate_recurse(expr.children[0] , self.env, 'div0', reflip)
       val2 = self.evaluate_recurse(expr.children[1] , self.env, 'div1', reflip)
       val = val1.__div__(val2)
+    elif self.type == '%':
+      val1 = self.evaluate_recurse(expr.children[0] , self.env, 'val', reflip)
+      val2 = self.evaluate_recurse(expr.children[1] , self.env, 'modulus', reflip)
+      val = val1.__mod__(val2)
     else:
       raise RException('Invalid expression type %s' % self.type)
 

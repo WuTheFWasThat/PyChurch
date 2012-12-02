@@ -395,6 +395,10 @@ class ReducedEvalNode:
       val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 1)
       val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 2)
       val = val1.__div__(val2)
+    elif expr.type == '%':
+      val1 = self.evaluate_recurse(expr.children[0], env, hashval, 1)
+      val2 = self.evaluate_recurse(expr.children[1], env, hashval, 2)
+      val = val1.__mod__(val2)
     else:
       raise RException('Invalid expression type %s' % expr.type)
 
@@ -456,6 +460,8 @@ class ReducedTraces(Engine):
     
     self.mhstats_details = False
     self.mhstats = {}
+
+    self.hashval = rrandom.random.randbelow()
     return
 
   def mhstats_on(self):

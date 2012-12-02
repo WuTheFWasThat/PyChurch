@@ -174,12 +174,22 @@ class bernoulli_XRP(XRP):
     self.deterministic = False
     return
   def apply(self, args = None):
-    p = args[0].num
-    p = check_prob(p)
+    if len(args) == 0:
+      p = 0.5
+    elif len(args) == 1:
+      p = args[0].num
+      p = check_prob(p)
+    else:
+      raise RException("bernoulli_XRP has no need to take in more than 1 argument")
     return BoolValue(rrandom.random.random() < p)
   def prob(self, val, args = None):
-    p = args[0].num
-    p = check_prob(p)
+    if len(args) == 0:
+      p = 0.5
+    elif len(args) == 1:
+      p = args[0].num
+      p = check_prob(p)
+    else:
+      raise RException("bernoulli_XRP has no need to take in more than 1 argument")
     if val.bool:
       return math.log(p)
     else:

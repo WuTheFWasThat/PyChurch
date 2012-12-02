@@ -47,6 +47,8 @@ class Expression:
     return OpExpression('*', [self, other])
   def __div__(self, other):
     return OpExpression('/', [self, other])
+  def __mod__(self, other):
+    return OpExpression('%', [self, other])
   def __and__(self, other):
     return OpExpression('&', [self, other])
   def __or__(self, other):
