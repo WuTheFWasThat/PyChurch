@@ -85,14 +85,17 @@ class ReducedEvalNode:
 
     self.val = None
 
-  def get_child(self, addition, env, subexpr):
+  def get_child(self, addition, env, subexpr, restore):
     if addition not in self.children:
       evalnode = self.spawnchild(addition, env, subexpr)
     else:
       evalnode = self.children[addition]
       if not evalnode.active:
         if evalnode.random_xrp_apply:
-          evalnode.evaluate(evalnode.val)
+          if restore:
+            evalnode.evaluate(evalnode.val, restore)
+          else:
+            evalnode.evaluate()
         else:
           evalnode.evaluate()
       assert addition not in self.active_children 
@@ -129,15 +132,16 @@ class ReducedEvalNode:
     assert self.type == 'apply'
     self.args = args
 
-  def propagate_to(self, evalnode):
+  def propagate_to(self, evalnode, restore_inactive):
     assert evalnode.active
     if evalnode.random_xrp_apply:
-      evalnode.evaluate(evalnode.val)
+      evalnode.evaluate(evalnode.val, restore_inactive)
     else:
-      evalnode.evaluate()
-      evalnode.propagate_up()
+      evalnode.evaluate(None, restore_inactive)
+      evalnode.propagate_up(restore_inactive)
 
-  def propagate_up(self):
+  # restore_inactive:  whether to restore or to reflip inactive nodes that get activated
+  def propagate_up(self, restore_inactive = False):
     # NOTE: with multiple parents, could this re-evaluate things in the wrong order and screw things up?
     assert self.active
 
@@ -148,14 +152,14 @@ class ReducedEvalNode:
       for evalnode in self.env.get_lookups(self.assume_name, self):
         lookup_nodes.append(evalnode)
       for evalnode in lookup_nodes:
-        self.propagate_to(evalnode)
+        self.propagate_to(evalnode, restore_inactive)
     elif self.parent is not None:
-      self.propagate_to(self.parent)
+      self.propagate_to(self.parent, restore_inactive)
 
     if self.mem:
       # self.mem_calls can be affected *while* propagating up.  However, if new links are created, they'll use the new value
       for evalnode in self.mem_calls.keys():
-        self.propagate_to(evalnode)
+        self.propagate_to(evalnode, restore_inactive)
 
   def unevaluate(self):
     # NOTE:  We may want to remove references to nodes when we unevaluate, such as when we have arguments
@@ -191,12 +195,14 @@ class ReducedEvalNode:
     else:
       xrp.remove(val, args)
     prob = xrp.prob(val, args)
-    self.traces.uneval_p += prob
+    if not self.observed:
+      self.traces.uneval_p += prob
     self.traces.p -= prob
 
   def add_xrp(self, xrp, val, args):
     prob = xrp.prob(val, args)
-    self.traces.eval_p += prob
+    if not self.observed:
+      self.traces.eval_p += prob
     self.traces.p += prob
     self.p = prob
     if xrp.is_mem_proc():
@@ -222,7 +228,7 @@ class ReducedEvalNode:
     self.traces.add_xrp(self.args, self)
     return val
 
-  def evaluate(self, xrp_force_val = None):
+  def evaluate(self, xrp_force_val = None, restore = False):
     expr = self.expression
     env = self.env
 
@@ -236,7 +242,8 @@ class ReducedEvalNode:
       self.remove_xrp(xrp, val, args)
     self.xrp_applies = []
 
-    val = self.evaluate_recurse(expr, env, 0, 0, xrp_force_val)
+    # TODO: use directive ids... and something else for mems?
+    val = self.evaluate_recurse(expr, env, 0, 0, xrp_force_val, restore)
 
     if not self.random_xrp_apply:
       if xrp_force_val is not None:
@@ -257,15 +264,15 @@ class ReducedEvalNode:
 
     return val
 
-  def binary_op_evaluate(self, expr, env, hashval):
-    val1 = self.evaluate_recurse(expr.children[0], env, hashval, 1)
-    val2 = self.evaluate_recurse(expr.children[1], env, hashval, 2)
+  def binary_op_evaluate(self, expr, env, hashval, restore):
+    val1 = self.evaluate_recurse(expr.children[0], env, hashval, 1, None, restore)
+    val2 = self.evaluate_recurse(expr.children[1], env, hashval, 2, None, restore)
     return (val1 , val2)
 
-  def children_evaluate(self, expr, env, hashval):
-    return [self.evaluate_recurse(expr.children[i], env, hashval, i+1) for i in range(len(expr.children))]
+  def children_evaluate(self, expr, env, hashval, restore):
+    return [self.evaluate_recurse(expr.children[i], env, hashval, i+1, None, restore) for i in range(len(expr.children))]
   
-  def evaluate_recurse(self, expr, env, hashval, addition, xrp_force_val = None):
+  def evaluate_recurse(self, expr, env, hashval, addition, xrp_force_val = None, restore = False):
     hashval = rhash.hash_pair(hashval, addition)
 
     if expr.type == 'value':
@@ -274,11 +281,11 @@ class ReducedEvalNode:
       (val, lookup_env) = env.lookup(expr.name)
       self.addlookup(expr.name, lookup_env)
     elif expr.type == 'if':
-      cond = self.evaluate_recurse(expr.cond, env, hashval, 1)
+      cond = self.evaluate_recurse(expr.cond, env, hashval, 1, None, restore)
       if cond.bool:
-        val = self.evaluate_recurse(expr.true, env, hashval, 2)
+        val = self.evaluate_recurse(expr.true, env, hashval, 2, None, restore)
       else:
-        val = self.evaluate_recurse(expr.false, env, hashval, 3)
+        val = self.evaluate_recurse(expr.false, env, hashval, 3, None, restore)
     elif expr.type == 'let':
       # TODO: this really is a let*
       # Does environment stuff work properly?
@@ -288,18 +295,18 @@ class ReducedEvalNode:
       new_env = env
       for i in range(n): # Bind variables
         new_env = new_env.spawn_child()
-        val = self.evaluate_recurse(expr.expressions[i], new_env, hashval, i+2)
+        val = self.evaluate_recurse(expr.expressions[i], new_env, hashval, i+2, None, restore)
         values.append(val)
         new_env.set(expr.vars[i], values[i])
         if val.type == 'procedure':
           val.env = new_env
       new_body = expr.body.replace(new_env, {}, self)
-      val = self.evaluate_recurse(new_body, new_env, hashval, 1)
+      val = self.evaluate_recurse(new_body, new_env, hashval, 1, None, restore)
 
     elif expr.type == 'apply':
       n = len(expr.children)
-      op = self.evaluate_recurse(expr.op, env, hashval, 1)
-      args = [self.evaluate_recurse(expr.children[i], env, hashval, i+2) for i in range(n)]
+      op = self.evaluate_recurse(expr.op, env, hashval, 1, None, restore)
+      args = [self.evaluate_recurse(expr.children[i], env, hashval, i+2, None, restore) for i in range(n)]
 
       if op.type == 'procedure':
         if n != len(op.vars):
@@ -308,7 +315,7 @@ class ReducedEvalNode:
         for i in range(n):
           new_env.set(op.vars[i], args[i])
         addition = rhash.hash_many([x.__hash__() for x in args])
-        val = self.evaluate_recurse(op.body, new_env, hashval, addition)
+        val = self.evaluate_recurse(op.body, new_env, hashval, addition, None, restore)
       elif op.type == 'xrp':
         xrp = op.xrp
         if not xrp.deterministic:
@@ -316,7 +323,7 @@ class ReducedEvalNode:
             self.random_xrp_apply = True
             val = self.apply_random_xrp(xrp, args, xrp_force_val)
           else:
-            child = self.get_child(hashval, env, expr)
+            child = self.get_child(hashval, env, expr, restore)
             val = child.val
         else:
           if xrp.is_mem_proc():
@@ -340,71 +347,71 @@ class ReducedEvalNode:
       procedure_body = expr.body.replace(new_env, bound, self)
       val = Procedure(expr.vars, procedure_body, env)
     elif expr.type == '=':
-      (val1, val2) = self.binary_op_evaluate(expr, env, hashval)
+      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, restore)
       val = val1.__eq__(val2)
     elif expr.type == '<':
-      (val1, val2) = self.binary_op_evaluate(expr, env, hashval)
+      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, restore)
       val = val1.__lt__(val2)
     elif expr.type == '>':
-      (val1, val2) = self.binary_op_evaluate(expr, env, hashval)
+      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, restore)
       val = val1.__gt__(val2)
     elif expr.type == '<=':
-      (val1, val2) = self.binary_op_evaluate(expr, env, hashval)
+      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, restore)
       val = val1.__le__(val2)
     elif expr.type == '>=':
-      (val1, val2) = self.binary_op_evaluate(expr, env, hashval)
+      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, restore)
       val = val1.__ge__(val2)
     elif expr.type == '&':
-      vals = self.children_evaluate(expr, env, hashval)
+      vals = self.children_evaluate(expr, env, hashval, restore)
       andval = BoolValue(True)
       for x in vals:
         andval = andval.__and__(x)
       val = andval
     elif expr.type == '^':
-      vals = self.children_evaluate(expr, env, hashval)
+      vals = self.children_evaluate(expr, env, hashval, restore)
       xorval = BoolValue(True)
       for x in vals:
         xorval = xorval.__xor__(x)
       val = xorval
     elif expr.type == '|':
-      vals = self.children_evaluate(expr, env, hashval)
+      vals = self.children_evaluate(expr, env, hashval, restore)
       orval = BoolValue(False)
       for x in vals:
         orval = orval.__or__(x)
       val = orval
     elif expr.type == '~':
-      negval = self.evaluate_recurse(expr.children[0] , env, hashval, 1)
+      negval = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
       val = negval.__inv__()
     elif expr.type == '+':
-      vals = self.children_evaluate(expr, env, hashval)
+      vals = self.children_evaluate(expr, env, hashval, restore)
       sum_val = NatValue(0)
       for x in vals:
         sum_val = sum_val.__add__(x)
       val = sum_val
     elif expr.type == '-':
-      val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 1)
-      val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 2)
+      val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
+      val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 2, None, restore)
       val = val1.__sub__(val2)
     elif expr.type == '*':
-      vals = self.children_evaluate(expr, env, hashval)
+      vals = self.children_evaluate(expr, env, hashval, restore)
       prod_val = NatValue(1)
       for x in vals:
         prod_val = prod_val.__mul__(x)
       val = prod_val
     elif expr.type == '/':
-      val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 1)
-      val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 2)
+      val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
+      val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 2, None, restore)
       val = val1.__div__(val2)
     elif expr.type == '%':
-      val1 = self.evaluate_recurse(expr.children[0], env, hashval, 1)
-      val2 = self.evaluate_recurse(expr.children[1], env, hashval, 2)
+      val1 = self.evaluate_recurse(expr.children[0], env, hashval, 1, None, restore)
+      val2 = self.evaluate_recurse(expr.children[1], env, hashval, 2, None, restore)
       val = val1.__mod__(val2)
     else:
       raise RException('Invalid expression type %s' % expr.type)
 
     return val
 
-  def reflip(self, xrp_force_val = None):
+  def reflip(self, xrp_force_val = None, restore_inactive = False):
 
     assert self.active
     self.val = self.apply_random_xrp(self.xrp, self.args, xrp_force_val)
@@ -412,7 +419,7 @@ class ReducedEvalNode:
       assert self.parent is None
       self.env.set(self.assume_name, self.val) # Environment in which this was evaluated
 
-    self.propagate_up()
+    self.propagate_up(restore_inactive)
     return self.val
 
   def str_helper(self, n = 0, verbose = True):
@@ -567,22 +574,19 @@ class ReducedTraces(Engine):
 
     old_p = self.p
     old_val = reflip_node.val
-    new_to_old_q = reflip_node.p
     old_to_new_q = - math.log(self.random_choices())
     new_val = reflip_node.reflip()
-    new_to_old_q -= math.log(self.random_choices())
-    old_to_new_q += reflip_node.p
+    new_to_old_q = - math.log(self.random_choices())
+
+    old_to_new_q += self.eval_p
+    new_to_old_q += self.uneval_p
 
     if debug:
       print "\n-----------------------------------------\n"
       print old_self
       print "\nCHANGING ", reflip_node, "\n  FROM  :  ", old_val, "\n  TO   :  ", new_val, "\n"
       if old_val == new_val:
-        self.proposal_accepts += 1
-        self.proposals += 1
         print "SAME VAL"
-        print "new:\n", self
-        return
   
     new_p = self.p
     eval_p = self.eval_p
@@ -600,7 +604,7 @@ class ReducedTraces(Engine):
   
     p = rrandom.random.random()
     if new_p + new_to_old_q - old_p - old_to_new_q < math.log(p):
-      new_val = reflip_node.reflip(old_val)
+      new_val = reflip_node.reflip(old_val, True)
 
       if debug: 
         print 'restore'
@@ -658,12 +662,10 @@ class ReducedTraces(Engine):
     
   def __str__(self):
     string = "EvalNodeTree:"
-    # Ignore default assumes
-    for id in self.assumes:
-      evalnode = self.assumes[id]
-      if id > 7: # default assumes
-        string += evalnode.str_helper()
-    for id in self.observes:
-      evalnode = self.observes[id]
+    for evalnode in self.assumes.values():
+      string += evalnode.str_helper()
+    for evalnode in self.observes.values():
+      string += evalnode.str_helper()
+    for evalnode in self.predicts.values():
       string += evalnode.str_helper()
     return string

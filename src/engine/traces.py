@@ -134,6 +134,38 @@ class EvalNode:
       raise RException("Setting args in a non-apply expression")
     self.args = args
 
+  def remove_xrp(self):
+    if not self.active:
+      raise RException("Removing XRP from inactive node")
+    xrp = self.xrp
+    args = self.args
+    if xrp.is_mem_proc():
+      xrp.remove_mem(self.val, args, self.traces, self)
+    else:
+      xrp.remove(self.val, args)
+    prob = xrp.prob(self.val, self.args)
+    if not self.observed:
+      self.traces.uneval_p += prob
+    self.traces.p -= prob
+    if not xrp.deterministic:
+      self.traces.remove_xrp(self)
+
+  def add_xrp(self, xrp, val, args):
+    prob = xrp.prob(val, args)
+    self.p = prob
+    if not self.observed:
+      self.traces.eval_p += prob
+    self.traces.p += prob
+    if xrp.is_mem_proc():
+      xrp.incorporate_mem(val, args, self.traces, self)
+    else:
+      xrp.incorporate(val, args)
+
+    if not xrp.deterministic:
+      self.random_xrp_apply = True
+      self.traces.add_xrp(args, self)
+
+  # restore_inactive:  whether to restore or to reflip inactive nodes that get activated
   def propagate_up(self, restore_inactive, start = False):
     # NOTE: 
     # assert self.active <--- almost true
@@ -205,37 +237,6 @@ class EvalNode:
 
     self.active = False
     return
-
-  def remove_xrp(self):
-    if not self.active:
-      raise RException("Removing XRP from inactive node")
-    xrp = self.xrp
-    args = self.args
-    if xrp.is_mem_proc():
-      xrp.remove_mem(self.val, args, self.traces, self)
-    else:
-      xrp.remove(self.val, args)
-    prob = xrp.prob(self.val, self.args)
-    if not self.observed:
-      self.traces.uneval_p += prob
-    self.traces.p -= prob
-    if not xrp.deterministic:
-      self.traces.remove_xrp(self)
-
-  def add_xrp(self, xrp, val, args):
-    prob = xrp.prob(val, args)
-    self.p = prob
-    if not self.observed:
-      self.traces.eval_p += prob
-    self.traces.p += prob
-    if xrp.is_mem_proc():
-      xrp.incorporate_mem(val, args, self.traces, self)
-    else:
-      xrp.incorporate(val, args)
-
-    if not xrp.deterministic:
-      self.random_xrp_apply = True
-      self.traces.add_xrp(args, self)
 
   def evaluate_recurse(self, subexpr, env, addition, reflip, is_apply = False):
     child = self.get_child(addition, env, subexpr, is_apply)
@@ -648,7 +649,6 @@ class Traces(Engine):
 
     old_p = self.p
     old_val = reflip_node.val
-    new_to_old_q = reflip_node.p
     old_to_new_q = - math.log(self.random_choices())
     new_val = reflip_node.reflip()
     new_to_old_q = - math.log(self.random_choices())
@@ -662,8 +662,6 @@ class Traces(Engine):
       print "\nCHANGING ", reflip_node, "\n  FROM  :  ", old_val, "\n  TO   :  ", new_val, "\n"
       if old_val == new_val:
         print "SAME VAL"
-        # print "new:\n", self
-        # return
   
     new_p = self.p
     eval_p = self.eval_p
