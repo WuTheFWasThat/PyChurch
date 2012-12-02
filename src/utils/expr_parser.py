@@ -143,10 +143,12 @@ def parse_expression(s, i):
         (expr, i) = parse_lambda(s, j)
       elif token == 'let':
         (expr, i) = parse_let(s, j)
-      elif token in ['+', '-', '*', '/', '%', \
+      elif token in [
+                     '=', '<', '<=', '>', '>=',
+                     '+', '-', '*', '/', '%', \
                      '&', '|', '^', '~', \
-                     'and', 'or', 'xor', 'not', \
-                     '=', '<', '<=', '>', '>=']:
+                     'and', 'or', 'xor', 'not' \
+                    ]:
         (expr, i) = parse_op(s, j, token)
       elif token == 'noise-negate':
         (expr, i) = parse_noise_negate(s, j)

@@ -130,6 +130,25 @@ class array_XRP(XRP):
   def __str__(self):
     return ('array(%s)' % str(self.array))
 
+class make_array_XRP(XRP):
+  def __init__(self):
+    self.deterministic = True
+    return
+  def apply(self, args = None):
+    return XRPValue(array_XRP(args)) 
+  def __str__(self):
+    return 'array_make_XRP'
+
+class make_symmetric_array_XRP(XRP):
+  def __init__(self):
+    self.deterministic = True
+    return
+  def apply(self, args = None):
+    (el, n)  = (args[0], args[1].nat)
+    return XRPValue(array_XRP([el] * n)) 
+  def __str__(self):
+    return 'array_make_XRP'
+
 class beta_XRP(XRP):
   def __init__(self):
     self.deterministic = False
@@ -265,28 +284,29 @@ class dirichlet_XRP(XRP):
     self.deterministic = False
     return
   def apply(self, args = None):
-    for arg in args:
-      check_pos(arg.num)
-    probs = [NumValue(p) for p in dirichlet([arg.num for arg in args])]
+    array_xrp = args[0]
+    probs = [NumValue(p) for p in dirichlet([alpha_i.num for alpha_i in array_xrp.xrp.array])]
     return XRPValue(array_XRP(probs))
   def prob(self, val, args = None):
+    array_xrp = args[0]
+    array = array_xrp.xrp.array
+    n = len(array)
+
     if val.type != 'xrp':
       raise RException("Returned value should have been an array XRP")
     probs = [x.num for x in val.xrp.array]
     for prob in probs:
       check_prob(prob)
-    n = len(args)
-    if len(probs) != n:
+    if n != len(probs):
       raise RException("Number of arguments, %d, should've been the dimension %d" % (n, len(probs)))
 
     alpha = 0
-    for alpha_i in args:
+    for alpha_i in array:
       check_pos(alpha_i.num)
       alpha += alpha_i.num
 
-    return math.log(math_gamma(alpha)) + sum([(args[i].num - 1) * math.log(probs[i]) for i in range(n)]) \
-           - sum([math.log(math_gamma(args[i].num)) for i in range(n)])
-
+    return math.log(math_gamma(alpha)) + sum([(array[i].num - 1) * math.log(probs[i]) for i in range(n)]) \
+           - sum([math.log(math_gamma(array[i].num)) for i in range(n)])
   def __str__(self):
     return 'dirichlet'
 
@@ -322,6 +342,18 @@ class dirichlet_multinomial_XRP(XRP):
   def __str__(self):
     return 'dirichlet_multinomial(%s)' % str(self.alphas)
 
+class make_dirichlet_multinomial_XRP(XRP):
+  def __init__(self):
+    self.deterministic = True
+    return
+  def apply(self, args = None):
+    if len(args) != 1:
+      raise RException("Dirichlet generator takes one argument, an array_XRP")
+    array_xrp = args[0]
+    return XRPValue(dirichlet_multinomial_XRP([alpha_i.num for alpha_i in array_xrp.xrp.array]))
+  def __str__(self):
+    return 'dirichlet_multinomial_make_XRP'
+
 class symmetric_dirichlet_XRP(XRP):
   def __init__(self):
     self.deterministic = False
@@ -337,12 +369,12 @@ class symmetric_dirichlet_XRP(XRP):
     probs = [x.num for x in val.xrp.array]
     for prob in probs:
       check_prob(prob)
-    if n.nat != len(args):
-      raise RException("Number of arguments, %d, should've been the dimension %d" % (len(args), n.nat))
     if len(probs) != n.nat:
       raise RException("Number of arguments, %d, should've been the dimension %d" % (n.nat, len(probs)))
     return math.log(math_gamma(alpha.num * n.nat)) + (alpha.num - 1) * sum([math.log(probs[i]) for i in range(n.num)]) \
            - n.nat * math.log(math_gamma(alpha.num))
+  def __str__(self):
+    return 'symmetric_dirichlet_multinomial'
 
 class make_symmetric_dirichlet_multinomial_XRP(XRP):
   def __init__(self):

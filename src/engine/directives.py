@@ -112,6 +112,27 @@ class Directives:
   def reset_engine(self):
     self.engine.reset()
   
+    # BASIC OPERATIONS
+
+    #self.assume('=', function(['x', 'y'], op('=', [var('x'), var('y')])))
+    #self.assume('<', function(['x', 'y'], op('<', [var('x'), var('y')])))
+    #self.assume('<=', function(['x', 'y'], op('<=', [var('x'), var('y')])))
+    #self.assume('>', function(['x', 'y'], op('>', [var('x'), var('y')])))
+    #self.assume('>=', function(['x', 'y'], op('>=', [var('x'), var('y')])))
+    #self.assume('+', function(['x', 'y'], op('+', [var('x'), var('y')])))
+    #self.assume('-', function(['x', 'y'], op('-', [var('x'), var('y')])))
+    #self.assume('*', function(['x', 'y'], op('*', [var('x'), var('y')])))
+    #self.assume('/', function(['x', 'y'], op('/', [var('x'), var('y')])))
+    #self.assume('%', function(['x', 'y'], op('%', [var('x'), var('y')])))
+    #self.assume('&', function(['x', 'y'], op('&', [var('x'), var('y')])))
+    #self.assume('|', function(['x', 'y'], op('|', [var('x'), var('y')])))
+    #self.assume('^', function(['x', 'y'], op('^', [var('x'), var('y')])))
+    #self.assume('~', function(['x'], op('~', [var('x')])))
+    #self.assume('and', function(['x', 'y'], op('&', [var('x'), var('y')])))
+    #self.assume('or', function(['x', 'y'], op('|', [var('x'), var('y')])))
+    #self.assume('xor', function(['x', 'y'], op('^', [var('x'), var('y')])))
+    #self.assume('not', function(['x'], op('~', [var('x')])))
+
     # BASIC DISTRIBUTIONS
 
     self.assume('bernoulli', xrp(bernoulli_XRP()), True)
@@ -130,10 +151,15 @@ class Directives:
                                       op('+', [op('*', [apply(var('rand'), []), op('-', [var('max-inclusive'), var('min-inclusive')])]), var('min-inclusive')])),
                 True)
    
+    # XRPs
+
+    self.assume('list', xrp(make_array_XRP()), True)
+    self.assume('repeat', xrp(make_symmetric_array_XRP()), True)
+
     # MORE COMPLICATED PROCESSES
 
-    #self.assume('dirichlet-multinomial/make', xrp(make_symmetric_dirichlet_XRP()), True)
-    #self.assume('dirichlet', xrp(symmetric_dirichlet_args_XRP()), True)
+    self.assume('dirichlet-multinomial/make', xrp(make_dirichlet_multinomial_XRP()), True)
+    self.assume('dirichlet', xrp(dirichlet_XRP()), True)
     self.assume('symmetric-dirichlet-multinomial/make', xrp(make_symmetric_dirichlet_multinomial_XRP()), True)
     self.assume('symmetric-dirichlet', xrp(symmetric_dirichlet_XRP()), True)
   
@@ -382,7 +408,6 @@ class Directives:
           ret_str += '\n  made-proposals: ' + str(d[key]['made-proposals'])
           ret_str += '\n  accepted-proposals: ' + str(d[key]['accepted-proposals'])
           ret_str += '\n'
-
     #elif token == 'report_directives':
     #  (directive_type, i) = parse_token(s, i)
     #  directives_report = self.report_directives(directive_type)
