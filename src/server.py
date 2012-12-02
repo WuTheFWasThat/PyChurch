@@ -2,12 +2,34 @@ import flask
 from flask import request
 from flask import make_response
 
+import argparse
 
 import json
 
 import myripl
-ripl = myripl.DirectRIPL()
-#ripl = myripl.SocketRIPL()
+
+parser = argparse.ArgumentParser(description='Engine of Church implementation.')
+parser.add_argument('-e', default='traces', dest = 'engine',
+                   help='Type of engine (db, traces, reduced_trace)')
+parser.add_argument('-s', action='store_true', dest = 'use_socket',
+                   help = 'Use the socket RIPL.  Remember to change the PID!')
+
+args = parser.parse_args()
+
+engine_type = args.engine
+if engine_type in ['rt', 'reduced', 'reduced_trace', 'reduced_traces', 'reducedtrace', 'reducedtraces']:
+  engine_type = 'reduced traces'
+elif engine_type in ['t', 'trace', 'traces']:
+  engine_type = 'traces'
+elif engine_type in ['r', 'db', 'randomdb']:
+  engine_type = 'randomdb'
+else:
+  raise Exception("Engine %s is not implemented" % engine_type)
+
+if args.use_socket:
+  ripl = myripl.SocketRIPL(engine_type)
+else:
+  ripl = myripl.DirectRIPL(engine_type)
 
 global app
 app = flask.Flask(__name__)
