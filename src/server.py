@@ -15,6 +15,8 @@ parser.add_argument('-s', action='store_true', dest = 'use_socket',
                    help = 'Use the socket RIPL.  Remember to change the PID!')
 parser.add_argument('-v', action='store_true', dest = 'verbose',
                    help = 'Print server activity')
+parser.add_argument('-p', default = 5000, action='store', dest = 'port', type = int,
+                   help = 'Port number')
 
 flags = parser.parse_args()
 
@@ -35,6 +37,7 @@ else:
 
 global app
 app = flask.Flask(__name__)
+app.run(port = flags.port)
 
 def print_verbose(header, message = None, args = None):
   if flags.verbose:
