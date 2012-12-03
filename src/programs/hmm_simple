@@ -1,0 +1,14 @@
+assume nstates 20
+assume chainlength 100
+
+assume get-column (mem (lambda (i) (symmetric-dirichlet 1 nstates)))
+
+assume get-next-state (lambda (i) ,
+                         (let ((loop (lambda (v j) ,
+                                       (let ( (w ((get-column i) j))) ,
+                                        (if (< v w) j (loop (- v w) (inc j))))))) ,
+                              (loop (rand) 0)))
+
+assume state (mem (lambda (i) (if (= i 0) 0 (get-next-state (state (dec i))))))
+
+assume laststate (state chainlength)
