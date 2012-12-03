@@ -37,7 +37,6 @@ else:
 
 global app
 app = flask.Flask(__name__)
-app.run(port = flags.port)
 
 def print_verbose(header, message = None, args = None):
   if flags.verbose:
@@ -171,5 +170,5 @@ def predict():
 
 if __name__ == '__main__':
     #ripl.set_continuous_inference(enable=True)
-    app.run(debug=True, use_reloader=False)
+    app.run(debug=True, use_reloader=False, port = flags.port)
 
