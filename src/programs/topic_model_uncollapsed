@@ -1,0 +1,22 @@
+assume ntopics 5
+assume nwords 20
+
+assume sample-dirichlet ,
+       (lambda (prob_array) (let ((loop  ,
+                                  (lambda (v i) ,
+                                         (let ((w (prob_array i))) ,
+                                          (if (< v w) i (loop (- v w) (+ i 1))))))) ,
+                             (loop (rand) 0)))
+
+assume get-document-topic-weights (mem (lambda (doc) (symmetric-dirichlet 1 ntopics)))
+assume get-document-topic-sampler (mem (lambda (doc) (sample-dirichlet (get-document-topic-weights doc))))
+assume get-topic-word-weights (mem (lambda (topic) (symmetric-dirichlet 1 nwords)))
+assume get-topic-word-sampler (mem (lambda (topic) (sample-dirichlet (get-topic-word-weights topic))))
+
+assume doc0_word0 (get-topic-word-sampler (get-document-topic-sampler 0)) 
+assume doc0_word1 (get-topic-word-sampler (get-document-topic-sampler 0)) 
+
+infer_many doc0_word0 100 100 
+
+exit
+

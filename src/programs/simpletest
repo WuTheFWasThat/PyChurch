@@ -1,0 +1,2 @@
+assume a (flip 0.5) 
+assume b (if a (flip 0.3) (flip 0.7))

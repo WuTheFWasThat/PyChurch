@@ -1,0 +1,6 @@
+
+assume draw-type1 (CRP/make 1.0)
+assume  draw-type0    (if (flip) draw-type1 (lambda () 1))
+assume  draw-type2    (dirichlet-multinomial/make (list 1 1))
+assume  class (mem (if (flip) (lambda (name) (draw-type0)) (lambda (name) (draw-type2))))
+predict  (class 0)

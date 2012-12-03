@@ -1,0 +1,18 @@
+assume ntopics 5
+assume nwords 20
+
+assume get-topic-word-hyper (mem (lambda (topic) (gamma 1 1)))
+assume get-document-topic-hyper (mem (lambda (doc) (gamma 1 1)))
+
+assume get-document-topic-sampler (mem (lambda (doc) (symmetric-dirichlet-multinomial/make (/ (get-document-topic-hyper doc) ntopics) ntopics)))
+
+assume get-topic-word-sampler (mem (lambda (topic) (symmetric-dirichlet-multinomial/make (/ (get-topic-word-hyper topic) nwords) nwords)))
+
+assume get-word (mem (lambda (doc pos) ((get-topic-word-sampler ((get-document-topic-sampler doc))))))
+
+assume doc0_word0 (get-word 0 0)
+assume doc0_word1 (get-word 0 1)
+
+infer_many doc0_word0 100 100
+
+exit

@@ -1,0 +1,8 @@
+assume alpha (gamma 0.1 20)
+assume cluster-crp (CRP/make alpha)
+assume get-cluster-mean (mem (lambda (cluster) (gaussian 0 10)))
+assume get-cluster-variance  (mem (lambda (cluster) (gamma 0.1 100)))
+assume get-cluster (mem (lambda (id) (cluster-crp)))
+assume get-cluster-model (mem (lambda (cluster) (lambda ( ) (gaussian (get-cluster-mean cluster) (get-cluster-variance cluster)))))
+assume get-datapoint (mem (lambda (id) (gaussian ((get-cluster-model (get-cluster id))) 0.1)))
+

@@ -1,0 +1,3 @@
+assume power-law (lambda (p x) (if (flip p) x (power-law p (+ x 1)))) 
+assume a (power-law 0.3 0)
+infer_many a 1000 10
