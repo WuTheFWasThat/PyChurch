@@ -189,7 +189,7 @@ class ReducedEvalNode:
     self.active = False
     return
 
-  def remove_xrp(self, xrp, val, args):
+  def remove_xrp(self, xrp, val, args, called = False):
     if xrp.is_mem_proc():
       xrp.remove_mem(val, args, self.traces, self)
     else:
@@ -214,7 +214,7 @@ class ReducedEvalNode:
   def apply_random_xrp(self, xrp, args, xrp_force_val = None):
     assert self.random_xrp_apply
     if self.active:
-      self.remove_xrp(self.xrp, self.val, self.args)
+      self.remove_xrp(self.xrp, self.val, self.args, True)
       self.traces.remove_xrp(self)
 
     self.xrp = xrp
@@ -333,7 +333,6 @@ class ReducedEvalNode:
           self.add_xrp(xrp, val, args)
           if not xrp.is_mem_proc(): # NOTE: I think this is okay
             self.xrp_applies.append((xrp, val, args))
-        self.xrp = xrp
         assert val is not None
       else:
         raise RException('Must apply either a procedure or xrp.  Instead got expression %s' % str(op))
