@@ -2,7 +2,7 @@ import flask
 from flask import request
 from flask import make_response
 
-import argparse
+
 
 import json
 
@@ -12,17 +12,28 @@ from threading import Thread
 import subprocess
 import time
 
-parser = argparse.ArgumentParser(description='Engine of Church implementation.')
-parser.add_argument('-e', default='traces', dest = 'engine',
-                   help='Type of engine (db, traces, reduced_trace)')
-parser.add_argument('-s', default='', dest = 'socket_server',
-                   help = 'Server to use a socket RIPL (otherwise will use direct RIPL = Python server).')
-parser.add_argument('-v', action='store_true', dest = 'verbose',
-                   help = 'Print server activity')
-parser.add_argument('-p', default = 5000, action='store', dest = 'port', type = int,
-                   help = 'Port number')
-
-flags = parser.parse_args()
+try:
+  import argparse
+  parser = argparse.ArgumentParser(description='Engine of Church implementation.')
+  parser.add_argument('-e', default='traces', dest = 'engine',
+                     help='Type of engine (db, traces, reduced_trace)')
+  parser.add_argument('-s', default='', dest = 'socket_server',
+                     help = 'Server to use a socket RIPL (otherwise will use direct RIPL = Python server).')
+  parser.add_argument('-v', action='store_true', dest = 'verbose',
+                     help = 'Print server activity')
+  parser.add_argument('-p', default = 5000, action='store', dest = 'port', type = int,
+                     help = 'Port number')
+  
+  flags = parser.parse_args()
+except:
+  class Flags():
+    def __init__(self):
+      self.engine = 't'
+      self.socket_server = 'http://127.0.0.1:5000/'
+      self.verbose = False
+      self.port = 5000
+      return
+  flags = Flags()
 
 engine_type = flags.engine
 if engine_type in ['rt', 'reduced', 'reduced_trace', 'reduced_traces', 'reducedtrace', 'reducedtraces']:

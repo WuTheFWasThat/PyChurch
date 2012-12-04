@@ -119,9 +119,9 @@ def parse_value_token(token):
       floatval = float(token)
       val = NumValue(floatval)
     except:
-      if token == 'False':
+      if token in ['False', 'false']:
         val = BoolValue(False)
-      elif token == 'True':
+      elif token in ['True', 'true']:
         val = BoolValue(True)
       else:
         raise RException("Invalid value (Note:  Procedures and XRPs not parseable)")
