@@ -36,23 +36,16 @@ else:
 if flags.socket_server:
   t = Thread(target=subprocess.call, args=([flags.socket_server]))
   t.start()
-  print "here2"
   
   output = subprocess.check_output("ps | grep -i %s" % flags.socket_server, shell=True)
-  print "here3"
   output = output.split('\n')
 
   shortest = output[0]
-  print "here3"
   for x in output:
     if 0 < len(x) < len(shortest):
       shortest = x
-  print "here3"
 
-  print output
-  print shortest
   pid = int(shortest[:shortest.find(' ')])
-  print pid
 
   ripl = myripl.SocketRIPL(engine_type, pid)
 else:
