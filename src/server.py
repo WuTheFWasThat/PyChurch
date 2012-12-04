@@ -8,17 +8,18 @@ import json
 
 import myripl
 
+from threading import Thread
+import subprocess
+
 parser = argparse.ArgumentParser(description='Engine of Church implementation.')
 parser.add_argument('-e', default='traces', dest = 'engine',
                    help='Type of engine (db, traces, reduced_trace)')
-parser.add_argument('-s', action='store_true', dest = 'use_socket',
-                   help = 'Use the socket RIPL.  Remember to change the PID!')
+parser.add_argument('-s', default='', dest = 'socket_server',
+                   help = 'Server to use a socket RIPL (otherwise will use direct RIPL = Python server).')
 parser.add_argument('-v', action='store_true', dest = 'verbose',
                    help = 'Print server activity')
 parser.add_argument('-p', default = 5000, action='store', dest = 'port', type = int,
                    help = 'Port number')
-parser.add_argument('-pid', action='store', dest = 'pid', type = int,
-                   help = 'Pid of server (if using socket)')
 
 flags = parser.parse_args()
 
@@ -32,8 +33,28 @@ elif engine_type in ['r', 'db', 'randomdb']:
 else:
   raise Exception("Engine %s is not implemented" % engine_type)
 
-if flags.use_socket:
-  ripl = myripl.SocketRIPL(engine_type, flags.pid)
+if flags.socket_server:
+  t = Thread(target=subprocess.call, args=([flags.socket_server]))
+  t.start()
+  print "here2"
+  
+  output = subprocess.check_output("ps | grep -i %s" % flags.socket_server, shell=True)
+  print "here3"
+  output = output.split('\n')
+
+  shortest = output[0]
+  print "here3"
+  for x in output:
+    if 0 < len(x) < len(shortest):
+      shortest = x
+  print "here3"
+
+  print output
+  print shortest
+  pid = int(shortest[:shortest.find(' ')])
+  print pid
+
+  ripl = myripl.SocketRIPL(engine_type, pid)
 else:
   ripl = myripl.DirectRIPL(engine_type)
 
