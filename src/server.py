@@ -50,7 +50,13 @@ else:
 
 if flags.socket_server:
   # spawn new server thread
-  t = Thread(target=subprocess.call, args=([flags.socket_server]))
+  print flags.socket_server
+  if py_2_6:
+    def threadcall():
+      subprocess.Popen(flags.socket_server, shell = True)
+    t = Thread(target=threadcall, args=())
+  else:
+    t = Thread(target=subprocess.call, args=([flags.socket_server]))
   t.start()
   
   time.sleep(0.1) # to prevent deadlock
