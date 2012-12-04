@@ -279,7 +279,8 @@ class DirectRIPL(MyRIPL):
 
 class SocketRIPL(MyRIPL):
     def init_help(self, pid):
-        self.socket = socket.create_connection(('localhost', 2222))
+        self.socket = socket.socket()
+        self.socket.connect(('localhost', 2222))
 
         self.bufsize = 1048576
         self.socket.recv(self.bufsize)

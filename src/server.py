@@ -10,6 +10,7 @@ import myripl
 
 from threading import Thread
 import subprocess
+import time
 
 parser = argparse.ArgumentParser(description='Engine of Church implementation.')
 parser.add_argument('-e', default='traces', dest = 'engine',
@@ -34,20 +35,22 @@ else:
   raise Exception("Engine %s is not implemented" % engine_type)
 
 if flags.socket_server:
+  # spawn new server thread
   t = Thread(target=subprocess.call, args=([flags.socket_server]))
   t.start()
   
+  time.sleep(0.1) # to prevent deadlock
+
+  # get the pid of the spawned process (very much a hack!)
   output = subprocess.check_output("ps | grep -i %s" % flags.socket_server, shell=True)
   output = output.split('\n')
-
   shortest = output[0]
   for x in output:
     if 0 < len(x) < len(shortest):
       shortest = x
-
   pid = int(shortest[:shortest.find(' ')])
 
-  ripl = myripl.SocketRIPL(engine_type, pid)
+  ripl = myripl.SocketRIPL(engine_type, "MH", pid)
 else:
   ripl = myripl.DirectRIPL(engine_type)
 
