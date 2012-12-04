@@ -14,6 +14,7 @@ import time
 
 try:
   import argparse
+  py_2_6 = False
   parser = argparse.ArgumentParser(description='Engine of Church implementation.')
   parser.add_argument('-e', default='traces', dest = 'engine',
                      help='Type of engine (db, traces, reduced_trace)')
@@ -26,10 +27,12 @@ try:
   
   flags = parser.parse_args()
 except:
+  print "WARNING:  USING Python 2.6?  Please use 2.7"
+  py_2_6 = True
   class Flags():
     def __init__(self):
       self.engine = 't'
-      self.socket_server = 'http://127.0.0.1:5000/'
+      self.socket_server = 'socket_server-traces-c'
       self.verbose = False
       self.port = 5000
       return
@@ -53,7 +56,10 @@ if flags.socket_server:
   time.sleep(0.1) # to prevent deadlock
 
   # get the pid of the spawned process (very much a hack!)
-  output = subprocess.check_output("ps | grep -i %s" % flags.socket_server, shell=True)
+  if py_2_6:
+    output = subprocess.Popen("ps | grep -i %s" % flags.socket_server, shell = True, stdout=subprocess.PIPE).communicate()[0]
+  else:
+    output = subprocess.check_output("ps | grep -i %s" % flags.socket_server, shell=True)
   output = output.split('\n')
   shortest = output[0]
   for x in output:
