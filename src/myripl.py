@@ -35,7 +35,7 @@ def expr_list_to_string(expr_list):
 
 class MyRIPL(RIPL):
     
-    def __init__(self, engine_type = "traces", kernel_type = "MH"):
+    def __init__(self, engine_type = "traces", kernel_type = "MH", pid = None):
         if engine_type == 'reduced traces':
           engine = ReducedTraces()
         elif engine_type == 'traces':
@@ -55,9 +55,9 @@ class MyRIPL(RIPL):
         
         print "Constructing RIPL: " + str((engine_type, kernel_type))
          
-        self.init_help()
+        self.init_help(pid)
 
-    def init_help(self):
+    def init_help(self, pid):
         raise Exception("Not implemented yet")
 
     def get_pid(self):
@@ -268,7 +268,7 @@ class MyRIPL(RIPL):
         return directive_report
 
 class DirectRIPL(MyRIPL):
-    def init_help(self):
+    def init_help(self, pid = None):
         return 
 
     def get_pid(self):
@@ -278,14 +278,16 @@ class DirectRIPL(MyRIPL):
         return self.directives.parse_and_run_command(msg)
 
 class SocketRIPL(MyRIPL):
-    def init_help(self):
+    def init_help(self, pid):
         self.socket = socket.create_connection(('localhost', 2222))
 
         self.bufsize = 1048576
         self.socket.recv(self.bufsize)
+
+        self.pid = pid
         
     def get_pid(self):
-        return 22139
+        return self.pid
 
     def get_recv_msg(self, msg):
         self.socket.send(msg)

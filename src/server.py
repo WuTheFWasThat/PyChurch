@@ -17,6 +17,8 @@ parser.add_argument('-v', action='store_true', dest = 'verbose',
                    help = 'Print server activity')
 parser.add_argument('-p', default = 5000, action='store', dest = 'port', type = int,
                    help = 'Port number')
+parser.add_argument('-pid', action='store', dest = 'pid', type = int,
+                   help = 'Pid of server (if using socket)')
 
 flags = parser.parse_args()
 
@@ -31,7 +33,7 @@ else:
   raise Exception("Engine %s is not implemented" % engine_type)
 
 if flags.use_socket:
-  ripl = myripl.SocketRIPL(engine_type)
+  ripl = myripl.SocketRIPL(engine_type, flags.pid)
 else:
   ripl = myripl.DirectRIPL(engine_type)
 
