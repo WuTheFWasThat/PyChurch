@@ -46,8 +46,9 @@ def dirichlet(params):
   z = sum(sample) + 0.0
   return [v/z for v in sample]
 
-def sample_categorical(probs):
-  (i, v) = (0, rrandom.random.random())
+def sample_categorical(probs, z = 1):
+  # z should be sum of probs
+  (i, v) = (0, rrandom.random.random() * z)
   while probs[i] < v:
     v -= probs[i]
     i += 1
@@ -249,7 +250,7 @@ class beta_bernoulli_XRP(XRP):
     else:
       self.t += 1
   def remove(self, val, args = None):
-    if val.num:
+    if val.bool:
       if not self.h > 0:
         raise RException("Removing too many heads from beta_bernoulli")
       self.h -= 1
@@ -323,8 +324,7 @@ class dirichlet_multinomial_XRP(XRP):
   def apply(self, args = None):
     if args is not None and len(args) != 0:
       raise RException('dirichlet_no_args_XRP has no need to take in arguments %s' % str(args))
-    probs = [x / (self.alpha + 0.0) for x in self.alphas]
-    return NatValue(sample_categorical(probs))
+    return NatValue(sample_categorical(self.alphas, self.alpha))
   def incorporate(self, val, args = None):
     if args is not None and len(args) != 0:
       raise RException('dirichlet_multinomial has no need to take in arguments %s' % str(args))
@@ -332,6 +332,15 @@ class dirichlet_multinomial_XRP(XRP):
       raise RException('dirichlet_multinomial should return something in [0, ..., %d], not %d' % (self.n - 1, val.int))
     self.alphas[val.int] += 1
     self.alpha += 1
+  def remove(self, val, args = None):
+    if args is not None and len(args) != 0:
+      raise RException('dirichlet_multinomial has no need to take in arguments %s' % str(args))
+    if val.int < 0 or val.int >= self.n:
+      raise RException('dirichlet_multinomial should return something in [0, ..., %d], not %d' % (self.n - 1, val.int))
+    if self.alphas[val.int] < 1:
+      raise RException('Alpha should not drop below 0')
+    self.alphas[val.int] -= 1
+    self.alpha -= 1
   def prob(self, val, args = None):
     if args is not None and len(args) != 0:
       raise RException('dirichlet_multinomial has no need to take in arguments %s' % str(args))
