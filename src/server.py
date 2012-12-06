@@ -53,7 +53,7 @@ if flags.socket_server:
   print flags.socket_server
   if py_2_6:
     def threadcall():
-      subprocess.Popen(flags.socket_server, shell = True)
+      subprocess.Popen("./" + flags.socket_server, shell = True)
     t = Thread(target=threadcall, args=())
   else:
     t = Thread(target=subprocess.call, args=([flags.socket_server]))
@@ -82,6 +82,7 @@ app = flask.Flask(__name__)
 
 def print_verbose(header, message = None, args = None):
   if flags.verbose:
+    print "\n----------\n"
     print
     print header
     if args is not None:
@@ -89,7 +90,6 @@ def print_verbose(header, message = None, args = None):
         print key, ": ", args[key]
     if message is not None:
       print message 
-    print "\n----------\n"
 
 def get_response(string):
     resp = make_response(string)
@@ -210,6 +210,23 @@ def predict():
     (d_id, val) = ripl.predict(expr_lst)
     print_verbose("PREDICT", {"d_id": d_id, "val": val}, {"expression": expr_lst})
     return get_response(json.dumps({"d_id": d_id, "val": val}))
+
+@app.route('/start_cont_infer', methods=['POST'])
+def start_cont_infer():
+    ripl.start_continuous_inference();
+    return get_response(json.dumps({"started": True}))
+
+@app.route('/stop_cont_infer', methods=['POST'])
+def stop_cont_infer():
+    ripl.stop_continuous_inference();
+    return get_response(json.dumps({"stopped": True}))
+
+@app.route('/cont_infer_status', methods=['GET'])
+def cont_infer_status():
+    if ripl.continuous_inference_status():
+      return get_response(json.dumps({"status": "on"}))
+    else:
+      return get_response(json.dumps({"status": "off"}))
 
 if __name__ == '__main__':
     #ripl.set_continuous_inference(enable=True)

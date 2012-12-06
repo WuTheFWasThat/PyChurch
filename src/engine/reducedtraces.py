@@ -667,8 +667,7 @@ class ReducedTraces(Engine):
     try:
       evalnode = self.db.randomKey()
     except:
-      # No coin flips!
-      return
+      raise RException("Program has no randomness!")
     self.reflip(evalnode)
 
   def reset(self):
