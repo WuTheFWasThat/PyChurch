@@ -147,6 +147,7 @@ class Directives:
     # BASIC XRPs
 
     self.assume('noisy-negate', xrp(noisy_negate_XRP()), True)
+    self.assume('noise-negate', xrp(noisy_negate_XRP()), True)
     self.assume('noisy', xrp(noisy_XRP()), True)
 
     self.assume('list', xrp(make_array_XRP()), True)

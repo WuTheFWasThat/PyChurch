@@ -251,7 +251,7 @@ def observe():
     except Exception as e:
       return get_response(e.message, 400)
     print_verbose("OBSERVE", {"d_id": d_id}, {"expression": expr_lst, "obs_val": literal_val})
-    return json.dumps({"d_id": d_id})
+    return get_response(json.dumps({"d_id": d_id}))
 
 @app.route('/predict', methods=['POST'])
 def predict():
