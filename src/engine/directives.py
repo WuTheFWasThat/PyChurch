@@ -118,6 +118,17 @@ class Directives:
     self.assume('dec', function(['x'], op('-', [var('x'), nat_expr(1)])), True)
     self.assume('abs', function(['x'], op('abs', [var('x')])), True)
 
+    self.assume('int', function(['x'], op('int', [var('x')])), True)
+    self.assume('round', function(['x'], op('round', [var('x')])), True)
+    self.assume('floor', function(['x'], op('floor', [var('x')])), True)
+    self.assume('ceil', function(['x'], op('ceil', [var('x')])), True)
+
+    #self.assume('floor', function(['x'], op('round', [op('-', [var('x'), num_expr(0.5)])])), True)
+    # wrong for negatives
+    #self.assume('ceil', function(['x'], op('round', [op('+', [var('x'), num_expr(0.5)])])), True)
+    # wrong for positives
+    # both wrong for 0
+
     #self.assume('power', function(['x'], op('**', [var('x')])), True)
 
     #self.assume('=', function(['x', 'y'], op('=', [var('x'), var('y')])))
@@ -363,6 +374,8 @@ class Directives:
           if token in ['true', 'True', 't', 'T', '1']:
             rerun_first = True
           elif token in ['false', 'False', 'f', 'F', '0']:
+            rerun_first = False
+          else:
             rerun_first = False
         except:
           rerun_first = False

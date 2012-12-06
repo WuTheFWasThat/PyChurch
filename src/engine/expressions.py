@@ -31,39 +31,12 @@ class Expression:
     pass
   def __eq__(self, other):
     return OpExpression('=', [self, other])
-  def __lt__(self, other):
-    return OpExpression('<', [self, other])
-  def __le__(self, other):
-    return OpExpression('<=', [self, other])
-  def __gt__(self, other):
-    return OpExpression('>', [self, other])
-  def __ge__(self, other):
-    return OpExpression('>=', [self, other])
-  def __add__(self, other):
-    return OpExpression('+', [self, other])
-  def __sub__(self, other):
-    return OpExpression('-', [self, other])
-  def __mul__(self, other):
-    return OpExpression('*', [self, other])
-  def __div__(self, other):
-    return OpExpression('/', [self, other])
-  def __mod__(self, other):
-    return OpExpression('%', [self, other])
-  def __and__(self, other):
-    return OpExpression('&', [self, other])
-  def __or__(self, other):
-    return OpExpression('|', [self, other])
-  def __xor__(self, other):
-    return OpExpression('^', [self, other])
-  def __invert__(self):
-    return OpExpression('~', [self])
   def __str__(self):
     return "Expression"
   def __repr__(self):
     return self.__str__()
   def __hash__(self):
     return self.hashval
-                                            
 
 class ConstExpression(Expression):
   def __init__(self, value):
@@ -181,6 +154,8 @@ class OpExpression(Expression):
       
     return self.type.join(['(' + str(x) + ')' for x in self.children])
     # return self.type +  '(' + ','.join([str(x) for x in self.children]) + ')'
+
+# TODO: get rid of this stuff?
 
 def var(v):
   return VarExpression(v) 

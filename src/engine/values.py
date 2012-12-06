@@ -1,6 +1,7 @@
 import utils.rrandom as rrandom 
 import utils.rhash as rhash
 from utils.rexceptions import RException
+import math
 
 class XRP:
   def __init__(self):
@@ -66,6 +67,14 @@ class Value:
   def __inv__(self):
     raise RException("Invalid operation")
   def __abs__(self):
+    raise RException("Invalid operation")
+  def __int__(self):
+    raise RException("Invalid operation")
+  def __round__(self):
+    raise RException("Invalid operation")
+  def __floor__(self):
+    raise RException("Invalid operation")
+  def __ceil__(self):
     raise RException("Invalid operation")
   def __nonzero__(self):
     return BoolValue((self.num > 0))
@@ -156,6 +165,32 @@ class NumValue(Value):
     return NumValue(- self.num)
   def __abs__(self):
     return NumValue(abs(self.num))
+  def __int__(self): # round towards zero
+    val = int(self.num)
+    if val < 0:
+      return IntValue(val)
+    else:
+      return NatValue(val)
+  def __round__(self): # round to nearest
+    if self.num <= -0.5:
+      return IntValue(int(self.num - 0.5))
+    elif self.num >= 0:
+      return NatValue(int(self.num + 0.5))
+    else:
+      return NatValue(0)
+  def __floor__(self):
+    val = int(math.floor(self.num))
+    if val < 0:
+      return IntValue(val)
+    else:
+      return NatValue(val)
+  def __ceil__(self):
+    val = int(math.ceil(self.num))
+    if val < 0:
+      return IntValue(val)
+    else:
+      return NatValue(val)
+
   def __nonzero__(self):
     return BoolValue((self.num > 0))
 

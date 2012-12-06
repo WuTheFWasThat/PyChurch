@@ -449,6 +449,18 @@ class EvalNode:
     elif self.type == 'abs':
       orig_val = self.evaluate_recurse(expr.children[0] , self.env, 'abs', reflip)
       val = orig_val.__abs__()
+    elif self.type == 'int':
+      orig_val = self.evaluate_recurse(expr.children[0] , self.env, 'int', reflip)
+      val = orig_val.__int__()
+    elif self.type == 'round':
+      orig_val = self.evaluate_recurse(expr.children[0] , self.env, 'round', reflip)
+      val = orig_val.__round__()
+    elif self.type == 'floor':
+      orig_val = self.evaluate_recurse(expr.children[0] , self.env, 'floor', reflip)
+      val = orig_val.__floor__()
+    elif self.type == 'ceil':
+      orig_val = self.evaluate_recurse(expr.children[0] , self.env, 'ceil', reflip)
+      val = orig_val.__ceil__()
     elif self.type == '+':
       vals = self.children_evaluate(reflip)
       sum_val = NatValue(0)

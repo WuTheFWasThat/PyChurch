@@ -384,6 +384,18 @@ class ReducedEvalNode:
     elif expr.type == 'abs':
       orig_val = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
       val = orig_val.__abs__()
+    elif expr.type == 'int':
+      orig_val = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
+      val = orig_val.__int__()
+    elif expr.type == 'round':
+      orig_val = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
+      val = orig_val.__round__()
+    elif expr.type == 'floor':
+      orig_val = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
+      val = orig_val.__floor__()
+    elif expr.type == 'ceil':
+      orig_val = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
+      val = orig_val.__ceil__()
     elif expr.type == '+':
       vals = self.children_evaluate(expr, env, hashval, restore)
       sum_val = NatValue(0)
