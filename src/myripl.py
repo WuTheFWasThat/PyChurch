@@ -354,7 +354,12 @@ class DirectRIPL(MyRIPL):
         return os.getpid()
 
     def get_recv_msg(self, msg):
-        return self.directives.parse_and_run_command(msg)
+        try:
+          ret_msg = self.directives.parse_and_run_command(msg)
+        except RException as e:
+          self.lock.release() # should be locked when here
+          raise Exception(e.message)
+        return ret_msg
 
 class SocketRIPL(MyRIPL):
     def init_help(self, pid):
@@ -371,4 +376,8 @@ class SocketRIPL(MyRIPL):
 
     def get_recv_msg(self, msg):
         self.socket.send(msg)
-        return self.socket.recv(self.bufsize)
+        ret_msg = self.socket.recv(self.bufsize)
+        if len(ret_msg) >= 7 and (ret_msg[:7] == 'ERROR: '):
+          self.lock.release() # should be locked when here
+          raise Exception(ret_msg[7:])
+        return ret_msg

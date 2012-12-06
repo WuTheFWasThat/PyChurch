@@ -91,84 +91,121 @@ def print_verbose(header, message = None, args = None):
     if message is not None:
       print message 
 
-def get_response(string):
+def get_response(string, status_code = 200):
     resp = make_response(string)
-    #resp.status_code = 201
+    resp.status_code = status_code
     #resp.data = json.dumps(directives)
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
 
 @app.route('/', methods=['GET'])
 def index(): 
-    directives = ripl.report_directives()
+    try:
+      directives = ripl.report_directives()
+    except Exception as e:
+      return get_response(e.message, 400)
+     
     print_verbose("DIRECTIVES REPORT", directives)
     return get_response(json.dumps(directives))
 
 @app.route('/', methods=['POST'])
 # DELETE
 def clear():
-    ripl.clear()
+    try:
+      ripl.clear()
+    except Exception as e:
+      return get_response(e.message, 400)
     print_verbose("CLEARED")
     return get_response(json.dumps({}))
 
 @app.route('/<int:did>', methods=['POST'])
 # DELETE
 def forget(did):
-    ripl.forget(did)
+    try:
+      ripl.forget(did)
+    except Exception as e:
+      return get_response(e.message, 400)
     print_verbose("FORGOTTEN")
     return get_response(json.dumps({}))
 
 @app.route('/<int:did>', methods=['GET'])
 def report_value(did):
-    d = ripl.report_value(did)
+    try:
+      d = ripl.report_value(did)
+    except Exception as e:
+      return get_response(e.message, 400)
     print_verbose("REPORT VALUE", d, {'did': did})
     return get_response(json.dumps(d))
 
 @app.route('/memory', methods=['GET'])
 def memory():
-    s = ripl.memory()
+    try:
+      s = ripl.memory()
+    except Exception as e:
+      return get_response(e.message, 400)
     print_verbose("MEMORY", s)
     return get_response(json.dumps({"memory": s}))
 
 @app.route('/entropy', methods=['GET'])
 def entropy():
-    h = ripl.entropy()
+    try:
+      h = ripl.entropy()
+    except Exception as e:
+      return get_response(e.message, 400)
     print_verbose("ENTROPY", h)
     return get_response(json.dumps({"random_choices": h}))
 
 @app.route('/mhstats/aggregated', methods=['GET'])
 def mhstats_aggregated():
-    d = ripl.mhstats_aggregated()
+    try:
+      d = ripl.mhstats_aggregated()
+    except Exception as e:
+      return get_response(e.message, 400)
     print_verbose("MHSTATS AGGREGATED", d)
     return get_response(json.dumps(d))
 
 @app.route('/mhstats/detailed', methods=['GET'])
 def mhstats_detailed():
-    d = ripl.mhstats_detailed()
+    try:
+      d = ripl.mhstats_detailed()
+    except Exception as e:
+      return get_response(e.message, 400)
     print_verbose("MHSTATS DETAILED", d)
     return get_response(json.dumps(d))
 
 @app.route('/mhstats/detailed/on', methods=['POST'])
 def mhstats_on(did):
-    ripl.mhstats_on(did)
+    try:
+      ripl.mhstats_on(did)
+    except Exception as e:
+      return get_response(e.message, 400)
     print_verbose("MHSTATS DETAILED ON")
     return get_response(json.dumps({"MESSAGE": "Mhstats On"}))
 
 @app.route('/mhstats/detailed/off', methods=['POST'])
 def mhstats_off(did):
-    ripl.mhstats_off(did)
+    try:
+      ripl.mhstats_off(did)
+    except Exception as e:
+      return get_response(e.message, 400)
     print_verbose("MHSTATS DETAILED OFF")
     return get_response(json.dumps({"MESSAGE": "Mhstats Off"}))
 
 @app.route('/logscore', methods=['GET'])
 def logscore():
-    p = ripl.logscore()
+    try:
+      p = ripl.logscore()
+    except Exception as e:
+      return get_response(e.message, 400)
     print_verbose("LOGSCORE", p)
     return get_response(json.dumps({"directive_logscore": p}))
 
 @app.route('/logscore/<int:did>', methods=['GET'])
 def logscore_observe(did):
-    p = ripl.logscore(did)
+    try:
+      p = ripl.logscore(did)
+    except Exception as e:
+      return get_response(e.message, 400)
     print_verbose("LOGSCORE", p, {"did": did})
     return get_response(json.dumps({"directive_logscore": p}))
 
@@ -176,14 +213,20 @@ def logscore_observe(did):
 def seed():
     seed = json.loads(request.form["seed"])
     print_verbose("SEED", seed)
-    ripl.seed(seed)
+    try:
+      ripl.seed(seed)
+    except Exception as e:
+      return get_response(e.message, 400)
     return get_response("Seeded with %s" % str(seed))
 
 @app.route('/infer', methods=['POST'])
 def infer():
     MHiterations = json.loads(request.form["MHiterations"])
     rerun_first = json.loads(request.form["rerun"])
-    t = ripl.infer(MHiterations, rerun_first)
+    try:
+      t = ripl.infer(MHiterations, rerun_first)
+    except Exception as e:
+      return get_response(e.message, 400)
     print_verbose("INFER", None, {"iters": MHiterations, "rerun": rerun_first, "time": t})
     return get_response(json.dumps({"time": t}))
 
@@ -191,7 +234,10 @@ def infer():
 def assume():
     name_str = json.loads(request.form["name_str"])
     expr_lst = json.loads(request.form["expr_lst"])
-    (d_id, val) = ripl.assume(name_str, expr_lst)
+    try:
+      (d_id, val) = ripl.assume(name_str, expr_lst)
+    except Exception as e:
+      return get_response(e.message, 400)
     print_verbose("ASSUME", {"d_id": d_id, "val": val}, {"name": name_str, "expression": expr_lst})
     return get_response(json.dumps({"d_id": d_id,
                        "val": val}))
@@ -200,30 +246,46 @@ def assume():
 def observe():
     expr_lst = json.loads(request.form["expr_lst"])
     literal_val = json.loads(request.form["literal_val"])
-    d_id = ripl.observe(expr_lst, literal_val)
+    try:
+      d_id = ripl.observe(expr_lst, literal_val)
+    except Exception as e:
+      return get_response(e.message, 400)
     print_verbose("OBSERVE", {"d_id": d_id}, {"expression": expr_lst, "obs_val": literal_val})
     return json.dumps({"d_id": d_id})
 
 @app.route('/predict', methods=['POST'])
 def predict():
     expr_lst = json.loads(request.form["expr_lst"])
-    (d_id, val) = ripl.predict(expr_lst)
+    try:
+      (d_id, val) = ripl.predict(expr_lst)
+    except Exception as e:
+      return get_response(e.message, 400)
     print_verbose("PREDICT", {"d_id": d_id, "val": val}, {"expression": expr_lst})
     return get_response(json.dumps({"d_id": d_id, "val": val}))
 
 @app.route('/start_cont_infer', methods=['POST'])
 def start_cont_infer():
-    ripl.start_continuous_inference();
+    try:
+      ripl.start_continuous_inference();
+    except Exception as e:
+      return get_response(e.message, 400)
     return get_response(json.dumps({"started": True}))
 
 @app.route('/stop_cont_infer', methods=['POST'])
 def stop_cont_infer():
-    ripl.stop_continuous_inference();
+    try:
+      ripl.stop_continuous_inference();
+    except Exception as e:
+      return get_response(e.message, 400)
     return get_response(json.dumps({"stopped": True}))
 
 @app.route('/cont_infer_status', methods=['GET'])
 def cont_infer_status():
-    if ripl.continuous_inference_status():
+    try:
+      continuous_inference = ripl.continuous_inference_status()
+    except Exception as e:
+      return get_response(e.message, 400)
+    if continuous_inference:
       return get_response(json.dumps({"status": "on"}))
     else:
       return get_response(json.dumps({"status": "off"}))

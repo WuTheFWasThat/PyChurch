@@ -89,7 +89,7 @@ def run(directives):
         try:
           ret_msg = directives.parse_and_run_command(msg)
         except RException as e:
-          ret_msg = e.message
+          ret_msg = "ERROR: " + e.message
         client_sock.send(ret_msg)
         print "\nSENT:\n%s" % ret_msg
       return 1 # could be unindented, if not for rpython
