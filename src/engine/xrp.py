@@ -165,11 +165,11 @@ class categorical_no_args_XRP(XRP):
     return
   def apply(self, args = None):
     i = sample_categorical(self.probs)
-    if args != None and len(args) != 0:
+    if args is not None and len(args) != 0:
       raise RException("categorical_no_args_XRP has no need to take arguments")
     return IntValue(i)
   def prob(self, val, args = None):
-    if args != None and len(args) != 0:
+    if args is not None and len(args) != 0:
       raise RException("categorical_no_args_XRP has no need to take arguments")
     if not 0 <= val.int < self.n:
       raise RException("Categorical should only return values between 0 and %d" % self.n)
@@ -183,7 +183,7 @@ class make_symmetric_categorical_XRP(XRP):
     self.deterministic = True
     return
   def apply(self, args = None):
-    n = args[0].num
+    n = args[0].nat
     return XRPValue(categorical_no_args_XRP([1 / (n + 0.0)] * n)) 
   def __str__(self):
     return 'make_symmetric_categorical_XRP'
@@ -195,7 +195,7 @@ class make_categorical_XRP(XRP):
   def apply(self, args = None):
     return XRPValue(categorical_no_args_XRP([x.num for x in args])) 
   def __str__(self):
-    return 'make_symmetric_categorical_XRP'
+    return 'make_categorical_XRP'
 
 # DISTRIBUTIONS
 
