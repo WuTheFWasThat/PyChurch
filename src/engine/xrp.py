@@ -176,7 +176,7 @@ class categorical_no_args_XRP(XRP):
     log_prob = math.log(self.probs[val.int])
     return log_prob
   def __str__(self):
-    return 'categorical(%f, %f)' % (self.mu, self.sigma)
+    return 'categorical(%s)' % (self.probs)
 
 class make_symmetric_categorical_XRP(XRP):
   def __init__(self):
@@ -185,6 +185,15 @@ class make_symmetric_categorical_XRP(XRP):
   def apply(self, args = None):
     n = args[0].num
     return XRPValue(categorical_no_args_XRP([1 / (n + 0.0)] * n)) 
+  def __str__(self):
+    return 'make_symmetric_categorical_XRP'
+
+class make_categorical_XRP(XRP):
+  def __init__(self):
+    self.deterministic = True
+    return
+  def apply(self, args = None):
+    return XRPValue(categorical_no_args_XRP([x.num for x in args])) 
   def __str__(self):
     return 'make_symmetric_categorical_XRP'
 

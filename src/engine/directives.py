@@ -144,10 +144,17 @@ class Directives:
     #self.assume('xor', function(['x', 'y'], op('^', [var('x'), var('y')])))
     #self.assume('not', function(['x'], op('~', [var('x')])))
 
-    # BASIC DISTRIBUTIONS
+    # BASIC XRPs
 
     self.assume('noisy-negate', xrp(noisy_negate_XRP()), True)
     self.assume('noisy', xrp(noisy_XRP()), True)
+
+    self.assume('list', xrp(make_array_XRP()), True)
+    self.assume('repeat', xrp(make_symmetric_array_XRP()), True)
+
+    self.assume('categorical', xrp(make_categorical_XRP()), True)
+
+    # BASIC DISTRIBUTIONS
 
     self.assume('bernoulli', xrp(bernoulli_XRP()), True)
     self.assume('flip', var('bernoulli'), True)
@@ -165,11 +172,6 @@ class Directives:
                                       op('+', [op('*', [apply(var('rand'), []), op('-', [var('max-inclusive'), var('min-inclusive')])]), var('min-inclusive')])),
                 True)
    
-    # OTHER SIMPLE XRPs
-
-    self.assume('list', xrp(make_array_XRP()), True)
-    self.assume('repeat', xrp(make_symmetric_array_XRP()), True)
-
     # MORE COMPLICATED PROCESSES
 
     self.assume('dirichlet-multinomial/make', xrp(make_dirichlet_multinomial_XRP()), True)
