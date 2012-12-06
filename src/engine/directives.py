@@ -146,6 +146,9 @@ class Directives:
 
     # BASIC DISTRIBUTIONS
 
+    self.assume('noisy-negate', xrp(noisy_negate_XRP()), True)
+    self.assume('noisy', xrp(noisy_XRP()), True)
+
     self.assume('bernoulli', xrp(bernoulli_XRP()), True)
     self.assume('flip', var('bernoulli'), True)
     self.assume('beta', xrp(beta_XRP()), True)

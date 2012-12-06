@@ -24,7 +24,6 @@ def sum(array):
   return ans
 
 # taken from Wikipedia's page on Lanczos approximation, but only works on real numbers
-
 def math_gamma(z):
   g = 7
   p = [0.99999999999980993, 676.5203681218851, -1259.1392167224028,
@@ -56,55 +55,60 @@ def sample_categorical(probs, z = 1):
 
 # GENERALLY USEFUL XRPs
 
-class categorical_no_args_XRP(XRP):
-  def __init__(self, probs):
-    self.deterministic = False
-    self.state = None
-    self.probs = [check_prob(p) for p in probs]
-    if not .999 <= sum(self.probs) <= 1.001:
-      raise RException("Categorical probabilities must sum to 1")
-    self.n = len(self.probs)
-    return
-  def apply(self, args = None):
-    i = sample_categorical(self.probs)
-    if args != None and len(args) != 0:
-      raise RException("categorical_no_args_XRP has no need to take arguments")
-    return IntValue(i)
-  def prob(self, val, args = None):
-    if args != None and len(args) != 0:
-      raise RException("categorical_no_args_XRP has no need to take arguments")
-    if not 0 <= val.int < self.n:
-      raise RException("Categorical should only return values between 0 and %d" % self.n)
-    log_prob = math.log(self.probs[val.int])
-    return log_prob
-  def __str__(self):
-    return 'categorical(%f, %f)' % (self.mu, self.sigma)
-
-class make_symmetric_categorical_XRP(XRP):
-  def __init__(self):
-    self.deterministic = True
-    return
-  def apply(self, args = None):
-    n = args[0].num
-    return XRPValue(categorical_no_args_XRP([1 / (n + 0.0)] * n)) 
-  def __str__(self):
-    return 'make_symmetric_categorical_XRP'
-
-class gaussian_XRP(XRP):
+class noisy_negate_XRP(XRP):
   def __init__(self):
     self.deterministic = False
     return
   def apply(self, args = None):
-    (mu, sigma) = (args[0].num, args[1].num)
-    check_pos(sigma)
-    return NumValue(rrandom.random.normalvariate(mu, sigma))
+    if len(args) != 2:
+      raise RException("noisy_negate must take 2 arguments")
+    (b, p) = (args[0].bool, args[1].num)
+    check_prob(p)
+    if rrandom.random.random() < p:
+      return BoolValue(not args[0].bool)
+    else:
+      return BoolValue(args[0].bool)
   def prob(self, val, args = None):
-    (mu , sigma) = (args[0].num, args[1].num + 0.0)
-    check_pos(sigma)
-    log_prob = - math.pow((val.num - mu) / sigma, 2)/ 2.0 - math.log(sigma) - math.log(2 * math.pi) / 2.0
-    return log_prob
+    if len(args) != 2:
+      raise RException("noisy_negate must take 2 arguments")
+    (b, p) = (args[0].bool, args[1].num)
+    check_prob(p)
+    if val.bool ^ b:
+      return math.log(p)
+    else:
+      return math.log(1-p)
   def __str__(self):
-    return 'normal'
+    return 'noisy_negate_XRP'
+
+class noisy_XRP(XRP):
+  def __init__(self):
+    self.deterministic = False
+    return
+  def apply(self, args = None):
+    if len(args) != 2:
+      raise RException("noisy must take 2 arguments")
+    (b, p) = (args[0].bool, args[1].num)
+    check_prob(p)
+    if b:
+      return BoolValue(True)
+    else:
+      return BoolValue(rrandom.random.random() < p)
+  def prob(self, val, args = None):
+    if len(args) != 2:
+      raise RException("noisy must take 2 arguments")
+    (b, p) = (args[0].bool, args[1].num)
+    check_prob(p)
+    if b:
+      if not val.bool:
+        raise RException("Should have returned true")
+      return 0
+    else:
+      if val.bool:
+        return math.log(p)
+      else:
+        return math.log(1-p)
+  def __str__(self):
+    return 'noisy_XRP'
 
 class array_XRP(XRP):
   def __init__(self, array):
@@ -149,6 +153,58 @@ class make_symmetric_array_XRP(XRP):
     return XRPValue(array_XRP([el] * n)) 
   def __str__(self):
     return 'array_make_XRP'
+
+class categorical_no_args_XRP(XRP):
+  def __init__(self, probs):
+    self.deterministic = False
+    self.state = None
+    self.probs = [check_prob(p) for p in probs]
+    if not .999 <= sum(self.probs) <= 1.001:
+      raise RException("Categorical probabilities must sum to 1")
+    self.n = len(self.probs)
+    return
+  def apply(self, args = None):
+    i = sample_categorical(self.probs)
+    if args != None and len(args) != 0:
+      raise RException("categorical_no_args_XRP has no need to take arguments")
+    return IntValue(i)
+  def prob(self, val, args = None):
+    if args != None and len(args) != 0:
+      raise RException("categorical_no_args_XRP has no need to take arguments")
+    if not 0 <= val.int < self.n:
+      raise RException("Categorical should only return values between 0 and %d" % self.n)
+    log_prob = math.log(self.probs[val.int])
+    return log_prob
+  def __str__(self):
+    return 'categorical(%f, %f)' % (self.mu, self.sigma)
+
+class make_symmetric_categorical_XRP(XRP):
+  def __init__(self):
+    self.deterministic = True
+    return
+  def apply(self, args = None):
+    n = args[0].num
+    return XRPValue(categorical_no_args_XRP([1 / (n + 0.0)] * n)) 
+  def __str__(self):
+    return 'make_symmetric_categorical_XRP'
+
+# DISTRIBUTIONS
+
+class gaussian_XRP(XRP):
+  def __init__(self):
+    self.deterministic = False
+    return
+  def apply(self, args = None):
+    (mu, sigma) = (args[0].num, args[1].num)
+    check_pos(sigma)
+    return NumValue(rrandom.random.normalvariate(mu, sigma))
+  def prob(self, val, args = None):
+    (mu , sigma) = (args[0].num, args[1].num + 0.0)
+    check_pos(sigma)
+    log_prob = - math.pow((val.num - mu) / sigma, 2)/ 2.0 - math.log(sigma) - math.log(2 * math.pi) / 2.0
+    return log_prob
+  def __str__(self):
+    return 'normal'
 
 class beta_XRP(XRP):
   def __init__(self):
