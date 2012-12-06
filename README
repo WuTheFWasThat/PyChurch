@@ -1,0 +1,53 @@
+THIS README IS STILL IN PROGRESS
+
+---------------
+RUNNING LOCALLY
+---------------
+
+To run a shell:
+  python run_program.py [-e ENGINE]
+
+To run a program:
+  python run_program.py [-e ENGINE] [-p PROGRAM]
+
+(Flags)
+ENGINE:  r = randomdb, t = traces, rt = reduced traces
+PROGRAM:  The directory of some Church program.
+
+-----------------------
+RUN A SERVER (REST API)
+-----------------------
+
+To run the python server:
+  python server.py [-e ENGINE] [-v] [-p PORT]
+
+To run a C server:
+  python server.py [-s BINARY] [-v] [-p PORT]
+
+(Flags)
+ENGINE:  r = randomdb, t = traces, rt = reduced traces
+BINARY:  The directory of some C binary
+PORT: The number of some port
+The -v flag toggles whether the server should print its activity
+
+-----------------------
+CREATING THE C BINARIES
+-----------------------
+
+
+You can also compile a faster version of the server by doing the following:
+
+1.  (OPTIONAL) Open socket_server.py, and change engine_type to what you'd like.
+2.  Install pypy.  
+3.  Run (replace the path to translate.py as appropriate):
+        python /Applications/pypy/pypy/translator/goal/translate.py socket_server.py 
+    (NOT YET READY)
+    For a tracing JIT version :
+        python /Applications/pypy/pypy/translator/goal/translate.py --opt=jit socket_server.py 
+     WARNING:  This can take a long time.
+4.  This should create a binary called socket_server-c.  You may want to rename it:
+     mv socket_server-c some_new_name
+
+--------------------
+DEFINING CUSTOM XRPs
+--------------------

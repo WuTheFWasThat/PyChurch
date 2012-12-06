@@ -1,0 +1,79 @@
+assume int0 (= (int 0) 0)
+assume round0 (= (round 0) 0)
+assume floor0 (= (floor 0) 0)
+assume ceil0 (= (ceil 0) 0)
+
+assume int0.1 (= (int 0.1) 0)
+assume round0.1 (= (round 0.1) 0)
+assume floor0.1 (= (floor 0.1) 0)
+assume ceil0.1 (= (ceil 0.1) 1)
+
+assume intn0.1 (= (int -0.1) 0)
+assume roundn0.1 (= (round -0.1) 0)
+assume floorn0.1 (= (floor -0.1) -1)
+assume ceiln0.1 (= (ceil -0.1) 0)
+
+assume int0.5 (= (int 0.5) 0)
+assume round0.5 (= (round 0.5) 1)
+assume floor0.5 (= (floor 0.5) 0)
+assume ceil0.5 (= (ceil 0.5) 1)
+
+assume intn0.5 (= (int -0.5) 0)
+assume roundn0.5 (= (round -0.5) -1)
+assume floorn0.5 (= (floor -0.5) -1)
+assume ceiln0.5 (= (ceil -0.5) 0)
+
+assume int1.0 (= (int 1.0) 1)
+assume round1.0 (= (round 1.0) 1)
+assume floor1.0 (= (floor 1.0) 1)
+assume ceil1.0 (= (ceil 1.0) 1)
+
+assume intn1.0 (= (int -1.0) -1)
+assume roundn1.0 (= (round -1.0) -1)
+assume floorn1.0 (= (floor -1.0) -1)
+assume ceiln1.0 (= (ceil -1.0) -1)
+
+assume int1.5 (= (int 1.5) 1)
+assume round1.5 (= (round 1.5) 2)
+assume floor1.5 (= (floor 1.5) 1)
+assume ceil1.5 (= (ceil 1.5) 2)
+
+assume intn1.5 (= (int -1.5) -1)
+assume roundn1.5 (= (round -1.5) -2)
+assume floorn1.5 (= (floor -1.5) -2)
+assume ceiln1.5 (= (ceil -1.5) -1)
+
+assume int1.3 (= (int 1.3) 1)
+assume round1.3 (= (round 1.3) 1)
+assume floor1.3 (= (floor 1.3) 1)
+assume ceil1.3 (= (ceil 1.3) 2)
+
+assume intn1.3 (= (int -1.3) -1)
+assume roundn1.3 (= (round -1.3) -1)
+assume floorn1.3 (= (floor -1.3) -2)
+assume ceiln1.3 (= (ceil -1.3) -1)
+
+assume int1.8 (= (int 1.8) 1)
+assume round1.8 (= (round 1.8) 2)
+assume floor1.8 (= (floor 1.8) 1)
+assume ceil1.8 (= (ceil 1.8) 2)
+
+assume intn1.8 (= (int -1.8) -1)
+assume roundn1.8 (= (round -1.8) -2)
+assume floorn1.8 (= (floor -1.8) -2)
+assume ceiln1.8 (= (ceil -1.8) -1)
+
+assume pass (and ,
+ int0     round0     floor0     ceil0     , 
+ int0.1   round0.1   floor0.1   ceil0.1   ,
+ intn0.1  roundn0.1  floorn0.1  ceiln0.1  ,
+ int0.5   round0.5   floor0.5   ceil0.5   ,
+ intn0.5  roundn0.5  floorn0.5  ceiln0.5  ,
+ int1.0   round1.0   floor1.0   ceil1.0   ,
+ intn1.0  roundn1.0  floorn1.0  ceiln1.0  ,
+ int1.5   round1.5   floor1.5   ceil1.5   ,
+ intn1.5  roundn1.5  floorn1.5  ceiln1.5  ,
+ int1.3   round1.3   floor1.3   ceil1.3   ,
+ intn1.3  roundn1.3  floorn1.3  ceiln1.3  ,
+ int1.8   round1.8   floor1.8   ceil1.8   ,
+ intn1.8  roundn1.8  floorn1.8  ceiln1.8  )

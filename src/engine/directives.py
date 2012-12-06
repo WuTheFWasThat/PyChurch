@@ -123,12 +123,6 @@ class Directives:
     self.assume('floor', function(['x'], op('floor', [var('x')])), True)
     self.assume('ceil', function(['x'], op('ceil', [var('x')])), True)
 
-    #self.assume('floor', function(['x'], op('round', [op('-', [var('x'), num_expr(0.5)])])), True)
-    # wrong for negatives
-    #self.assume('ceil', function(['x'], op('round', [op('+', [var('x'), num_expr(0.5)])])), True)
-    # wrong for positives
-    # both wrong for 0
-
     #self.assume('power', function(['x'], op('**', [var('x')])), True)
 
     #self.assume('=', function(['x', 'y'], op('=', [var('x'), var('y')])))
@@ -348,25 +342,25 @@ class Directives:
   def parse_and_run_command(self, s):
     ret_str = 'done'
     (token, i) = parse_token(s, 0)
-    if token == 'assume':
+    if token in ['assume', 'ASSUME']:
       (var, i) = parse_token(s, i)
       (expr, i) = parse_expression(s, i)
       (val, id) = self.assume(var, expr)
       ret_str = 'value: ' + val.__str__() + '\nid: ' + str(id)
-    elif token == 'observe':
+    elif token in ['observe', 'OBSERVE']:
       (expr, i) = parse_expression(s, i)
       (val, i) = parse_value(s, i)
       id = self.observe(expr, val)
       ret_str = 'id: ' + str(id)
-    elif token == 'predict':
+    elif token in ['predict', 'PREDICT']:
       (expr, i) = parse_expression(s, i)
       (val, id) = self.predict(expr)
       ret_str = 'value: ' + val.__str__() + '\nid: ' + str(id)
-    elif token == 'forget':
+    elif token in ['forget', 'FORGET']:
       (id, i) = parse_integer(s, i)
       self.forget(id)
       ret_str = 'forgotten'
-    elif token == 'infer':
+    elif token in ['infer', 'INFER']:
       try:
         (iters, i) = parse_integer(s, i)
         try:
@@ -384,11 +378,11 @@ class Directives:
         rerun_first = False
       t = self.infer(iters, rerun_first)
       ret_str = 'time: ' + str(t)
-    elif token == 'seed':
+    elif token in ['seed']:
       (seed, i) = parse_integer(s, i)
       rrandom.random.seed(seed)
     # TODO: fix
-    elif token == 'infer_many':
+    elif token in ['infer_many']:
       (expression, i) = parse_expression(s, i)
       (niters, i) = parse_integer(s, i)
       (burnin, i) = parse_integer(s, i)
@@ -402,21 +396,21 @@ class Directives:
         table.append([str(val), str(p)])
       ret_str = table_to_string(table, ['Value', 'Count'])
       ret_str += '\nTime taken (seconds): ' + str(t)
-    elif token == 'clear':
+    elif token in ['clear', 'reset']:
       self.reset()
       ret_str = 'cleared'
-    elif token == 'report_value':
+    elif token in ['report_value', 'reportvalue']:
       (id, i) = parse_integer(s, i)
       ret_str = 'value: ' + self.report_value(id).__str__()
-    elif token == 'logscore':
+    elif token in ['log_score', 'logscore']:
       try:
         (id, i) = parse_integer(s, i)
       except:
         id = -1
       ret_str = 'logp: ' + str(self.log_score(id))
-    elif token == 'entropy':
+    elif token in ['entropy']:
       ret_str = 'entropy: ' + str(self.random_choices())
-    elif token == 'mhstats':
+    elif token in ['mhstats']:
       (detail, i) = parse_token(s, i)
       if detail == 'aggregated':
         d = self.engine.mhstats_aggregated()

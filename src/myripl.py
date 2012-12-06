@@ -70,7 +70,7 @@ class MyRIPL(RIPL):
         return msg[msg.find(substring) + len(substring):]
     
     def assume(self, name_str, expr_lst):
-        msg = "assume " + name_str + " " + expr_list_to_string(expr_lst)
+        msg = "ASSUME " + name_str + " " + expr_list_to_string(expr_lst)
 
         recv_msg = self.get_recv_msg(msg)
         msgs = recv_msg.split('\n')
@@ -80,7 +80,7 @@ class MyRIPL(RIPL):
         directive = {}
         directive["directive-id"] = id
         directive["directive-type"] = "DIRECTIVE-ASSUME"
-        directive["directive-expression"] = msg
+        directive["directive-expression"] = "(" + msg + ")"
         directive["value"] = val
         directive["name"] = name_str
         self.directive_list.append(directive)
@@ -89,7 +89,7 @@ class MyRIPL(RIPL):
         return (id, val)
 
     def observe(self, expr_lst, literal_val):
-        msg = "observe " + expr_list_to_string(expr_lst) + ' ' + str(literal_val)
+        msg = "OBSERVE " + expr_list_to_string(expr_lst) + ' ' + str(literal_val)
 
         recv_msg = self.get_recv_msg(msg)
         id = int(self.get_field(recv_msg, 'id: ')) + 1
@@ -97,7 +97,7 @@ class MyRIPL(RIPL):
         directive = {}
         directive["directive-id"] = id
         directive["directive-type"] = "DIRECTIVE-OBSERVE"
-        directive["directive-expression"] = msg
+        directive["directive-expression"] = "(" + msg + ")"
         #directive["value"] = literal_val
         self.directive_list.append(directive)
         
@@ -105,7 +105,7 @@ class MyRIPL(RIPL):
         return id
 
     def predict(self, expr_lst):
-        msg = "predict " + expr_list_to_string(expr_lst)
+        msg = "PREDICT " + expr_list_to_string(expr_lst)
 
         recv_msg = self.get_recv_msg(msg)
         msgs = recv_msg.split('\n')
@@ -115,7 +115,7 @@ class MyRIPL(RIPL):
         directive = {}
         directive["directive-id"] = id
         directive["directive-type"] = "DIRECTIVE-PREDICT"
-        directive["directive-expression"] = msg
+        directive["directive-expression"] = "(" + msg + ")"
         directive["value"] = val
         self.directive_list.append(directive)
 
