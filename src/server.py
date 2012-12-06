@@ -69,9 +69,9 @@ if flags.socket_server:
   output = output.split('\n')
   shortest = output[0]
   for x in output:
-    if 0 < len(x) < len(shortest):
+    if 5 < len(x) < len(shortest):
       shortest = x
-  pid = int(shortest[:shortest.find(' ')])
+  pid = int(shortest[:5])
 
   ripl = myripl.SocketRIPL(engine_type, "MH", pid)
 else:
@@ -99,7 +99,7 @@ def get_response(string):
     return resp
 
 @app.route('/', methods=['GET'])
-def index():
+def index(): 
     directives = ripl.report_directives()
     print_verbose("DIRECTIVES REPORT", directives)
     return get_response(json.dumps(directives))
@@ -182,8 +182,9 @@ def seed():
 @app.route('/infer', methods=['POST'])
 def infer():
     MHiterations = json.loads(request.form["MHiterations"])
-    t = ripl.infer(MHiterations)
-    print_verbose("INFER", None, {"iters": MHiterations, "time": t})
+    rerun_first = json.loads(request.form["rerun"])
+    t = ripl.infer(MHiterations, rerun_first)
+    print_verbose("INFER", None, {"iters": MHiterations, "rerun": rerun_first, "time": t})
     return get_response(json.dumps({"time": t}))
 
 @app.route('/assume', methods=['POST'])

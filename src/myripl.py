@@ -204,8 +204,8 @@ class MyRIPL(RIPL):
         s = p.communicate()[0].strip()
         return s
 
-    def infer(self, iters, infer_config=None):
-        msg = "infer " + str(iters)
+    def infer(self, iters, rerun_first):
+        msg = "infer " + str(iters)  + " " + str(rerun_first)
 
         recv_msg = self.get_recv_msg(msg)
         

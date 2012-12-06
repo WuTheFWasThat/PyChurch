@@ -298,8 +298,10 @@ class Directives:
   #        raise RException("Invalid directive %s" % directive_type)
   #  return directive_report
   
-  def infer(self, iters = 1):
+  def infer(self, iters = 1, rerun_first = False):
     t = time.time()
+    if rerun_first:
+      self.rerun()
     for i in range(iters):
       self.engine.infer()
     t = time.time() - t
@@ -356,9 +358,18 @@ class Directives:
     elif token == 'infer':
       try:
         (iters, i) = parse_integer(s, i)
+        try:
+          (token, i) = parse_token(s, i)
+          if token in ['true', 'True', 't', 'T', '1']:
+            rerun_first = True
+          elif token in ['false', 'False', 'f', 'F', '0']:
+            rerun_first = False
+        except:
+          rerun_first = False
       except:
         iters = 1
-      t = self.infer(iters)
+        rerun_first = False
+      t = self.infer(iters, rerun_first)
       ret_str = 'time: ' + str(t)
     elif token == 'seed':
       (seed, i) = parse_integer(s, i)
