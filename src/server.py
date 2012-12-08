@@ -66,6 +66,7 @@ if flags.socket_server:
     output = subprocess.Popen("ps | grep -i %s" % flags.socket_server[:8], shell = True, stdout=subprocess.PIPE).communicate()[0]
   else:
     output = subprocess.check_output("ps | grep -i %s" % flags.socket_server, shell=True)
+  print output
   output = output.split('\n')
   shortest = output[0]
   for x in output:
