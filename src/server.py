@@ -50,7 +50,6 @@ else:
 
 if flags.socket_server:
   # spawn new server thread
-  print flags.socket_server
   if py_2_6:
     def threadcall():
       subprocess.Popen("./" + flags.socket_server, shell = True)
