@@ -32,7 +32,7 @@ except:
   class Flags():
     def __init__(self):
       self.engine = 't'
-      self.socket_server = 'socket_server-traces-c'
+      self.socket_server = 'ec2-jeff-traces-server'
       self.verbose = False
       self.port = 5000
       return
@@ -63,7 +63,7 @@ if flags.socket_server:
 
   # get the pid of the spawned process (very much a hack!)
   if py_2_6:
-    output = subprocess.Popen("ps | grep -i %s" % flags.socket_server, shell = True, stdout=subprocess.PIPE).communicate()[0]
+    output = subprocess.Popen("ps | grep -i %s" % flags.socket_server[:8], shell = True, stdout=subprocess.PIPE).communicate()[0]
   else:
     output = subprocess.check_output("ps | grep -i %s" % flags.socket_server, shell=True)
   output = output.split('\n')
