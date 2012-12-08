@@ -198,7 +198,7 @@ def logscore():
     except Exception as e:
       return get_response(e.message, 400)
     print_verbose("LOGSCORE", p)
-    return get_response(json.dumps({"directive_logscore": p}))
+    return get_response(json.dumps({"total_logscore": p}))
 
 @app.route('/logscore/<int:did>', methods=['GET'])
 def logscore_observe(did):

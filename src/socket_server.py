@@ -94,24 +94,8 @@ def run(directives):
         print "\nSENT:\n%s" % ret_msg
       return 1 # could be unindented, if not for rpython
 
-def mainloop(program, bracket_map):
-    pc = 0
-    tape = Tape()
-    
-    while pc < len(program):
-      print "im in a loop"
-
-def read(fp):
-    program = ""
-    while True:
-        read = os.read(fp, 4096)
-        if len(read) == 0:
-            break
-        program += read
-    return program
-
 def entry_point(argv):
-    engine_type = 'traces'
+    engine_type = 'rt'
 
     if engine_type in ['rt', 'reduced', 'reduced_trace', 'reduced_traces', 'reducedtrace', 'reducedtraces']:
       engine = ReducedTraces()
