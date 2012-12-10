@@ -7,6 +7,10 @@ from utils.rexceptions import RException
 def check_prob(val):
   if not 0 <= val <= 1:
     raise RException("Value %s is not a valid probability" % str(val))
+  return val
+
+def ensure_prob(val):
+  check_prob(val)
   if val == 0:
     return 2**(-32)
   elif val == 1:
@@ -63,7 +67,7 @@ class noisy_negate_XRP(XRP):
     if len(args) != 2:
       raise RException("noisy_negate must take 2 arguments")
     (b, p) = (args[0].bool, args[1].num)
-    check_prob(p)
+    p = ensure_prob(p)
     if rrandom.random.random() < p:
       return BoolValue(not args[0].bool)
     else:
@@ -72,7 +76,7 @@ class noisy_negate_XRP(XRP):
     if len(args) != 2:
       raise RException("noisy_negate must take 2 arguments")
     (b, p) = (args[0].bool, args[1].num)
-    check_prob(p)
+    p = ensure_prob(p)
     if val.bool ^ b:
       return math.log(p)
     else:
@@ -88,7 +92,7 @@ class noisy_XRP(XRP):
     if len(args) != 2:
       raise RException("noisy must take 2 arguments")
     (b, p) = (args[0].bool, args[1].num)
-    check_prob(p)
+    p = ensure_prob(p)
     if b:
       return BoolValue(True)
     else:
@@ -97,7 +101,7 @@ class noisy_XRP(XRP):
     if len(args) != 2:
       raise RException("noisy must take 2 arguments")
     (b, p) = (args[0].bool, args[1].num)
-    check_prob(p)
+    p = ensure_prob(p)
     if b:
       if not val.bool:
         raise RException("Should have returned true")
@@ -154,48 +158,26 @@ class make_symmetric_array_XRP(XRP):
   def __str__(self):
     return 'array_make_XRP'
 
-class categorical_no_args_XRP(XRP):
-  def __init__(self, probs):
+class categorical_XRP(XRP):
+  def __init__(self):
     self.deterministic = False
-    self.state = None
-    self.probs = [check_prob(p) for p in probs]
-    if not .999 <= sum(self.probs) <= 1.001:
-      raise RException("Categorical probabilities must sum to 1")
-    self.n = len(self.probs)
     return
   def apply(self, args = None):
-    i = sample_categorical(self.probs)
-    if args is not None and len(args) != 0:
-      raise RException("categorical_no_args_XRP has no need to take arguments")
+    probs = [check_prob(x.num) for x in args]
+    if not .999 <= sum(probs) <= 1.001:
+      raise RException("Categorical probabilities must sum to 1")
+    i = sample_categorical(probs)
     return IntValue(i)
   def prob(self, val, args = None):
-    if args is not None and len(args) != 0:
-      raise RException("categorical_no_args_XRP has no need to take arguments")
-    if not 0 <= val.int < self.n:
-      raise RException("Categorical should only return values between 0 and %d" % self.n)
-    log_prob = math.log(self.probs[val.int])
+    probs = [check_prob(x.num) for x in args]
+    if not .999 <= sum(probs) <= 1.001:
+      raise RException("Categorical probabilities must sum to 1")
+    if not 0 <= val.int < len(probs):
+      raise RException("Categorical should only return values between 0 and %d" % len(probs))
+    log_prob = math.log(probs[val.int])
     return log_prob
   def __str__(self):
-    return 'categorical(%s)' % (self.probs)
-
-class make_symmetric_categorical_XRP(XRP):
-  def __init__(self):
-    self.deterministic = True
-    return
-  def apply(self, args = None):
-    n = args[0].nat
-    return XRPValue(categorical_no_args_XRP([1 / (n + 0.0)] * n)) 
-  def __str__(self):
-    return 'make_symmetric_categorical_XRP'
-
-class make_categorical_XRP(XRP):
-  def __init__(self):
-    self.deterministic = True
-    return
-  def apply(self, args = None):
-    return XRPValue(categorical_no_args_XRP([x.num for x in args])) 
-  def __str__(self):
-    return 'make_categorical_XRP'
+    return 'categorical_XRP'
 
 # DISTRIBUTIONS
 
@@ -228,7 +210,7 @@ class beta_XRP(XRP):
     (a , b) = (args[0].num, args[1].num)
     check_pos(a)
     check_pos(b)
-    v = check_prob(val.num)
+    v = ensure_prob(val.num)
     return math.log(math_gamma(a + b)) + (a - 1) * math.log(v)  + (b - 1) * math.log(1 - v) \
            - math.log(math_gamma(a)) - math.log(math_gamma(b))
   def __str__(self):
@@ -462,3 +444,64 @@ class make_symmetric_dirichlet_multinomial_XRP(XRP):
   def __str__(self):
     return 'symmetric_dirichlet_multinomial_make_XRP'
 
+class CRP_XRP(XRP):
+  def __init__(self, alpha):
+    self.deterministic = False
+    self.tables = {}
+    check_pos(alpha)
+    self.alpha = alpha
+    self.weight = alpha
+    return
+  def apply(self, args = None):
+    if args is not None and len(args) != 0:
+      raise RException('CRP_XRP has no need to take in arguments %s' % str(args))
+    x = rrandom.random.random() * self.weight
+    for id in self.tables:
+      x -= self.tables[id]
+      if x <= 0:
+        return NatValue(id)
+    return NatValue(rrandom.random.randbelow())
+  def incorporate(self, val, args = None):
+    if args is not None and len(args) != 0:
+      raise RException('CRP_XRP has no need to take in arguments %s' % str(args))
+    self.weight += 1
+    if val.nat in self.tables:
+      self.tables[val.nat] += 1
+    else:
+      self.tables[val.nat] = 1
+  def remove(self, val, args = None):
+    if args is not None and len(args) != 0:
+      raise RException('CRP_XRP has no need to take in arguments %s' % str(args))
+    if val.nat in self.tables:
+      if self.tables[val.nat] == 1:
+        del self.tables[val.nat]
+      else:
+        if not self.tables[val.nat] > 1:
+          raise RException("Removing from an empty table")
+        self.tables[val.nat] -= 1
+        self.weight -= 1
+    else:
+      raise RException('CRP_XRP cannot remove the value %d, as it has state %s' % (val.nat, str(self.tables.keys())))
+  def prob(self, val, args = None):
+    if args is not None and len(args) != 0:
+      raise RException('CRP_XRP has no need to take in arguments %s' % str(args))
+    if val.nat in self.tables:
+      return math.log(self.tables[val.nat]) - math.log(self.weight)
+    else:
+      return math.log(self.alpha) - math.log(self.weight)
+  def __str__(self):
+    return 'CRP(%f)' % (self.alpha)
+
+
+class gen_CRP_XRP(XRP):
+  def __init__(self):
+    self.deterministic = True
+    return
+  def apply(self, args = None):
+    alpha = args[0].num
+    check_pos(alpha)
+    return XRPValue(CRP_XRP(alpha))
+  def prob(self, val, args = None):
+    return 0
+  def __str__(self):
+    return 'CRP_XRP'

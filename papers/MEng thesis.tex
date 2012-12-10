@@ -271,9 +271,8 @@ Lastly, we allow for something much more general than the noisy observations abo
 
 The noisy expressions obtained with {\tt noisy} are a special case of this, so long as {\tt noise\_level} is non-zero.  
 
-\section{Implementations}
+\section{Reduced Traces}
 
-\subsection{The randomness database}
 
 In order to perform inference, we must store all random choices (XRP applications) in the execution of our program, so that we can evaluate and unevaluate.  
 
@@ -344,9 +343,80 @@ Technically, we use log probabilities instead of probabilities, as done here, to
 
 
 
+\subsection{The randomness database}
+
+The most naive implementation of the inference engine simply reruns the program after each iteration.  That is, we simply remember the results of all XRP applications, and 
 
 \subsection{Traces}
 
+\subsection{Reduced Traces}
+
+Consider the following program, which samples from the categorical distribution, which returns $i$ with probability $p_i$.   The distribution is represented by the procedure {\tt categorical}, which takes an argument $i$ and returns $p_i$.  It is guaranteed that for some finite $n$, $\sum_{i = 0}^{n-1} p_i = 1$
+
+\begin{verbatim}
+[ASSUME sample-categorical-loop 
+        (lambda (v i)
+                (if (< v (categorical i)) 
+                    i 
+                    (sample-categorical-loop 
+                     (- v (categorical i))
+                     (+ i 1))))] 
+
+[ASSUME sample-categorical (lambda () 
+                            (sample-categorical-loop (rand) 0)]
+\end{verbatim}
+
+Notice that using traces, we will create a node for each application of the sub-loop.  And yet it is clear that this space is un-needed.  We feed the function a single choice of randomness, and it creates up to $n$ nodes.  But if we were to reflip the application of {\tt rand}, we would need to re-evaluate the entire application again.  Thus if $n$ is large, this could be a phenomenal waste of space.  Supposing a loop like this were on the critical path of some program, we could be using a multiplicative factor of $O(n)$ more space.  
+
+One solution is to collapse this sampling into an XRP.  However, this is clearly not a satisfactory solution in general.  
+
+We essentially want to ``contract" all edges of deterministic computation in the traces graph.  
+
+The only nodes which remain will be nodes corresponding to applications of nondeterministic XRPs, and nodes which correspond to directives.  % and mem nodes
+
+MORE DESCRIPTION HERE
+
+As described, this has its pitfalls.  For example, suppose we write a program which indexes into an array using the max of two samples from the categorical distribution from the last example:
+
+\begin{verbatim}
+[ASSUME x (array-XRP (max 
+                      (sample-categorical) 
+                      (sample-categorical))) ]
+\end{verbatim}
+
+Now, each time we reflip the coin at the bottom of some {\tt sample-categorical}, we must re-evaluate both applications of sample-categorical, in order to propagate up to {\tt x}'s value.  
+
+If we were to make this a max of $n$ samples, instead of 2, this could lead to an asymptotically worse run-time.  
+
+
+\subsection{Comparison}
+
+T = time of running program
+S = space " "
+H = entropy " "
+
+\begin{table}[h]
+\caption{Engine Complexity Trade-offs} \label{sample-table}
+\begin{center}
+\begin{tabular}{c|ccc}
+& {\bf t / iter} & {\bf s} & {\bf h / iter} \\ \hline 
+{\bf Random DB} & T & H & 1? \\ 
+{\bf Traces} & envelope? & T + H? & H(site) \\
+{\bf Reduced traces} & H + dep? & env + ?	& H(site) \\
+\end{tabular}
+\end{center}
+\end{table}
+
+
+\section{}
+
+We say node $x$ is a {\em child} of node $y$, if the evaluation of $y$'s value depends on the application of $x$.  
+
+% a node can only have multiple parents if it is a top level xrp apply in some assume.  ... or if it's a men
+
+Now suppose I want to reflip the coin at some node $x$.  
+
+At each node, we cache the relative locations and values of all its children.  Furthermore, if it is an XRP application node, we also cache the application's XRP, arguments, and resulting value.  
 
 \pagebreak
 
@@ -733,6 +803,9 @@ We can now use the Dirichlet process to create something we call DPmem.  DPmem i
 
 DPmem can be used, for example, to do mixture modeling.  The idea is that we should sometimes
 
+\section{Applications}
+
+\subsection{Topic Modeling}
 
 \pagebreak
 

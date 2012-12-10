@@ -28,3 +28,6 @@ class Engine:
   def mhstats_aggregated(self):
     raise RException("Not implemented")
   
+class Node:
+  def __leq__(self, other):
+    raise RException("Not implemented")

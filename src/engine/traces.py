@@ -58,7 +58,7 @@ class EnvironmentNode(Environment):
   def spawn_child(self): 
     return EnvironmentNode(self)
 
-class EvalNode:
+class EvalNode(Node):
   def __init__(self, traces, env, expression):
     self.traces = traces
 
@@ -203,6 +203,12 @@ class EvalNode:
       for evalnode in self.mem_calls.keys():
         evalnode.propagate_up(restore_inactive)
 
+    if restore_inactive:
+      # TODO: NOT ACTUALLY SAFE, because of multiple propagation
+      for addition in self.applychildren:
+        if not self.applychildren[addition].active:
+          del self.applychildren[addition]
+      assert len(self.applychildren) < 2
     self.val = val
     return self.val
 
@@ -318,7 +324,8 @@ class EvalNode:
         new_env.set(expr.vars[i], values[i])
         if val.type == 'procedure':
           val.env = new_env
-      new_body = expr.body.replace(new_env, {}, self)
+      #new_body = expr.body.replace(new_env, {}, self)
+      new_body = expr.body
       # TODO :  should probably be an applychild
       # this doesnt work properly.  needs to be analagous to apply
       self.get_child('letbody', new_env, new_body).unevaluate()
@@ -404,11 +411,12 @@ class EvalNode:
       self.args = args
     elif self.type == 'function':
       n = len(expr.vars)
-      new_env = self.env.spawn_child()
-      bound = {}
-      for i in range(n): # Bind variables
-        bound[expr.vars[i]] = True
-      procedure_body = expr.body.replace(new_env, bound, self)
+      #new_env = self.env.spawn_child()
+      #bound = {}
+      #for i in range(n): # Bind variables
+      #  bound[expr.vars[i]] = True
+      #procedure_body = expr.body.replace(new_env, bound, self)
+      procedure_body = expr.body
       val = Procedure(expr.vars, procedure_body, self.env)
     elif self.type == '=':
       (val1, val2) = self.binary_op_evaluate(reflip)

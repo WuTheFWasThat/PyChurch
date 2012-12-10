@@ -41,7 +41,7 @@ class EnvironmentNode(Environment):
   def spawn_child(self): 
     return EnvironmentNode(self)
 
-class ReducedEvalNode:
+class ReducedEvalNode(Node):
   def __init__(self, traces, env, expression):
     self.traces = traces
 
@@ -300,7 +300,8 @@ class ReducedEvalNode:
         new_env.set(expr.vars[i], values[i])
         if val.type == 'procedure':
           val.env = new_env
-      new_body = expr.body.replace(new_env, {}, self)
+      #new_body = expr.body.replace(new_env, {}, self)
+      new_body = expr.body
       val = self.evaluate_recurse(new_body, new_env, hashval, 1, None, restore)
 
     elif expr.type == 'apply':
@@ -340,10 +341,11 @@ class ReducedEvalNode:
     elif expr.type == 'function':
       n = len(expr.vars)
       new_env = env.spawn_child()
-      bound = {}
-      for i in range(n): # Bind variables
-        bound[expr.vars[i]] = True
-      procedure_body = expr.body.replace(new_env, bound, self)
+      #bound = {}
+      #for i in range(n): # Bind variables
+      #  bound[expr.vars[i]] = True
+      #procedure_body = expr.body.replace(new_env, bound, self)
+      procedure_body = expr.body
       val = Procedure(expr.vars, procedure_body, env)
     elif expr.type == '=':
       (val1, val2) = self.binary_op_evaluate(expr, env, hashval, restore)

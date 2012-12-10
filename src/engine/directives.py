@@ -153,7 +153,7 @@ class Directives:
     self.assume('list', xrp(make_array_XRP()), True)
     self.assume('repeat', xrp(make_symmetric_array_XRP()), True)
 
-    self.assume('categorical', xrp(make_categorical_XRP()), True)
+    self.assume('categorical', xrp(categorical_XRP()), True)
 
     # BASIC DISTRIBUTIONS
 
