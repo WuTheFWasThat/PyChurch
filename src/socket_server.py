@@ -95,7 +95,7 @@ def run(directives):
       return 1 # could be unindented, if not for rpython
 
 def entry_point(argv):
-    engine_type = 'rt'
+    engine_type = 't'
 
     if engine_type in ['rt', 'reduced', 'reduced_trace', 'reduced_traces', 'reducedtrace', 'reducedtraces']:
       engine = ReducedTraces()

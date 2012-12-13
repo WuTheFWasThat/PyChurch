@@ -9,6 +9,8 @@ from utils.expr_parser import *
 import utils.infertools as infertools 
 
 import time
+import gc
+import objgraph
 
 try:
   from pypy.rlib.jit import JitDriver
@@ -316,6 +318,10 @@ class Directives:
     for i in range(iters):
       self.engine.infer()
     t = time.time() - t
+    # TODO: get rid of this
+    #gc.collect() 
+
+    #objgraph.show_refs([self.engine.assumes], filename='sample-graph' + str(time.time()) + '.png')
     return t
 
   def infer_many(self, expression, niter = 1000, burnin = 100, printiters = 0): 

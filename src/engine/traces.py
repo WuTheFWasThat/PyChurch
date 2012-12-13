@@ -31,7 +31,7 @@ class EnvironmentNode(Environment):
     self.assignments = {} # Dictionary from names to values
 
     self.assumes = {}
-    self.lookups = {} # just a set
+    self.lookups = {} # for each name, a set
     return
 
   def add_assume(self, name, evalnode):
@@ -66,8 +66,6 @@ class EvalNode(Node):
 
     self.parent = None 
     self.children = {} 
-    # TODO: get rid of this?
-    self.applychildren = {} 
     self.applychild = None
 
     self.mem = False # Whether this is the root of a mem'd procedure's application
@@ -96,22 +94,17 @@ class EvalNode(Node):
     self.hashval = rrandom.random.randbelow()
     return
 
-  def get_child(self, addition, env, subexpr, is_apply = False):
-    children = (self.applychildren if is_apply else self.children)
-
-    if addition not in children:
-      self.spawnchild(addition, env, subexpr, is_apply)
-    evalnode = children[addition]
+  def get_child(self, addition, env, subexpr):
+    if addition not in self.children:
+      self.spawnchild(addition, env, subexpr)
+    evalnode = self.children[addition]
     evalnode.env = env
     return evalnode
   
-  def spawnchild(self, addition, env, subexpr, is_apply = False):
+  def spawnchild(self, addition, env, subexpr):
     child = EvalNode(self.traces, env, subexpr)
     child.parent = self
-    if is_apply:
-      self.applychildren[addition] = child
-    else:
-      self.children[addition] = child
+    self.children[addition] = child
 
   def add_assume(self, name, env):
     if not env is self.env:
@@ -165,6 +158,12 @@ class EvalNode(Node):
       self.random_xrp_apply = True
       self.traces.add_xrp(args, self)
 
+  def delete_children(self):
+    # TODO: NOT ACTUALLY SAFE, because of multiple propagation
+    for addition in self.children.keys():
+      if not self.children[addition].active:
+        del self.children[addition]
+
   # restore_inactive:  whether to restore or to reflip inactive nodes that get activated
   def propagate_up(self, restore_inactive, start = False):
     # NOTE: 
@@ -177,14 +176,16 @@ class EvalNode(Node):
     if self.random_xrp_apply:
       if not start:
         oldval = self.val
-        val = self.evaluate(reflip = 0.5, xrp_force_val = self.val, restore = restore_inactive)
+        val = self.evaluate(reflip = 0.5, xrp_force_val = self.val)
         if not val is oldval:
           raise RException("Failed to forced val")
         return val
       else:
         val = self.val
     else:
-      val = self.evaluate(reflip = 0.5, xrp_force_val = None, restore = restore_inactive)
+      val = self.evaluate(reflip = 0.5, xrp_force_val = None)
+      if restore_inactive:
+        self.delete_children()
 
     if self.assume:
       if not self.parent is None:
@@ -203,12 +204,6 @@ class EvalNode(Node):
       for evalnode in self.mem_calls.keys():
         evalnode.propagate_up(restore_inactive)
 
-    if restore_inactive:
-      # TODO: NOT ACTUALLY SAFE, because of multiple propagation
-      for addition in self.applychildren:
-        if not self.applychildren[addition].active:
-          del self.applychildren[addition]
-      assert len(self.applychildren) < 2
     self.val = val
     return self.val
 
@@ -229,10 +224,10 @@ class EvalNode(Node):
         self.get_child('arg' + str(i), self.env, expr.children[i]).unevaluate()
       self.get_child('operator', self.env, expr.op).unevaluate()
       if self.procedure_apply: 
-        addition = ','.join([x.str_hash for x in self.args])
-        if not addition in self.applychildren:
-          raise RException("Addition not in applychildren")
-        self.applychildren[addition].unevaluate()
+        addition = ','.join(['apply'] + [x.str_hash for x in self.args])
+        if not addition in self.children:
+          raise RException("Addition not in children")
+        self.children[addition].unevaluate()
       else:
         if not self.xrp_apply:
           raise RException("Apply is neither procedure nor xrp apply")
@@ -244,8 +239,8 @@ class EvalNode(Node):
     self.active = False
     return
 
-  def evaluate_recurse(self, subexpr, env, addition, reflip, is_apply = False):
-    child = self.get_child(addition, env, subexpr, is_apply)
+  def evaluate_recurse(self, subexpr, env, addition, reflip):
+    child = self.get_child(addition, env, subexpr)
     val = child.evaluate(reflip == True, None)
     return val
   
@@ -261,7 +256,7 @@ class EvalNode(Node):
   #          0.5 # reflip current, but don't recurse
   #          0 # reflip nothing
   # restore - whether we are restoring, in MH 
-  def evaluate(self, reflip = False, xrp_force_val = None, restore = False):
+  def evaluate(self, reflip = False, xrp_force_val = None):
     if reflip == False and self.active:
       if self.val is None:
         raise RException("Active node has no value")
@@ -287,8 +282,6 @@ class EvalNode(Node):
         false_child = self.get_child('false', self.env, expr.false)
         if false_child.active:
           false_child.unevaluate()
-          if reflip == 0.5:
-            reflip = not restore
           val = self.evaluate_recurse(expr.true, self.env, 'true', reflip)
         else:
           val = self.evaluate_recurse(expr.true, self.env, 'true', reflip)
@@ -296,8 +289,6 @@ class EvalNode(Node):
         true_child = self.get_child('true', self.env, expr.true)
         if true_child.active:
           true_child.unevaluate()
-          if reflip == 0.5:
-            reflip = not restore
           val = self.evaluate_recurse(expr.false, self.env, 'false', reflip)
         else:
           val = self.evaluate_recurse(expr.false, self.env, 'false', reflip)
@@ -326,8 +317,6 @@ class EvalNode(Node):
           val.env = new_env
       #new_body = expr.body.replace(new_env, {}, self)
       new_body = expr.body
-      # TODO :  should probably be an applychild
-      # this doesnt work properly.  needs to be analagous to apply
       self.get_child('letbody', new_env, new_body).unevaluate()
       val = self.evaluate_recurse(new_body, new_env, 'letbody', reflip)
 
@@ -348,19 +337,18 @@ class EvalNode(Node):
         new_env = op.env.spawn_child()
         for i in range(n):
           new_env.set(op.vars[i], args[i])
-        addition = ','.join([x.str_hash for x in args])
+        addition = ','.join(['apply'] + [x.str_hash for x in args])
 
-        applychild = self.get_child(addition, new_env, op.body, True)
+        applychild = self.get_child(addition, new_env, op.body)
 
         if self.applychild is applychild:
-          val = self.evaluate_recurse(op.body, new_env, addition, reflip, True)
+          val = self.evaluate_recurse(op.body, new_env, addition, reflip)
         else:
           if self.applychild is not None:
             self.applychild.unevaluate()
-          if reflip == 0.5:
-            reflip = not restore
-          val = self.evaluate_recurse(op.body, new_env, addition, reflip, True)
+          val = self.evaluate_recurse(op.body, new_env, addition, reflip)
         self.applychild = applychild
+        self.applyaddition = addition
       elif op.type == 'xrp':
         self.xrp_apply = True
         xrp = op.xrp
@@ -509,7 +497,7 @@ class EvalNode(Node):
   def reflip(self, force_val = None, restore_inactive = False):
     #if use_jit:
     #  jitdriver.jit_merge_point(node=self.val)
-    self.evaluate(reflip = 0.5, xrp_force_val = force_val, restore = restore_inactive)
+    self.evaluate(reflip = 0.5, xrp_force_val = force_val)
     if not self.random_xrp_apply:
       raise RException("Reflipping something that isn't a random xrp apply")
     self.propagate_up(restore_inactive, True)
@@ -529,8 +517,6 @@ class EvalNode(Node):
       string += ", VALUE = " + str(self.val)
       for key in self.children:
         string += self.children[key].str_helper(n + 2)
-      for key in self.applychildren:
-        string += self.applychildren[key].str_helper(n + 2)
     return string
 
   def __str__(self):
@@ -704,7 +690,7 @@ class Traces(Engine):
   
     p = rrandom.random.random()
     if new_p + new_to_old_q - old_p - old_to_new_q < math.log(p):
-      new_val = reflip_node.reflip(old_val, True)
+      reflip_node.reflip(old_val, True)
 
       if debug: 
         print 'restore'
@@ -720,6 +706,7 @@ class Traces(Engine):
       #assert self.eval_p == uneval_p
       # May not be true, because sometimes things get removed then incorporated
     else:
+      reflip_node.reflip(new_val, True)
       if self.mhstats_details:
         if reflip_node.hashval in self.mhstats:
           self.mhstats[reflip_node.hashval]['accepted-proposals'] += 1
@@ -728,6 +715,7 @@ class Traces(Engine):
           self.mhstats[reflip_node.hashval]['accepted-proposals'] = 1
           self.mhstats[reflip_node.hashval]['made-proposals'] = 0
       self.accepted_proposals += 1
+
     if self.mhstats_details:
       if reflip_node.hashval in self.mhstats:
         self.mhstats[reflip_node.hashval]['made-proposals'] += 1 
