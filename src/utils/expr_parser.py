@@ -92,6 +92,8 @@ def parse_op(s, i, operator):
       operator = '^'
     elif operator == 'not':
       operator = '~'
+    elif operator == 'pow':
+      operator = '**'
     (children, i) = parse_expr_list(s, i)
     return (op(operator, children), i)
 
@@ -134,6 +136,7 @@ def parse_expression(s, i):
       elif token in [
                      '=', '<', '<=', '>', '>=',
                      '+', '-', '*', '/', '%', \
+                     'pow', '**', \
                      '&', '|', '^', '~', \
                      'and', 'or', 'xor', 'not' \
                     ]:

@@ -26,6 +26,7 @@ class Expression:
     self.hashval = rrandom.random.randbelow()
     pass
 
+  # TODO: GET RID OF THIS!
   def replace(self, env, bound = {}, help = None):
     # For traces and reduced traces, help is an evalnode
     pass

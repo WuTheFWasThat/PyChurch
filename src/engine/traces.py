@@ -477,6 +477,10 @@ class EvalNode(Node):
       val1 = self.evaluate_recurse(expr.children[0] , self.env, 'div0', reflip)
       val2 = self.evaluate_recurse(expr.children[1] , self.env, 'div1', reflip)
       val = val1.__div__(val2)
+    elif self.type == '**':
+      val1 = self.evaluate_recurse(expr.children[0] , self.env, 'base', reflip)
+      val2 = self.evaluate_recurse(expr.children[1] , self.env, 'exp', reflip)
+      val = val1.__pow__(val2)
     elif self.type == '%':
       val1 = self.evaluate_recurse(expr.children[0] , self.env, 'val', reflip)
       val2 = self.evaluate_recurse(expr.children[1] , self.env, 'modulus', reflip)

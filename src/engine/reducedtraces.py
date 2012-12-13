@@ -418,6 +418,10 @@ class ReducedEvalNode(Node):
       val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
       val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 2, None, restore)
       val = val1.__div__(val2)
+    elif expr.type == '**':
+      val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
+      val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 2, None, restore)
+      val = val1.__pow__(val2)
     elif expr.type == '%':
       val1 = self.evaluate_recurse(expr.children[0], env, hashval, 1, None, restore)
       val2 = self.evaluate_recurse(expr.children[1], env, hashval, 2, None, restore)

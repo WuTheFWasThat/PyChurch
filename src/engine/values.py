@@ -56,6 +56,8 @@ class Value:
     raise RException("Invalid operation")
   def __div__(self, other):
     raise RException("Invalid operation")
+  def __pow__(self, other):
+    raise RException("Invalid operation")
   def __mod__(self, other):
     raise RException("Invalid operation")
   def __and__(self, other):
@@ -161,6 +163,8 @@ class NumValue(Value):
     return NumValue(self.num * other.num)
   def __div__(self, other):
     return NumValue(self.num / (other.num + 0.0))
+  def __pow__(self, other):
+    return NumValue(self.num ** other.num)
   def __inv__(self):
     return NumValue(- self.num)
   def __abs__(self):
@@ -230,6 +234,15 @@ class IntValue(NumValue):
         return NatValue(self.int * other.int)
     else:
       return NumValue(self.num * other.num)
+  def __pow__(self, other):
+    if other.type == 'nat':
+      intval = self.int ** other.int
+      if intval < 0:
+        return IntValue(self.int ** other.int)
+      else:
+        return NatValue(self.int ** other.int)
+    else:
+      return NumValue(self.num ** other.num)
   def __mod__(self, other):
     return NumValue(self.int % other.nat)
   def __abs__(self):
