@@ -99,7 +99,7 @@ class FunctionExpression(Expression):
     return FunctionExpression(self.vars, body) 
     
   def __str__(self):
-    return '(lambda %s : %s)' % (str(self.vars), str(self.body))
+    return '(lambda %s %s)' % (str(self.vars), str(self.body))
 
 class IfExpression(Expression):
   def __init__(self, cond, true, false):
@@ -116,7 +116,7 @@ class IfExpression(Expression):
     return IfExpression(cond, true, false)
   
   def __str__(self):
-    return '(if %s then %s else %s)' % (str(self.cond), str(self.true), str(self.false))
+    return '(if %s %s %s)' % (str(self.cond), str(self.true), str(self.false))
 
 class LetExpression(Expression):
   def __init__(self, bindings, body):
@@ -150,11 +150,7 @@ class OpExpression(Expression):
     return OpExpression(self.type, children)
   
   def __str__(self):
-    if len(self.children) == 1:
-      return self.type + '(' + str(self.children[0]) + ')'
-      
-    return self.type.join(['(' + str(x) + ')' for x in self.children])
-    # return self.type +  '(' + ','.join([str(x) for x in self.children]) + ')'
+    return '(' + self.type + ' ' + ' '.join([str(x) for x in self.children]) + ')'
 
 # TODO: get rid of this stuff?
 

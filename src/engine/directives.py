@@ -281,35 +281,52 @@ class Directives:
     value = self.engine.report_value(id)
     return value
   
-  #def report_directives(self, desired_directive_type = ""):
-  #  directive_report = []
-  #  for id in range(len(self.directives)):
-  #    directive_type = self.directives[id]
-  #    if desired_directive_type in ["", directive_type]:
-  #      d = {}
-  #      d["directive-id"] = str(id)
-  #      if directive_type == 'assume':
-  #        (varname, expr) = self.assumes[id]
-  #        d["directive-type"] = "DIRECTIVE-ASSUME"
-  #        d["directive-expression"] = expr.__str__()
-  #        d["name"] = varname
-  #        d["value"] = self.report_value(id).__str__()
-  #        directive_report.append(d)
-  #      elif directive_type == 'observe':
-  #        (expr, val, active) = self.observes[id]
-  #        d["directive-type"] = "DIRECTIVE-OBSERVE"
-  #        d["directive-expression"] = expr.__str__()
-  #        #d["value"] = self.report_value(id).__str__()
-  #        directive_report.append(d)
-  #      elif directive_type == 'predict':
-  #        (expr, active) = self.predicts[id]
-  #        d["directive-type"] = "DIRECTIVE-PREDICT"
-  #        d["directive-expression"] = expr.__str__()
-  #        d["value"] = self.report_value(id).__str__()
-  #        directive_report.append(d)
-  #      else:
-  #        raise RException("Invalid directive %s" % directive_type)
-  #  return directive_report
+  def report_directives(self, desired_directive_type = ""):
+    directive_report = []
+    for id in range(len(self.directives)):
+      directive_type = self.directives[id]
+      if desired_directive_type in ["", directive_type]:
+        d = {}
+        if directive_type == 'assume':
+          (varname, expr) = self.assumes[id]
+          value = self.report_value(id)
+        elif directive_type == 'observe':
+          (expr, value, active) = self.observes[id]
+        elif directive_type == 'predict':
+          (expr, active) = self.predicts[id]
+          value = self.report_value(id)
+        else:
+          raise RException("Invalid directive %s" % directive_type)
+        directive = [str(id), directive_type, expr.__str__(), value.__str__()]
+        directive_report.append(directive)
+    #directive_report = []
+    #for id in range(len(self.directives)):
+    #  directive_type = self.directives[id]
+    #  if desired_directive_type in ["", directive_type]:
+    #    d = {}
+    #    d["directive-id"] = str(id)
+    #    if directive_type == 'assume':
+    #      (varname, expr) = self.assumes[id]
+    #      d["directive-type"] = "DIRECTIVE-ASSUME"
+    #      d["directive-expression"] = expr.__str__()
+    #      d["name"] = varname
+    #      d["value"] = self.report_value(id).__str__()
+    #      directive_report.append(d)
+    #    elif directive_type == 'observe':
+    #      (expr, val, active) = self.observes[id]
+    #      d["directive-type"] = "DIRECTIVE-OBSERVE"
+    #      d["directive-expression"] = expr.__str__()
+    #      #d["value"] = self.report_value(id).__str__()
+    #      directive_report.append(d)
+    #    elif directive_type == 'predict':
+    #      (expr, active) = self.predicts[id]
+    #      d["directive-type"] = "DIRECTIVE-PREDICT"
+    #      d["directive-expression"] = expr.__str__()
+    #      d["value"] = self.report_value(id).__str__()
+    #      directive_report.append(d)
+    #    else:
+    #      raise RException("Invalid directive %s" % directive_type)
+    return directive_report
   
   def infer(self, iters = 1, rerun_first = False):
     t = time.time()
@@ -324,16 +341,17 @@ class Directives:
     #objgraph.show_refs([self.engine.assumes], filename='sample-graph' + str(time.time()) + '.png')
     return t
 
-  def infer_many(self, expression, niter = 1000, burnin = 100, printiters = 0): 
+  def infer_many(self, expression, niter = 1000, burnin = 100, skip = 1, printiters = 0): 
     self.rerun()
     dict = {}
     (val, id) = self.predict(expression)
   
+    self.infer(burnin)
     for n in range(niter):
       if printiters > 0 and n % printiters == 0:  
         print n, "iters"
   
-      self.infer(burnin)
+      self.infer(skip)
   
       val = self.report_value(id).__hash__()
       if val in dict:
@@ -354,7 +372,9 @@ class Directives:
   def parse_and_run_command(self, s):
     ret_str = 'done'
     (token, i) = parse_token(s, 0)
-    if token in ['assume', 'ASSUME']:
+    if token in ['#']:
+      ret_str = 'Line ignored'
+    elif token in ['assume', 'ASSUME']:
       (var, i) = parse_token(s, i)
       (expr, i) = parse_expression(s, i)
       (val, id) = self.assume(var, expr)
@@ -397,9 +417,16 @@ class Directives:
     elif token in ['infer_many']:
       (expression, i) = parse_expression(s, i)
       (niters, i) = parse_integer(s, i)
-      (burnin, i) = parse_integer(s, i)
+      try:
+        (burnin, i) = parse_integer(s, i)
+      except:
+        burnin = 0
+      try:
+        (skip, i) = parse_integer(s, i)
+      except:
+        skip = 1
       t = time.time()
-      d = self.infer_many(expression, niters, burnin)
+      d = self.infer_many(expression, niters, burnin, skip)
       t = time.time() - t
       ret_str = '\n'
       table = []
@@ -444,10 +471,13 @@ class Directives:
           ret_str += '\n  made-proposals: ' + str(d[key]['made-proposals'])
           ret_str += '\n  accepted-proposals: ' + str(d[key]['accepted-proposals'])
           ret_str += '\n'
-    #elif token == 'report_directives':
-    #  (directive_type, i) = parse_token(s, i)
-    #  directives_report = self.report_directives(directive_type)
-    #  ret_str = table_to_string(directives_report, ['id', 'directive', 'value'])
+    elif token == 'report_directives':
+      try:
+        (directive_type, i) = parse_token(s, i)
+      except:
+        directive_type = ''
+      directives_report = self.report_directives(directive_type)
+      ret_str = table_to_string(directives_report, ['id', 'type', 'expression', 'value'])
     else:
-      raise RException("Invalid directive")
+      raise RException("Invalid command")
     return ret_str

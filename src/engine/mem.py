@@ -120,7 +120,7 @@ class mem_proc_XRP(XRP):
   def is_mem_proc(self):
     return True
   def __str__(self):
-    return 'Memoization of %s XRP' % str(self.procedure)
+    return '(MEM\'d %s)' % str(self.procedure)
 
 class mem_XRP(XRP):
   def __init__(self):
@@ -177,5 +177,5 @@ class mem_XRP(XRP):
   def is_mem(self):
     return True
   def __str__(self):
-    return 'Memoization XRP'
+    return 'mem'
 
