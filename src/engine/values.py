@@ -148,13 +148,21 @@ class NumValue(Value):
   def __eq__(self, other):
     return BoolValue((self.type == other.type) and (self.num == other.num))
   def __gt__(self, other):
-    return BoolValue((self.type == other.type) and (self.num > other.num))
+    if other.type not in ['num', 'int', 'nat']:
+      raise RException("Invalid comparison")
+    return BoolValue((self.num > other.num))
   def __ge__(self, other):
-    return BoolValue((self.type == other.type) and (self.num >= other.num))
+    if other.type not in ['num', 'int', 'nat']:
+      raise RException("Invalid comparison")
+    return BoolValue((self.num >= other.num))
   def __lt__(self, other):
-    return BoolValue((self.type == other.type) and (self.num < other.num))
+    if other.type not in ['num', 'int', 'nat']:
+      raise RException("Invalid comparison")
+    return BoolValue((self.num < other.num))
   def __le__(self, other):
-    return BoolValue((self.type == other.type) and (self.num <= other.num))
+    if other.type not in ['num', 'int', 'nat']:
+      raise RException("Invalid comparison")
+    return BoolValue((self.num <= other.num))
   def __add__(self, other):
     return NumValue(self.num + other.num)
   def __sub__(self, other):
