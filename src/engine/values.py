@@ -231,36 +231,38 @@ class IntValue(NumValue):
     if other.type == 'int' or other.type == 'nat':
       intval = self.int + other.int
       if intval < 0:
-        return IntValue(self.int + other.int)
+        return IntValue(intval)
       else:
-        return NatValue(self.int + other.int)
+        return NatValue(intval)
     else:
       return NumValue(self.num + other.num)
   def __sub__(self, other):
     if other.type == 'int' or other.type == 'nat':
       intval = self.int - other.int
       if intval < 0:
-        return IntValue(self.int - other.int)
+        return IntValue(intval)
       else:
-        return NatValue(self.int - other.int)
+        return NatValue(intval)
     else:
       return NumValue(self.num - other.num)
   def __mul__(self, other):
     if other.type == 'int' or other.type == 'nat':
       intval = self.int * other.int
       if intval < 0:
-        return IntValue(self.int * other.int)
+        return IntValue(intval)
       else:
-        return NatValue(self.int * other.int)
+        return NatValue(intval)
     else:
       return NumValue(self.num * other.num)
   def __pow__(self, other):
     if other.type == 'nat':
-      intval = self.int ** other.int
+      intval = 1
+      for i in range(other.int):
+        intval = intval * self.int
       if intval < 0:
-        return IntValue(self.int ** other.int)
+        return IntValue(intval)
       else:
-        return NatValue(self.int ** other.int)
+        return NatValue(intval)
     else:
       return NumValue(math.pow(self.num, other.num))
   def __mod__(self, other):
