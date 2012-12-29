@@ -135,6 +135,16 @@ class BoolValue(Value):
   def __nonzero__(self):
     return self.bool
 
+# TODO: use this?
+def MakeNumValue(val):
+  if int(val) == val:
+    if val >= 0:
+      return NatValue(val)
+    else:
+      return IntValue(val)
+  else:
+    return NumValue(val)
+
 class NumValue(Value):
   def __init__(self, num):
     self.initialize()
@@ -172,11 +182,13 @@ class NumValue(Value):
   def __div__(self, other):
     return NumValue(self.num / (other.num + 0.0))
   def __pow__(self, other):
-    return NumValue(self.num ** other.num)
+    return NumValue(math.pow(self.num, other.num))
   def __inv__(self):
     return NumValue(- self.num)
   def __abs__(self):
     return NumValue(abs(self.num))
+  #def __mod__(self, other):
+  #  return NumValue(self.num % other.nat)
   def __int__(self): # round towards zero
     val = int(self.num)
     if val < 0:
@@ -250,9 +262,9 @@ class IntValue(NumValue):
       else:
         return NatValue(self.int ** other.int)
     else:
-      return NumValue(self.num ** other.num)
+      return NumValue(math.pow(self.num, other.num))
   def __mod__(self, other):
-    return NumValue(self.int % other.nat)
+    return NatValue(self.int % other.nat)
   def __abs__(self):
     return NatValue(abs(self.int))
   def __inv__(self):

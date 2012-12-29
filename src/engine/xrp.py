@@ -274,7 +274,7 @@ class uniform_discrete_XRP(XRP):
   def prob(self, val, args = None):
     n = args[0].nat
     if not 0 <= val.nat < n:
-      raise RException("uniform_args_XRP should return something between 0 and %d, not %d" % (n, val.nat))
+      raise RException("uniform_discrete_XRP should return something between 0 and %d, not %d" % (n, val.nat))
     return -math.log(n)
   def __str__(self):
     return 'uniform'

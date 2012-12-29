@@ -323,6 +323,8 @@ class EvalNode(Node):
     elif self.type == 'apply':
       n = len(expr.children)
       args = [self.evaluate_recurse(expr.children[i], self.env, 'arg' + str(i), reflip) for i in range(n)]
+      if len(args) == 4:
+        print args
       op = self.evaluate_recurse(expr.op, self.env, 'operator', reflip)
 
       if xrp_force_val is not None:
