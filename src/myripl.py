@@ -356,7 +356,7 @@ class DirectRIPL(MyRIPL):
     def get_recv_msg(self, msg):
         try:
           ret_msg = self.directives.parse_and_run_command(msg)
-        except RException as e:
+        except Exception as e:
           self.lock.release() # should be locked when here
           raise Exception(e.message)
         return ret_msg
