@@ -91,10 +91,12 @@ def print_verbose(header, message = None, args = None):
       print message 
 
 def get_response(string, status_code = 200):
+    print "GETTING RESPONSE"
     resp = make_response(string)
     resp.status_code = status_code
     #resp.data = json.dumps(directives)
     resp.headers['Access-Control-Allow-Origin'] = '*'
+    print "RESPONSE GOTTEN"
     return resp
 
 @app.route('/', methods=['GET'])
@@ -110,11 +112,13 @@ def index():
 @app.route('/', methods=['POST'])
 # DELETE
 def clear():
+    print "CLEARING"
     try:
       ripl.clear()
     except Exception as e:
       return get_response(e.message, 400)
     print_verbose("CLEARED")
+    print "CLEARED"
     return get_response(json.dumps({}))
 
 @app.route('/<int:did>', methods=['POST'])
@@ -236,8 +240,10 @@ def assume():
     try:
       (d_id, val) = ripl.assume(name_str, expr_lst)
     except Exception as e:
+      print "EXCEPTION"
       return get_response(e.message, 400)
     print_verbose("ASSUME", {"d_id": d_id, "val": val}, {"name": name_str, "expression": expr_lst})
+    print "NO EXCEPTION"
     return get_response(json.dumps({"d_id": d_id,
                        "val": val}))
 
@@ -254,6 +260,7 @@ def observe():
 
 @app.route('/predict', methods=['POST'])
 def predict():
+    print "PREDICTING"
     expr_lst = json.loads(request.form["expr_lst"])
     try:
       (d_id, val) = ripl.predict(expr_lst)
