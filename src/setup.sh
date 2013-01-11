@@ -43,7 +43,6 @@ sudo yum -y install atlas-devel
 sudo yum install lapack
 #sudo pip install scipy
 
-
 #sudo easy_install -U distribute
 #sudo yum -y install python-devel
 

@@ -31,6 +31,10 @@ PORT: The number of some port
 The -v flag toggles whether the server should print its activity
 
 -----------------------
+SETUP ON EC2
+-----------------------
+
+-----------------------
 CREATING THE C BINARIES
 -----------------------
 
