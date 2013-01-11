@@ -34,6 +34,8 @@ The -v flag toggles whether the server should print its activity
 SETUP ON EC2
 -----------------------
 
+See ec2_setup.txt
+
 -----------------------
 CREATING THE C BINARIES
 -----------------------
@@ -55,3 +57,17 @@ You can also compile a faster version of the server by doing the following:
 --------------------
 DEFINING CUSTOM XRPs
 --------------------
+
+See /src/engine/values.py for class definition
+See /src/engine/xrp.py for examples
+
+Remember to set self.deterministic, depending on whether your XRP is deterministic!  
+
+--------------------
+ADDING PRIMITIVE PROCEDURES
+--------------------
+
+See /src/engine/directives.py for examples. (Search for "PRIMITIVE PROCEDURES".)
+The syntax for expressions can be found near the bottom of /src/engine/expressions.py (or you can simply follow the examples).
+Don't forget the 3rd argument must be set to 'True'.
+

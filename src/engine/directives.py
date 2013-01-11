@@ -114,6 +114,8 @@ class Directives:
   def reset_engine(self):
     self.engine.reset()
   
+    ### PRIMITIVE PROCEDURES ###
+
     # BASIC OPERATIONS
 
     self.assume('inc', function(['x'], op('+', [var('x'), nat_expr(1)])), True)
