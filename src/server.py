@@ -2,8 +2,6 @@ import flask
 from flask import request
 from flask import make_response
 
-
-
 import json
 
 import myripl
@@ -43,8 +41,8 @@ if engine_type in ['rt', 'reduced', 'reduced_trace', 'reduced_traces', 'reducedt
   engine_type = 'reduced traces'
 elif engine_type in ['t', 'trace', 'traces']:
   engine_type = 'traces'
-elif engine_type in ['r', 'db', 'randomdb']:
-  engine_type = 'randomdb'
+#elif engine_type in ['r', 'db', 'randomdb']:
+#  engine_type = 'randomdb'
 else:
   raise Exception("Engine %s is not implemented" % engine_type)
 

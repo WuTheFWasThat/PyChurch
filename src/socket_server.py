@@ -11,7 +11,6 @@ from utils.rexceptions import RException
 from engine.directives import Directives 
 from engine.traces import *
 from engine.reducedtraces import *
-from engine.randomdb import *
 
 try:
   from pypy.rlib import rsocket
@@ -101,8 +100,8 @@ def entry_point(argv):
       engine = ReducedTraces()
     elif engine_type in ['t', 'trace', 'traces']:
       engine = Traces()
-    elif engine_type in ['r', 'db', 'randomdb']:
-      engine = RandomDB()
+    #elif engine_type in ['r', 'db', 'randomdb']:
+    #  engine = RandomDB()
     else:
       raise RException("Engine %s is not implemented" % engine_type)
     

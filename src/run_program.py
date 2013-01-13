@@ -1,7 +1,6 @@
 from engine.directives import Directives 
 from engine.traces import *
 from engine.reducedtraces import *
-from engine.randomdb import *
 
 import time
 
@@ -27,8 +26,8 @@ if __name__ == "__main__":
     engine = ReducedTraces()
   elif engine_type in ['t', 'trace', 'traces']:
     engine = Traces()
-  elif engine_type in ['r', 'db', 'randomdb']:
-    engine = RandomDB()
+  # elif engine_type in ['r', 'db', 'randomdb']:
+  #  engine = RandomDB()
   else:
     raise RException("Engine %s is not implemented" % engine_type)
   

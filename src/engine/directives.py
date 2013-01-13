@@ -6,7 +6,6 @@ import utils.rrandom as rrandom
 from utils.format import table_to_string
 from utils.rexceptions import RException
 from utils.expr_parser import *
-import utils.infertools as infertools 
 
 import time
 import gc
