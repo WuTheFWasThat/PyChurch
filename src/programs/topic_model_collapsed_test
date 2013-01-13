@@ -1,0 +1,42 @@
+assume ntopics 2
+assume nwords 3
+
+assume get-topic-word-hyper (lambda (x) .1), (mem (lambda (topic) (gamma .1 1)))
+
+assume get-document-topic-hyper (lambda (x) .1), (mem (lambda (doc) (gamma .1 1)))
+
+assume get-document-topic-sampler (mem (lambda (doc) (symmetric-dirichlet-multinomial/make (/ (get-document-topic-hyper doc) ntopics) ntopics)))
+
+assume get-topic-word-sampler (mem (lambda (topic) (symmetric-dirichlet-multinomial/make (/ (get-topic-word-hyper topic) nwords) nwords)))
+
+assume get-word (mem (lambda (doc pos) ((get-topic-word-sampler ((get-document-topic-sampler doc))))))
+
+observe (noisy (= (get-word 0 0) 1) 0.01) true
+observe (noisy (= (get-word 0 1) 1) 0.01) true
+observe (noisy (= (get-word 0 2) 1) 0.01) true
+observe (noisy (= (get-word 0 3) 1) 0.01) true
+observe (noisy (= (get-word 0 4) 1) 0.01) true
+observe (noisy (= (get-word 0 5) 1) 0.01) true
+observe (noisy (= (get-word 0 6) 1) 0.01) true
+
+observe (noisy (= (get-word 1 0) 2) 0.01) true
+observe (noisy (= (get-word 1 1) 2) 0.01) true
+observe (noisy (= (get-word 1 2) 2) 0.01) true
+observe (noisy (= (get-word 1 3) 0) 0.01) true
+observe (noisy (= (get-word 1 4) 0) 0.01) true
+observe (noisy (= (get-word 1 5) 0) 0.01) true
+observe (noisy (= (get-word 1 6) 0) 0.01) true
+
+predict (get-topic-word-sampler 0)
+predict (get-topic-word-sampler 1)
+
+predict (get-document-topic-sampler 0)
+predict (get-document-topic-sampler 1)
+
+infer 20000
+
+predict (get-topic-word-sampler 0)
+predict (get-topic-word-sampler 1)
+predict (get-document-topic-sampler 0)
+predict (get-document-topic-sampler 1)
+

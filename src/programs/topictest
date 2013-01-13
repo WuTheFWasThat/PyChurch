@@ -1,0 +1,46 @@
+assume ts (mem (lambda (d) (symmetric-dirichlet-multinomial/make 2 3)))
+
+assume a (ts 0)
+assume b (ts 1)
+assume c (ts 2)
+assume d (ts 3)
+assume e (ts 4)
+
+observe (noisy (= (a) 1) .01) true
+observe (noisy (= (a) 1) .01) true
+observe (noisy (= (a) 1) .01) true
+
+observe (noisy (= (b) 0) .01) true
+observe (noisy (= (b) 0) .01) true
+observe (noisy (= (b) 0) .01) true
+
+observe (noisy (= (c) 0) .01) true
+observe (noisy (= (c) 0) .01) true
+observe (noisy (= (c) 1) .01) true
+observe (noisy (= (c) 1) .01) true
+
+observe (noisy (= (d) 1) .01) true
+observe (noisy (= (d) 0) .01) true
+observe (noisy (= (d) 1) .01) true
+observe (noisy (= (d) 1) .01) true
+
+observe (noisy (= (e) 1) .01) true
+observe (noisy (= (e) 0) .01) true
+observe (noisy (= (e) 0) .01) true
+observe (noisy (= (e) 0) .01) true
+
+infer 1000
+
+predict a
+predict b
+predict c
+predict d
+predict e
+
+infer_many (a) 10000 1
+infer_many (b) 10000 1
+infer_many (c) 10000 1
+infer_many (d) 10000 1
+infer_many (e) 10000 1
+
+logscore

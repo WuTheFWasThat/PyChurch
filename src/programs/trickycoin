@@ -1,0 +1,8 @@
+assume get-tricky (lambda () ((lambda (weight) (lambda () (bernoulli weight))) (rand)))
+
+assume coin1 (get-tricky)
+
+assume coin2 (get-tricky)
+
+infer_many (coin1)  1000 1
+infer_many (coin2)  1000 1

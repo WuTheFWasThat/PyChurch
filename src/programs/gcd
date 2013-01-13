@@ -1,0 +1,59 @@
+
+# 2221 * 5243
+# assume N 11644703
+
+# 2221
+
+clear
+
+assume P (uniform-discrete 1000 10000)
+assume multiples (mem (lambda (id) (+ (* P (uniform-discrete 1 5243)) (uniform-discrete -10 10))))
+ 
+clear
+
+assume Ps (mem (lambda (id) (uniform-discrete 10 20)))
+assume multiples (mem (lambda (id) (+ (* (Ps id) (uniform-discrete 1 20)) (uniform-discrete -1 1))))
+
+observe (gaussian (- (Ps 0) (Ps 1)) 2) 0
+observe (gaussian (- (Ps 1) (Ps 2)) 2) 0
+observe (gaussian (- (Ps 2) (Ps 3)) 2) 0
+observe (gaussian (- (Ps 3) (Ps 4)) 2) 0
+
+observe (noisy (< (abs (- (multiples 0) 170)) 1.1) .001) True
+observe (noisy (< (abs (- (multiples 1) 104)) 1.1) .001) True
+observe (noisy (< (abs (- (multiples 2) 077)) 1.1) .001) True
+observe (noisy (< (abs (- (multiples 3) 220)) 1.1) .001) True
+observe (noisy (< (abs (- (multiples 4) 260)) 1.1) .001) True
+
+# 170, 104, 77, 220, 260, 221, 104, 222, 117, 195, 64, 194, 14, 142, 208
+
+clear
+
+# infer 10000
+# 
+# predict (Ps 0)
+# predict (Ps 1)
+# predict (Ps 2)
+# predict (Ps 3)
+# predict (Ps 4)
+# predict (multiples 0)
+# predict (multiples 1)
+# predict (multiples 2)
+# predict (multiples 3)
+# predict (multiples 4)
+# 
+# report_directives
+# infer 10000
+# report_directives
+# 
+
+assume get_noise (lambda ( ) (uniform-discrete 
+assume gcd (lambda (a b) (if (> b a) (gcd b a) (if (= b 0) a (gcd b (% a b)))))
+
+assume noisy_gcd (lambda (a b ea eb) (if (> b a) (noisy_gcd b a eb ea) ,
+(if (<= b eb) a,
+(noisy_gcd b (% (uniform-discrete (- a ea) (+ a ea)) b) eb (int (/ ea (/ a b)))))))
+
+predict (noisy_gcd 1500 21001 5 5)
+predict (noisy_gcd 150000 130000 5 5)
+
