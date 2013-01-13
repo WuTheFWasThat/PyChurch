@@ -3,6 +3,27 @@ import utils.rhash as rhash
 from utils.rexceptions import RException
 import math
 
+# transition // for inference on theta, the internal randomness generated during init
+# marg (scoring total probability of all applications);
+# propose (re-propose a particular application)
+
+
+# class XRP:
+#   def __init__(self, initargs):
+#     #self.deterministic = False
+#     #self.initargs = initargs
+#     #self.state = None
+#     raise RException("Not implemented")
+#   def transition(self, args, vals, theta, initargs):
+#     raise RException("Not implemented")
+#   def joint(args, vals, state, initargs, theta):
+#     raise RException("Not implemented")
+#   def mhprop(args, oldval, state, initargs, theta)
+#     # returns newval, q->, q-<
+#     raise RException("Not implemented")
+#   def __str__(self):
+#     return 'XRP'
+
 class XRP:
   def __init__(self):
     self.deterministic = False
@@ -22,6 +43,8 @@ class XRP:
     return False
   def __str__(self):
     return 'XRP'
+  def mhprop(args, oldval, state, initargs, theta)
+    # returns newval, q->, q-<
 
 class Value:
   def initialize(self):
