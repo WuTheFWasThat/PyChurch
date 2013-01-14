@@ -468,7 +468,6 @@ class ReducedEvalNode(Node):
 class ReducedTraces(Engine):
   def __init__(self):
     self.engine_type = 'reduced traces'
-
     self.assumes = {} # id -> evalnode
     self.observes = {} # id -> evalnode
     self.predicts = {} # id -> evalnode
@@ -688,3 +687,7 @@ class ReducedTraces(Engine):
     for evalnode in self.predicts.values():
       string += evalnode.str_helper()
     return string
+
+  def engine_type(self):
+    return 'reduced traces'
+

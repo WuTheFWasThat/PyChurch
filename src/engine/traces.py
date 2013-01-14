@@ -68,9 +68,6 @@ class EvalNode(Node):
     self.children = {} 
     self.applychild = None
 
-    self.mem = False # Whether this is the root of a mem'd procedure's application
-    self.mem_calls = {} # just a set
-
     self.env = env # Environment in which this was evaluated
     self.lookup = None 
     self.assume = False
@@ -130,17 +127,12 @@ class EvalNode(Node):
   def remove_xrp(self):
     if not self.active:
       raise RException("Removing XRP from inactive node")
-    xrp = self.xrp
-    args = self.args
-    if xrp.is_mem_proc():
-      xrp.remove_mem(self.val, args, self.traces, self)
-    else:
-      xrp.remove(self.val, args)
-    prob = xrp.prob(self.val, self.args)
+    self.xrp.remove(self.val, self.args)
+    prob = self.xrp.prob(self.val, self.args)
     if not self.observed:
       self.traces.uneval_p += prob
     self.traces.p -= prob
-    if not xrp.deterministic:
+    if not self.xrp.deterministic:
       self.traces.remove_xrp(self)
 
   def add_xrp(self, xrp, val, args):
@@ -149,14 +141,11 @@ class EvalNode(Node):
     if not self.observed:
       self.traces.eval_p += prob
     self.traces.p += prob
-    if xrp.is_mem_proc():
-      xrp.incorporate_mem(val, args, self.traces, self)
-    else:
-      xrp.incorporate(val, args)
+    xrp.incorporate(val, args)
 
     if not xrp.deterministic:
       self.random_xrp_apply = True
-      self.traces.add_xrp(args, self)
+      self.traces.add_xrp(args, self, xrp.weight(args))
 
   def delete_children(self):
     # TODO: NOT ACTUALLY SAFE, because of multiple propagation
@@ -198,11 +187,6 @@ class EvalNode(Node):
         evalnode.propagate_up(restore_inactive)
     elif self.parent is not None:
       self.parent.propagate_up(restore_inactive)
-
-    if self.mem:
-      # self.mem_calls can be affected *while* propagating up.  However, if new links are created, they'll use the new value
-      for evalnode in self.mem_calls.keys():
-        evalnode.propagate_up(restore_inactive)
 
     self.val = val
     return self.val
@@ -254,7 +238,7 @@ class EvalNode(Node):
   
   # reflip = 1 # reflip all
   #          0.5 # reflip current, but don't recurse
-  #          0 # reflip nothing
+  #          0 # reflip nothing (unless inactive)
   # restore - whether we are restoring, in MH 
   def evaluate(self, reflip = False, xrp_force_val = None):
     if reflip == False and self.active:
@@ -323,8 +307,6 @@ class EvalNode(Node):
     elif self.type == 'apply':
       n = len(expr.children)
       args = [self.evaluate_recurse(expr.children[i], self.env, 'arg' + str(i), reflip) for i in range(n)]
-      if len(args) == 4:
-        print args
       op = self.evaluate_recurse(expr.op, self.env, 'operator', reflip)
 
       if xrp_force_val is not None:
@@ -355,7 +337,7 @@ class EvalNode(Node):
         self.xrp_apply = True
         xrp = op.xrp
 
-        if reflip == False and self.val is not None: # also inactive
+        if reflip == False and self.val is not None: # also inactive.  (reactivated branch?)
           val = self.val
           self.add_xrp(self.xrp, self.val, self.args)
         elif xrp_force_val is not None:
@@ -371,20 +353,14 @@ class EvalNode(Node):
 
         elif xrp.deterministic or (not reflip):
           if self.active:
-            if xrp.is_mem_proc():
-              val = xrp.apply_mem(args, self.traces)
-            elif self.args == args and self.xrp == xrp:
+            if self.args == args and self.xrp == xrp:
               val = self.val
-              # TODO: deal with mem'd function changing..>
             else:
               self.remove_xrp()
               val = xrp.apply(args)
               self.add_xrp(xrp, val, args)
           else:
-            if xrp.is_mem_proc():
-              val = xrp.apply_mem(args, self.traces)
-            else:
-              val = xrp.apply(args)
+            val = xrp.apply(args)
             self.add_xrp(xrp, val, args)
         else: # not deterministic, needs reflipping
           if self.active:
@@ -490,24 +466,52 @@ class EvalNode(Node):
     else:
       raise RException('Invalid expression type %s' % self.type)
 
-    self.val = val
     self.active = True
+    self.set_val(val)
+
+    return val
+
+  def restore(self, force_val):
+    #if use_jit:
+    #  jitdriver.jit_merge_point(node=self.val)
+
+    if not (self.type == 'apply' and self.xrp_apply and self.random_xrp_apply):
+      raise RException("Reflipping something that isn't a random xrp apply")
+    if not self.active:
+      raise RException("Reflipping something that isn't active")
+    self.remove_xrp()
+    self.add_xrp(self.xrp, force_val, self.args)
+    self.set_val(force_val)
+    self.propagate_up(True, True)
+    return self.val
+
+  def reflip(self):
+    #if use_jit:
+    #  jitdriver.jit_merge_point(node=self.val)
+
+    if not (self.type == 'apply' and self.xrp_apply and self.random_xrp_apply):
+      raise RException("Reflipping something that isn't a random xrp apply")
+    if not self.active:
+      raise RException("Reflipping something that isn't active")
+
+    if self.observed:
+      return self.val
+
+    self.remove_xrp()
+    val = self.xrp.apply(self.args)
+    self.add_xrp(self.xrp, val, self.args)
+
+    self.set_val(val)
+    self.propagate_up(False, True)
+    return self.val
+
+  def set_val(self, val):
+    self.val = val 
 
     if self.assume:
       if self.parent is not None:
         raise RException("Assume should not have a parent")
       self.env.set(self.assume_name, val) # Environment in which this was evaluated
-
-    return val
-
-  def reflip(self, force_val = None, restore_inactive = False):
-    #if use_jit:
-    #  jitdriver.jit_merge_point(node=self.val)
-    self.evaluate(reflip = 0.5, xrp_force_val = force_val)
-    if not self.random_xrp_apply:
-      raise RException("Reflipping something that isn't a random xrp apply")
-    self.propagate_up(restore_inactive, True)
-    return self.val
 
   def str_helper(self, n = 0, verbose = True):
     string = "\n" + (' ' * n) + "|- "
@@ -697,7 +701,7 @@ class Traces(Engine):
   
     p = rrandom.random.random()
     if new_p + new_to_old_q - old_p - old_to_new_q < math.log(p):
-      reflip_node.reflip(old_val, True)
+      reflip_node.restore(old_val)
 
       if debug: 
         print 'restore'
@@ -713,7 +717,7 @@ class Traces(Engine):
       #assert self.eval_p == uneval_p
       # May not be true, because sometimes things get removed then incorporated
     else:
-      reflip_node.reflip(new_val, True)
+      reflip_node.restore(new_val) # NOTE: Is necessary for correctness
       if self.mhstats_details:
         if reflip_node.hashval in self.mhstats:
           self.mhstats[reflip_node.hashval]['accepted-proposals'] += 1
@@ -739,10 +743,10 @@ class Traces(Engine):
     evalnodecheck.setargs(args)
     if self.weighted_db.__contains__(evalnodecheck) or self.db.__contains__(evalnodecheck):
       raise RException("DB already had this evalnode")
-    #if weight == 1:
-    #  self.db.__setitem__(evalnodecheck, True)
-    #else:
-    self.weighted_db.__setitem__(evalnodecheck, True, weight)
+    if weight == 1:
+      self.db.__setitem__(evalnodecheck, True)
+    else:
+      self.weighted_db.__setitem__(evalnodecheck, True, weight)
 
   def remove_xrp(self, evalnode):
     if self.db.__contains__(evalnode):

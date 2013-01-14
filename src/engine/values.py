@@ -37,12 +37,17 @@ class XRP:
   ## SHOULD RETURN THE LOG PROBABILITY
   def prob(self, val, args = None):
     return 0
+  def weight(self, args = None):
+    return 1
   def __str__(self):
     return 'XRP'
-  def mhprop(args, oldval, state, initargs, theta):
-    # TODO
-    pass
-    # returns newval, q->, q-<
+  def mhprop(oldval, args): # TODO: theta
+    # TODO.  look at reflip
+    self.remove(oldval, args)
+    newval = self.apply(args)
+    q_forwards = self.prob(newval, args)
+    q_back = self.prob(oldval, args)
+    return newval, q_forwards, q_back
   def load_from_unweighted_XRP(self):
     # TODO
     pass
@@ -51,29 +56,37 @@ class XRP:
   def is_mem(self):
     return False
 
-class unweighted_XRP:
-  def __init__(self):
-    self.deterministic = False
-    return
-  def apply(self, args = None):
-    raise RException("Not implemented")
-  def incorporate(self, val, args = None):
-    pass
-  def remove(self, val, args = None):
-    pass
-  ## SHOULD RETURN THE LOG PROBABILITY
-  def prob(self, val, args = None):
-    return 0
-  def is_mem_proc(self):
-    return False
-  def is_mem(self):
-    return False
-  def __str__(self):
-    return 'XRP'
-  def mhprop(args, oldval, state, initargs, theta):
-    # TODO
-    pass
-    # returns newval, q->, q-<
+
+
+# ** an xrp_state node in the trace contains:
+#    - state
+#    - init_args
+#    - theta (any internal randomness, hidden from the enclosing Church engine and not managed by it)
+# 
+# initialize(init_args, xrp_state) --- constructs the contents of the state to be empty but have the right shape (ie enforces "empty" sufficient statistics, e.g. 0 values for all counts for a dirichlet-discrete). also must copy init_args into the state if they are not there or equal to the current one. optionally, gets to sample some randomness and store it in theta. 
+# 
+# reinitialize(old_init_args, new_init_args, xrp_state) --- "propagate" a change in init_args into the state. for typical XRPs, just copy in the new args. but for XRPs that have a theta, this might be a useful way to let them know that parameters/etc have changed.
+# 
+# overrideable: calculate_state_weight(xrp_state, init_args) --- calculate the weight for the state of this XRP. This weight determines how often the engine will perform transitions on any internal randomness hidden inside this XRP.
+# 
+# sample(xrp_state, args) -> val --- applies the XRP once based on the state and some args. notice this means sample can access theta's value, and the init_args, from the xrp_state node.
+# 
+# incorporate(xrp_state, args, val) --- incorporates val into state (e.g. increments sufficient statistics)
+# 
+# remove(xrp_state, args, val) --- removes val from state (e.g. decrements sufficient statistics)
+# 
+# calc_application_logprob(xrp_state, args, val) --- computes log marginal probability of val given state, args, init_args ***and theta***
+# 
+# overrideable: calc_application_weight(init_args, xrp_state, args) --- calculates a positive integer weight used by the engine to allocate Markov chain transition steps for inference. by default, always returns a constant of 1.
+# 
+# overrideable: application_mhpropose(xrp_state, args, old_val) -> (new_val, log_q->, log_q<-) --- performs an MH proposal and returns the new value along with the proposal probabilities in both directions, **and adjusts the state accordingly**
+# default kernel on applications: before, app_mhprop was implicitly score remove sample score incorporate. now that's the default implementation of propose, but it can be overridden.
+# 
+# there is no default kernel on theta, since the user who makes use of theta needs to manage it themselves. an easy kernel (assuming the user can track P(theta|initargs, rest_of_state) internally --- application_logprob already gives them P(val|theta, args, initargs, rest_of_state)) is MH from the prior: remove all applications (tracking scores), re-init, re-add, accept or reject internally. [[FIXME: note for vkm to send to dan roy --- yura add asana task once you've revised this doc --- ask about slice sampling and mem-as-uncomputable-object here]]
+# 
+# default propagation on argument change to any application: remove the application, score, change the value, incorporate the application, and score
+# 
+# default propagation on init_arg change: remove all applications (calculating scores one by one), change the init arg, reincorporate all, calculating scores accordingly
 
 class Value:
   def initialize(self):

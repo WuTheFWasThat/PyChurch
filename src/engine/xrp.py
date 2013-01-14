@@ -450,12 +450,12 @@ class CRP_XRP(XRP):
     self.tables = {}
     check_pos(alpha)
     self.alpha = alpha
-    self.weight = alpha
+    self.z = alpha
     return
   def apply(self, args = None):
     if args is not None and len(args) != 0:
       raise RException('CRP_XRP has no need to take in arguments %s' % str(args))
-    x = rrandom.random.random() * self.weight
+    x = rrandom.random.random() * self.z
     for id in self.tables:
       x -= self.tables[id]
       if x <= 0:
@@ -464,7 +464,7 @@ class CRP_XRP(XRP):
   def incorporate(self, val, args = None):
     if args is not None and len(args) != 0:
       raise RException('CRP_XRP has no need to take in arguments %s' % str(args))
-    self.weight += 1
+    self.z += 1
     if val.nat in self.tables:
       self.tables[val.nat] += 1
     else:
@@ -479,16 +479,16 @@ class CRP_XRP(XRP):
         if not self.tables[val.nat] > 1:
           raise RException("Removing from an empty table")
         self.tables[val.nat] -= 1
-        self.weight -= 1
+        self.z -= 1
     else:
       raise RException('CRP_XRP cannot remove the value %d, as it has state %s' % (val.nat, str(self.tables.keys())))
   def prob(self, val, args = None):
     if args is not None and len(args) != 0:
       raise RException('CRP_XRP has no need to take in arguments %s' % str(args))
     if val.nat in self.tables:
-      return math.log(self.tables[val.nat]) - math.log(self.weight)
+      return math.log(self.tables[val.nat]) - math.log(self.z)
     else:
-      return math.log(self.alpha) - math.log(self.weight)
+      return math.log(self.alpha) - math.log(self.z)
   def __str__(self):
     return 'CRP(%f)' % (self.alpha)
 

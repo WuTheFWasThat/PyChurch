@@ -15,6 +15,7 @@ class mem_proc_XRP(XRP):
   def apply(self, args = None):
     return self.apply_mem(args)
   def apply_mem(self, args = None, engine = None, help = None):
+    raise RException("mem currently not supported")
     if len(args) != self.n:
       raise RException("Gave a mem'd procedure with %d arguments %d arguments instead" % (self.n, len(args)))
     addition = ','.join([x.str_hash for x in args])
@@ -49,6 +50,7 @@ class mem_proc_XRP(XRP):
   def incorporate(self, val, args = None):
     return self.incorporate_mem(val, args)
   def incorporate_mem(self, val, args = None, engine = None, help = None):
+    raise RException("mem currently not supported")
     addition = ','.join([x.str_hash for x in args])
     # TODO:  assert value is correct
     if engine.engine_type == 'reduced traces':
@@ -81,6 +83,7 @@ class mem_proc_XRP(XRP):
   def remove(self, val, args = None):
     return self.remove_mem(val, args)
   def remove_mem(self, val, args = None, engine = None, help = None):
+    raise RException("mem currently not supported")
     addition = ','.join([x.str_hash for x in args])
     if addition not in self.argsdict:
       raise RException("Should only remove additions that have been applied/incorporated")

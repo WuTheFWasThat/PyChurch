@@ -18,8 +18,11 @@ if __name__ == "__main__":
                      help='Type of engine (db, traces, reduced_trace)')
   parser.add_argument('-p', dest = 'program', 
                       action = "store", help='Program to run (if any)')
+  parser.add_argument('-s', dest = 'seed', type = int,
+                      action = "store", help='RNG seed')
   
   args = parser.parse_args()
+  rrandom.random.init_genrand(args.seed)
   
   engine_type = args.engine
   if engine_type in ['rt', 'reduced', 'reduced_trace', 'reduced_traces', 'reducedtrace', 'reducedtraces']:

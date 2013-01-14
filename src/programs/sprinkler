@@ -1,5 +1,5 @@
 assume cloudy (bernoulli 0.5)
-assume sprinkler (if cloudy (bernoulli 0.1) (bernoulli 0.5))
+assume sprinkler (if cloudy (bernoulli 0.1) (bernoulli 0.3))
 
 infer_many cloudy 1000 5
 infer_many sprinkler 1000 5
