@@ -37,6 +37,26 @@ class XRP:
   ## SHOULD RETURN THE LOG PROBABILITY
   def prob(self, val, args = None):
     return 0
+  def __str__(self):
+    return 'XRP'
+  def mhprop(args, oldval, state, initargs, theta)
+    # returns newval, q->, q-<
+  def load_from_unweighted_XRP(self):
+    def 
+
+class unweighted_XRP:
+  def __init__(self):
+    self.deterministic = False
+    return
+  def apply(self, args = None):
+    raise RException("Not implemented")
+  def incorporate(self, val, args = None):
+    pass
+  def remove(self, val, args = None):
+    pass
+  ## SHOULD RETURN THE LOG PROBABILITY
+  def prob(self, val, args = None):
+    return 0
   def is_mem_proc(self):
     return False
   def is_mem(self):
