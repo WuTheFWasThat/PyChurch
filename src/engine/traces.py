@@ -497,7 +497,14 @@ class EvalNode(Node):
     if self.observed:
       return self.val
 
-    self.remove_xrp()
+    self.traces.remove_xrp(self)
+
+    self.xrp.remove(self.val, self.args)
+    prob = self.xrp.prob(self.val, self.args)
+    if not self.observed:
+      self.traces.uneval_p += prob
+    self.traces.p -= prob
+
     val = self.xrp.apply(self.args)
     self.add_xrp(self.xrp, val, self.args)
 
