@@ -43,11 +43,16 @@ class XRP:
     return 'XRP'
   def mhprop(oldval, args): # TODO: theta
     # TODO.  look at reflip
-    self.remove(oldval, args)
-    newval = self.apply(args)
-    q_forwards = self.prob(newval, args)
-    q_back = self.prob(oldval, args)
-    return newval, q_forwards, q_back
+    self.traces.remove_xrp(self)
+    self.xrp.remove(self.val, self.args)
+    p_uneval = self.xrp.prob(self.val, self.args)
+    val = self.xrp.apply(self.args)
+    p_eval = self.xrp.prob(val, self.args)
+    self.xrp.incorporate(val, self.args)
+    self.traces.add_xrp(self.args, self, self.xrp.weight(self.args))
+
+
+    return val, p_eval, p_uneval
   def load_from_unweighted_XRP(self):
     # TODO
     pass

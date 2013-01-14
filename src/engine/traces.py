@@ -129,8 +129,6 @@ class EvalNode(Node):
       raise RException("Removing XRP from inactive node")
     self.xrp.remove(self.val, self.args)
     prob = self.xrp.prob(self.val, self.args)
-    if not self.observed:
-      self.traces.uneval_p += prob
     self.traces.p -= prob
     if not self.xrp.deterministic:
       self.traces.remove_xrp(self)
@@ -138,8 +136,6 @@ class EvalNode(Node):
   def add_xrp(self, xrp, val, args):
     prob = xrp.prob(val, args)
     self.p = prob
-    if not self.observed:
-      self.traces.eval_p += prob
     self.traces.p += prob
     xrp.incorporate(val, args)
 
@@ -500,22 +496,21 @@ class EvalNode(Node):
     self.traces.remove_xrp(self)
 
     self.xrp.remove(self.val, self.args)
-    prob = self.xrp.prob(self.val, self.args)
-    if not self.observed:
-      self.traces.uneval_p += prob
-    self.traces.p -= prob
-
+    p_uneval = self.xrp.prob(self.val, self.args)
     val = self.xrp.apply(self.args)
-   
-    prob = self.xrp.prob(val, self.args)
-    self.p = prob
-    if not self.observed:
-      self.traces.eval_p += prob
-    self.traces.p += prob
+    p_eval = self.xrp.prob(val, self.args)
     self.xrp.incorporate(val, self.args)
+
     self.traces.add_xrp(self.args, self, self.xrp.weight(self.args))
 
+    self.traces.uneval_p += p_uneval
+    self.traces.p -= p_uneval
+    self.traces.eval_p += p_eval
+    self.traces.p += p_eval
+    self.p = p_eval
+
     self.set_val(val)
+
     self.propagate_up(False, True)
     return self.val
 

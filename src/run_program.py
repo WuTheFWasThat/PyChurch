@@ -18,7 +18,7 @@ if __name__ == "__main__":
                      help='Type of engine (db, traces, reduced_trace)')
   parser.add_argument('-p', dest = 'program', 
                       action = "store", help='Program to run (if any)')
-  parser.add_argument('-s', dest = 'seed', type = int,
+  parser.add_argument('-s', dest = 'seed', type = int, default = 0,
                       action = "store", help='RNG seed')
   
   args = parser.parse_args()
