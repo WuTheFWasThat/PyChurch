@@ -506,7 +506,14 @@ class EvalNode(Node):
     self.traces.p -= prob
 
     val = self.xrp.apply(self.args)
-    self.add_xrp(self.xrp, val, self.args)
+   
+    prob = self.xrp.prob(val, self.args)
+    self.p = prob
+    if not self.observed:
+      self.traces.eval_p += prob
+    self.traces.p += prob
+    self.xrp.incorporate(val, self.args)
+    self.traces.add_xrp(self.args, self, self.xrp.weight(self.args))
 
     self.set_val(val)
     self.propagate_up(False, True)

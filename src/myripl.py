@@ -1,7 +1,6 @@
 from engine.directives import Directives
 from engine.traces import *
 from engine.reducedtraces import *
-from engine.randomdb import *
 
 import random
 
