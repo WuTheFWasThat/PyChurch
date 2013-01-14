@@ -126,7 +126,7 @@ class Directives:
     self.assume('floor', function(['x'], op('floor', [var('x')])), True)
     self.assume('ceil', function(['x'], op('ceil', [var('x')])), True)
 
-    #self.assume('power', function(['x'], op('**', [var('x')])), True)
+    self.assume('power', function(['x', 'y'], op('**', [var('x'), var('y')])), True)
 
     #self.assume('=', function(['x', 'y'], op('=', [var('x'), var('y')])))
     #self.assume('<', function(['x', 'y'], op('<', [var('x'), var('y')])))
