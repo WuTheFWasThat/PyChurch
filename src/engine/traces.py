@@ -1,7 +1,7 @@
 from engine import *
 from expressions import *
 from environment import *
-from utils.random_choice_dict import RandomChoiceDict
+from utils.random_choice_dict import RandomChoiceDict, WeightedRandomChoiceDict
 from utils.rexceptions import RException
 
 # The traces datastructure. 
@@ -541,6 +541,7 @@ class Traces(Engine):
     self.directives = []
 
     self.db = RandomChoiceDict() 
+    self.weighted_db = WeightedRandomChoiceDict() 
 
     self.env = EnvironmentNode()
 
@@ -577,7 +578,7 @@ class Traces(Engine):
       return self.observes[id].p
 
   def random_choices(self):
-    return self.db.__len__()
+    return self.db.__len__() + self.weighted_db.__len__()
 
   def assume(self, name, expr, id):
     evalnode = EvalNode(self, self.env, expr)
@@ -734,20 +735,32 @@ class Traces(Engine):
       print "new:\n", self
 
   # Add an XRP application node to the db
-  def add_xrp(self, args, evalnodecheck = None):
+  def add_xrp(self, args, evalnodecheck, weight = 1):
     evalnodecheck.setargs(args)
-    if self.db.__contains__(evalnodecheck):
+    if self.weighted_db.__contains__(evalnodecheck) or self.db.__contains__(evalnodecheck):
       raise RException("DB already had this evalnode")
-    self.db.__setitem__(evalnodecheck, True)
+    #if weight == 1:
+    #  self.db.__setitem__(evalnodecheck, True)
+    #else:
+    self.weighted_db.__setitem__(evalnodecheck, True, weight)
 
   def remove_xrp(self, evalnode):
-    if not self.db.__contains__(evalnode):
+    if self.db.__contains__(evalnode):
+      self.db.__delitem__(evalnode)
+    elif self.weighted_db.__contains__(evalnode):
+      self.weighted_db.__delitem__(evalnode)
+    else:
       raise RException("DB did not already have this evalnode")
-    self.db.__delitem__(evalnode)
+
+  def randomKey(self):
+    if rrandom.random.random() * self.random_choices() > self.db.__len__():
+      return self.weighted_db.randomKey()
+    else:
+      return self.db.randomKey()
 
   def infer(self):
     try:
-      evalnode = self.db.randomKey()
+      evalnode = self.randomKey()
     except:
       raise RException("Program has no randomness!")
     self.reflip(evalnode)

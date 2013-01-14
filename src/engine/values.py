@@ -39,10 +39,17 @@ class XRP:
     return 0
   def __str__(self):
     return 'XRP'
-  def mhprop(args, oldval, state, initargs, theta)
+  def mhprop(args, oldval, state, initargs, theta):
+    # TODO
+    pass
     # returns newval, q->, q-<
   def load_from_unweighted_XRP(self):
-    def 
+    # TODO
+    pass
+  def is_mem_proc(self):
+    return False
+  def is_mem(self):
+    return False
 
 class unweighted_XRP:
   def __init__(self):
@@ -63,7 +70,9 @@ class unweighted_XRP:
     return False
   def __str__(self):
     return 'XRP'
-  def mhprop(args, oldval, state, initargs, theta)
+  def mhprop(args, oldval, state, initargs, theta):
+    # TODO
+    pass
     # returns newval, q->, q-<
 
 class Value:

@@ -1,7 +1,5 @@
-#import rrandom
-#from utils.rexceptions import RException
-#from utils.rexceptions import RException
-RException = Exception
+import rrandom
+from utils.rexceptions import RException
 
 # A dictionary which also supports fetching a random key in O(1)
 # See http://stackoverflow.com/questions/10840901/python-get-random-key-in-a-dictionary-in-o1
@@ -74,7 +72,7 @@ class MaxHeap():
       self.heap[index2] = key1
       return index2
     
-    def append(self, key, val):
+    def add(self, key, val):
         i = len(self.heap)
         self.heap.append(key)
         self.values[key] = val
@@ -140,6 +138,7 @@ class WeightedRandomChoiceDict():
       if key not in self.dict:
           self.keyToId[key] = len(self.idToKey) 
           self.idToKey.append(key)
+      self.heap.add(key, weight)
       self.dict[key] = (value, weight)
 
   def __delitem__(self, key): 
@@ -169,7 +168,6 @@ class WeightedRandomChoiceDict():
         (value, weight) = self.dict[key]
         if p * max < weight:
           return key
-      # return self.idToKey[random.randrange(len(self.idToKey))]
 
   def __str__(self):
       return self.dict.__str__()
