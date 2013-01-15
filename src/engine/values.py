@@ -41,9 +41,7 @@ class XRP:
     return 1
   def __str__(self):
     return 'XRP'
-  def mh_prop(self, oldval, args): # TODO: theta
-    # TODO.  look at reflip
-
+  def mh_prop(self, oldval, args): 
     self.remove(oldval, args)
     p_uneval = self.prob(oldval, args)
     val = self.apply(args)
@@ -59,12 +57,8 @@ class XRP:
   def is_mem(self):
     return False
 
+# TODO
 
-
-# ** an xrp_state node in the trace contains:
-#    - state
-#    - init_args
-#    - theta (any internal randomness, hidden from the enclosing Church engine and not managed by it)
 # 
 # initialize(init_args, xrp_state) --- constructs the contents of the state to be empty but have the right shape (ie enforces "empty" sufficient statistics, e.g. 0 values for all counts for a dirichlet-discrete). also must copy init_args into the state if they are not there or equal to the current one. optionally, gets to sample some randomness and store it in theta. 
 # 
@@ -82,14 +76,37 @@ class XRP:
 # 
 # overrideable: calc_application_weight(init_args, xrp_state, args) --- calculates a positive integer weight used by the engine to allocate Markov chain transition steps for inference. by default, always returns a constant of 1.
 # 
-# overrideable: application_mhpropose(xrp_state, args, old_val) -> (new_val, log_q->, log_q<-) --- performs an MH proposal and returns the new value along with the proposal probabilities in both directions, **and adjusts the state accordingly**
-# default kernel on applications: before, app_mhprop was implicitly score remove sample score incorporate. now that's the default implementation of propose, but it can be overridden.
-# 
-# there is no default kernel on theta, since the user who makes use of theta needs to manage it themselves. an easy kernel (assuming the user can track P(theta|initargs, rest_of_state) internally --- application_logprob already gives them P(val|theta, args, initargs, rest_of_state)) is MH from the prior: remove all applications (tracking scores), re-init, re-add, accept or reject internally. [[FIXME: note for vkm to send to dan roy --- yura add asana task once you've revised this doc --- ask about slice sampling and mem-as-uncomputable-object here]]
-# 
 # default propagation on argument change to any application: remove the application, score, change the value, incorporate the application, and score
 # 
 # default propagation on init_arg change: remove all applications (calculating scores one by one), change the init arg, reincorporate all, calculating scores accordingly
+
+# 3. optional: theta_transition([args], [vals], xrp_state)  --- OPTIONAL: run a transition operator on xrp_state that leaves the distribution P(theta, state | init_args, [args], [vals]) invariant (e.g. Gibbs on the parameters in a conjugate model, or slice on something more generic) and ergodically converges to it.
+# 
+# NOTE:  If you implement theta_transition, then weight can only depend on init_args and args
+# 
+# But can be used for inference over (collapsed) inference, or also the uncollapsed beta-bernoulli processes as an XRP
+# 
+# 4. optional: theta_mhpropose([args], [vals], state) -> (old_theta_key, {val_loc : new_val}, log_q->, log_q<-, w_added, w_removed) --- runs an mh proposal that modifies theta and potentially some/all of [vals]. returns an object that the xrp can use to undo the move as follows:
+# set_theta(theta_key) --- tell the system to revert theta to an old value specified by theta_key
+# 
+# there is no default kernel on theta, since the user who makes use of theta needs to manage it themselves. an easy kernel (assuming the user can track P(theta|initargs, rest_of_state) internally --- application_logprob already gives them P(val|theta, args, initargs, rest_of_state)) is MH from the prior: remove all applications (tracking scores), re-init, re-add, accept or reject internally. [[FIXME: note for vkm to send to dan roy --- yura add asana task once you've revised this doc --- ask about slice sampling and mem-as-uncomputable-object here]]
+# 
+# 
+# to use this, the engine:
+# - saves old value
+# - replaces the vals with the new vals (using inc/remove)
+# - scores the p ratio for this new move
+# - does MH
+# - if reject, undoes the value changes and tells the underlying XRP to reset its theta back to the old theta_key
+# 
+# OPTIONAL: but can be used to implement men with an inner RIPL.
+# 
+# 5. joint_prob --- efficiently computes score for the whole sequence of applications (used for changes to init_args) ***given state and theta***
+#    [ASSUME popular_die (symmetric-dirichlet-discrete alpha 2)]
+#    [PREDICT (repeat big_die 10000000)]
+#    So when alpha changes, we want to quickly rescore, which we can sometimes do efficiently given the state (without linearly touching all applications)
+# 
+#    OPTIONAL. By default when init_args changes, first all old applications are removed, then change is made, then they're re-added.
 
 class Value:
   def initialize(self):

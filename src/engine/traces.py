@@ -499,11 +499,7 @@ class EvalNode(Node):
 
     self.traces.remove_xrp(self)
 
-    self.xrp.remove(self.val, self.args)
-    p_uneval = self.xrp.prob(self.val, self.args)
-    val = self.xrp.apply(self.args)
-    p_eval = self.xrp.prob(val, self.args)
-    self.xrp.incorporate(val, self.args)
+    (val, p_uneval, p_eval) = self.xrp.mh_prop(self.val, self.args)
 
     self.traces.add_xrp(self.args, self, self.xrp.weight(self.args))
 

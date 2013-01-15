@@ -47,9 +47,6 @@ class ReducedEvalNode(Node):
 
     self.parent = None 
 
-    self.mem = False # Whether this is the root of a mem'd procedure's application
-    self.mem_calls = {} # just a set
-
     self.env = env # Environment in which this was evaluated
 
     self.assume = False
@@ -156,11 +153,6 @@ class ReducedEvalNode(Node):
     elif self.parent is not None:
       self.propagate_to(self.parent, restore_inactive)
 
-    if self.mem:
-      # self.mem_calls can be affected *while* propagating up.  However, if new links are created, they'll use the new value
-      for evalnode in self.mem_calls.keys():
-        self.propagate_to(evalnode, restore_inactive)
-
   def unevaluate(self):
     # NOTE:  We may want to remove references to nodes when we unevaluate, such as when we have arguments
     # drawn from some continuous domain
@@ -184,16 +176,13 @@ class ReducedEvalNode(Node):
       self.remove_xrp(self.xrp, self.val, self.args)
       self.traces.remove_xrp(self)
     else:
-      assert self.assume or self.predict or self.mem
+      assert self.assume or self.predict
 
     self.active = False
     return
 
   def remove_xrp(self, xrp, val, args, forcing = False):
-    if xrp.is_mem_proc():
-      xrp.remove_mem(val, args, self.traces, self)
-    else:
-      xrp.remove(val, args)
+    xrp.remove(val, args)
     prob = xrp.prob(val, args)
     if not forcing:
       self.traces.uneval_p += prob
@@ -205,10 +194,7 @@ class ReducedEvalNode(Node):
       self.traces.eval_p += prob
     self.traces.p += prob
     self.p = prob
-    if xrp.is_mem_proc():
-      xrp.incorporate_mem(val, args, self.traces, self)
-    else:
-      xrp.incorporate(val, args)
+    xrp.incorporate(val, args)
 
   # reflips own XRP, possibly with a forced value
   def apply_random_xrp(self, xrp, args, xrp_force_val = None):
@@ -242,19 +228,15 @@ class ReducedEvalNode(Node):
       self.remove_xrp(xrp, val, args)
     self.xrp_applies = []
 
-    # TODO: use directive ids... and something else for mems?
+    # TODO: use directive ids... 
     val = self.evaluate_recurse(expr, env, 0, 0, xrp_force_val, restore)
 
     if not self.random_xrp_apply:
       if xrp_force_val is not None:
         raise RException("Can only force non-deterministic XRP applications")
-      assert self.assume or self.mem or self.predict
+      assert self.assume  or self.predict
 
-    if self.assume:
-      assert self.parent is None
-      self.env.set(self.assume_name, val) # Environment in which this was evaluated
-
-    self.val = val
+    self.set_val(val)
     self.active = True
 
     for addition in old_active_children:
@@ -327,13 +309,9 @@ class ReducedEvalNode(Node):
             child = self.get_child(hashval, env, expr, restore)
             val = child.val
         else:
-          if xrp.is_mem_proc():
-            val = xrp.apply_mem(args, self.traces)
-          else:
-            val = xrp.apply(args)
+          val = xrp.apply(args)
           self.add_xrp(xrp, val, args)
-          if not xrp.is_mem_proc(): # NOTE: I think this is okay
-            self.xrp_applies.append((xrp, val, args))
+          self.xrp_applies.append((xrp, val, args))
         assert val is not None
       else:
         raise RException('Must apply either a procedure or xrp.  Instead got expression %s' % str(op))
@@ -431,16 +409,52 @@ class ReducedEvalNode(Node):
 
     return val
 
-  def reflip(self, xrp_force_val = None, restore_inactive = False):
-
-    assert self.active
-    self.val = self.apply_random_xrp(self.xrp, self.args, xrp_force_val)
+  def set_val(self, val):
+    self.val = val
     if self.assume:
       assert self.parent is None
       self.env.set(self.assume_name, self.val) # Environment in which this was evaluated
 
-    self.propagate_up(restore_inactive)
+  def restore(self, val):
+    assert self.active
+    assert self.random_xrp_apply
+    self.remove_xrp(self.xrp, self.val, self.args, True)
+    self.traces.remove_xrp(self)
+    self.add_xrp(self.xrp, val, self.args, True)
+    self.traces.add_xrp(self.args, self)
+    self.set_val(val)
+    self.propagate_up(True)
     return self.val
+
+  def reflip(self):
+    assert self.active
+    assert self.random_xrp_apply
+
+    self.traces.remove_xrp(self)
+
+    (val, p_uneval, p_eval) = self.xrp.mh_prop(self.val, self.args)
+
+    self.traces.add_xrp(self.args, self)
+    
+    self.traces.uneval_p += p_uneval
+    self.traces.p -= p_uneval
+    self.traces.eval_p += p_eval
+    self.traces.p += p_eval
+    self.p = p_eval
+
+    self.set_val(val)
+
+    self.propagate_up(False)
+    return self.val
+
+  def mh_prop(self, oldval, args): 
+    self.remove(oldval, args)
+    p_uneval = self.prob(oldval, args)
+    val = self.apply(args)
+    p_eval = self.prob(val, args)
+    self.incorporate(val, args)
+
+    return val, p_uneval, p_eval
 
   def str_helper(self, n = 0, verbose = True):
     string = "\n" + (' ' * n) + "|- "
@@ -623,7 +637,7 @@ class ReducedTraces(Engine):
   
     p = rrandom.random.random()
     if new_p + new_to_old_q - old_p - old_to_new_q < math.log(p):
-      new_val = reflip_node.reflip(old_val, True)
+      new_val = reflip_node.restore(old_val)
 
       if debug: 
         print 'restore'
