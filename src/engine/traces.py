@@ -124,18 +124,22 @@ class EvalNode(Node):
       raise RException("Setting args in a non-apply expression")
     self.args = args
 
-  def remove_xrp(self):
+  def remove_xrp(self, forcing = False):
     if not self.active:
       raise RException("Removing XRP from inactive node")
     self.xrp.remove(self.val, self.args)
     prob = self.xrp.prob(self.val, self.args)
+    if not forcing:
+      self.traces.uneval_p += prob
     self.traces.p -= prob
     if not self.xrp.deterministic:
       self.traces.remove_xrp(self)
 
-  def add_xrp(self, xrp, val, args):
+  def add_xrp(self, xrp, val, args, forcing = False):
     prob = xrp.prob(val, args)
     self.p = prob
+    if not forcing:
+      self.traces.eval_p += prob
     self.traces.p += prob
     xrp.incorporate(val, args)
 
@@ -344,8 +348,8 @@ class EvalNode(Node):
             
           val = xrp_force_val
           if self.active:
-            self.remove_xrp()
-          self.add_xrp(xrp, val, args)
+            self.remove_xrp(True)
+          self.add_xrp(xrp, val, args, True)
 
         elif xrp.deterministic or (not reflip):
           if self.active:

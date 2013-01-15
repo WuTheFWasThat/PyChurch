@@ -195,14 +195,10 @@ class ReducedEvalNode(Node):
     else:
       xrp.remove(val, args)
     prob = xrp.prob(val, args)
-    if not self.observed:
-      self.traces.uneval_p += prob
     self.traces.p -= prob
 
   def add_xrp(self, xrp, val, args):
     prob = xrp.prob(val, args)
-    if not self.observed:
-      self.traces.eval_p += prob
     self.traces.p += prob
     self.p = prob
     if xrp.is_mem_proc():
@@ -431,15 +427,44 @@ class ReducedEvalNode(Node):
 
     return val
 
-  def reflip(self, xrp_force_val = None, restore_inactive = False):
-
-    assert self.active
-    self.val = self.apply_random_xrp(self.xrp, self.args, xrp_force_val)
+  def set_val(self, val):
+    self.val = val
     if self.assume:
       assert self.parent is None
-      self.env.set(self.assume_name, self.val) # Environment in which this was evaluated
+      self.env.set(self.assume_name, val) # Environment in which this was evaluated
 
-    self.propagate_up(restore_inactive)
+  def restore(self, val = None):
+
+    assert self.active
+    val = self.apply_random_xrp(self.xrp, self.args, val)
+    self.set_val(val)
+
+    self.propagate_up(True)
+    return self.val
+
+  def reflip(self):
+    if self.observed:
+      return self.val
+
+    assert self.active
+
+    self.traces.remove_xrp(self)
+
+    (val, p_uneval, p_eval) = self.xrp.mh_prop(self.val, self.args)
+
+    # TODO: weight
+    self.traces.add_xrp(self.args, self)
+
+    self.traces.uneval_p += p_uneval
+    self.traces.p -= p_uneval
+    self.traces.eval_p += p_eval
+    self.traces.p += p_eval
+    self.p = p_eval
+
+    val = self.xrp.mh_prop(self.val, args)
+    self.set_val(val)
+
+    self.propagate_up(False)
     return self.val
 
   def str_helper(self, n = 0, verbose = True):
@@ -623,7 +648,7 @@ class ReducedTraces(Engine):
   
     p = rrandom.random.random()
     if new_p + new_to_old_q - old_p - old_to_new_q < math.log(p):
-      new_val = reflip_node.reflip(old_val, True)
+      new_val = reflip_node.restore(old_val)
 
       if debug: 
         print 'restore'
