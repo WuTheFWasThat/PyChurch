@@ -189,16 +189,20 @@ class ReducedEvalNode(Node):
     self.active = False
     return
 
-  def remove_xrp(self, xrp, val, args, called = False):
+  def remove_xrp(self, xrp, val, args, forcing = False):
     if xrp.is_mem_proc():
       xrp.remove_mem(val, args, self.traces, self)
     else:
       xrp.remove(val, args)
     prob = xrp.prob(val, args)
+    if not forcing:
+      self.traces.uneval_p += prob
     self.traces.p -= prob
 
-  def add_xrp(self, xrp, val, args):
+  def add_xrp(self, xrp, val, args, forcing = False):
     prob = xrp.prob(val, args)
+    if not forcing:
+      self.traces.eval_p += prob
     self.traces.p += prob
     self.p = prob
     if xrp.is_mem_proc():
@@ -210,7 +214,7 @@ class ReducedEvalNode(Node):
   def apply_random_xrp(self, xrp, args, xrp_force_val = None):
     assert self.random_xrp_apply
     if self.active:
-      self.remove_xrp(self.xrp, self.val, self.args, True)
+      self.remove_xrp(self.xrp, self.val, self.args, xrp_force_val is not None)
       self.traces.remove_xrp(self)
 
     self.xrp = xrp
@@ -220,7 +224,7 @@ class ReducedEvalNode(Node):
       val = self.xrp.apply(self.args)
     else:
       val = xrp_force_val
-    self.add_xrp(self.xrp, val, self.args)
+    self.add_xrp(self.xrp, val, self.args, xrp_force_val is not None)
     self.traces.add_xrp(self.args, self)
     return val
 
@@ -427,44 +431,15 @@ class ReducedEvalNode(Node):
 
     return val
 
-  def set_val(self, val):
-    self.val = val
+  def reflip(self, xrp_force_val = None, restore_inactive = False):
+
+    assert self.active
+    self.val = self.apply_random_xrp(self.xrp, self.args, xrp_force_val)
     if self.assume:
       assert self.parent is None
-      self.env.set(self.assume_name, val) # Environment in which this was evaluated
+      self.env.set(self.assume_name, self.val) # Environment in which this was evaluated
 
-  def restore(self, val = None):
-
-    assert self.active
-    val = self.apply_random_xrp(self.xrp, self.args, val)
-    self.set_val(val)
-
-    self.propagate_up(True)
-    return self.val
-
-  def reflip(self):
-    if self.observed:
-      return self.val
-
-    assert self.active
-
-    self.traces.remove_xrp(self)
-
-    (val, p_uneval, p_eval) = self.xrp.mh_prop(self.val, self.args)
-
-    # TODO: weight
-    self.traces.add_xrp(self.args, self)
-
-    self.traces.uneval_p += p_uneval
-    self.traces.p -= p_uneval
-    self.traces.eval_p += p_eval
-    self.traces.p += p_eval
-    self.p = p_eval
-
-    val = self.xrp.mh_prop(self.val, args)
-    self.set_val(val)
-
-    self.propagate_up(False)
+    self.propagate_up(restore_inactive)
     return self.val
 
   def str_helper(self, n = 0, verbose = True):
@@ -648,7 +623,7 @@ class ReducedTraces(Engine):
   
     p = rrandom.random.random()
     if new_p + new_to_old_q - old_p - old_to_new_q < math.log(p):
-      new_val = reflip_node.restore(old_val)
+      new_val = reflip_node.reflip(old_val, True)
 
       if debug: 
         print 'restore'
