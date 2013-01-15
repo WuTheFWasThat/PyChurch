@@ -145,7 +145,7 @@ class EvalNode(Node):
 
     if not xrp.deterministic:
       self.random_xrp_apply = True
-      self.traces.add_xrp(args, self, xrp.weight(args))
+      self.traces.add_xrp(xrp, args, self, xrp.weight(args))
 
   def delete_children(self):
     # TODO: NOT ACTUALLY SAFE, because of multiple propagation
@@ -160,7 +160,7 @@ class EvalNode(Node):
     # This only breaks when this node is unevaluated from another branch of propagate_up
     # but this means children may have changed, so if we activate this branch and don't re-evaluate,
     # the result may be wrong!  We can't always re-evaluate the branches, because of the way reflip restores.
-    # TODO: optimize to not re-propagate. needs to calculate explicit trace structure
+    # TODO: optimize to not re-propagate. needs to calculate explicit trace structure, or use some heap structure?
 
     if self.random_xrp_apply:
       if not start:
@@ -501,7 +501,7 @@ class EvalNode(Node):
 
     (val, p_uneval, p_eval) = self.xrp.mh_prop(self.val, self.args)
 
-    self.traces.add_xrp(self.args, self, self.xrp.weight(self.args))
+    self.traces.add_xrp(self.xrp, self.args, self, self.xrp.weight(self.args))
 
     self.traces.uneval_p += p_uneval
     self.traces.p -= p_uneval
@@ -553,8 +553,9 @@ class Traces(Engine):
     self.predicts = {} # id -> evalnode
     self.directives = []
 
-    self.db = RandomChoiceDict() 
-    self.weighted_db = WeightedRandomChoiceDict() 
+    self.db = RandomChoiceDict()
+    self.weighted_db = WeightedRandomChoiceDict()
+    self.xrps = {} # xrp -> 
 
     self.env = EnvironmentNode()
 
@@ -748,7 +749,7 @@ class Traces(Engine):
       print "new:\n", self
 
   # Add an XRP application node to the db
-  def add_xrp(self, args, evalnodecheck, weight = 1):
+  def add_xrp(self, xrp, args, evalnodecheck, weight = 1):
     evalnodecheck.setargs(args)
     if self.weighted_db.__contains__(evalnodecheck) or self.db.__contains__(evalnodecheck):
       raise RException("DB already had this evalnode")

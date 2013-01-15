@@ -5,24 +5,6 @@ import math
 
 # transition // for inference on theta, the internal randomness generated during init
 # marg (scoring total probability of all applications);
-# propose (re-propose a particular application)
-
-
-# class XRP:
-#   def __init__(self, initargs):
-#     #self.deterministic = False
-#     #self.initargs = initargs
-#     #self.state = None
-#     raise RException("Not implemented")
-#   def transition(self, args, vals, theta, initargs):
-#     raise RException("Not implemented")
-#   def joint(args, vals, state, initargs, theta):
-#     raise RException("Not implemented")
-#   def mhprop(args, oldval, state, initargs, theta)
-#     # returns newval, q->, q-<
-#     raise RException("Not implemented")
-#   def __str__(self):
-#     return 'XRP'
 
 class XRP:
   def __init__(self):
@@ -34,14 +16,20 @@ class XRP:
     pass
   def remove(self, val, args = None):
     pass
-  ## SHOULD RETURN THE LOG PROBABILITY
+  # computes *log* marginal probability of val, given the current state/state/init_args, and that we are applying args
   def prob(self, val, args = None):
+    if not self.deterministic:
+      raise RException("This XRP is non-deterministic, and you should overwrite this function!")
     return 0
+  # A positive weight used by the engine to allocate Markov chain transition steps for inference. By default, always returns 1.
   def weight(self, args = None):
     return 1
+  def state_weight(self):
+    return 0
   def __str__(self):
     return 'XRP'
   def mh_prop(self, oldval, args): 
+    # for re-proposing a particular application
     self.remove(oldval, args)
     p_uneval = self.prob(oldval, args)
     val = self.apply(args)
@@ -49,34 +37,15 @@ class XRP:
     self.incorporate(val, args)
 
     return val, p_uneval, p_eval
-  def load_from_unweighted_XRP(self):
-    # TODO
-    pass
+  # TODO: Something which forces same old val, but with changed arguments?
   def is_mem_proc(self):
     return False
   def is_mem(self):
     return False
 
 # TODO
-
-# 
-# initialize(init_args, xrp_state) --- constructs the contents of the state to be empty but have the right shape (ie enforces "empty" sufficient statistics, e.g. 0 values for all counts for a dirichlet-discrete). also must copy init_args into the state if they are not there or equal to the current one. optionally, gets to sample some randomness and store it in theta. 
 # 
 # reinitialize(old_init_args, new_init_args, xrp_state) --- "propagate" a change in init_args into the state. for typical XRPs, just copy in the new args. but for XRPs that have a theta, this might be a useful way to let them know that parameters/etc have changed.
-# 
-# overrideable: calculate_state_weight(xrp_state, init_args) --- calculate the weight for the state of this XRP. This weight determines how often the engine will perform transitions on any internal randomness hidden inside this XRP.
-# 
-# sample(xrp_state, args) -> val --- applies the XRP once based on the state and some args. notice this means sample can access theta's value, and the init_args, from the xrp_state node.
-# 
-# incorporate(xrp_state, args, val) --- incorporates val into state (e.g. increments sufficient statistics)
-# 
-# remove(xrp_state, args, val) --- removes val from state (e.g. decrements sufficient statistics)
-# 
-# calc_application_logprob(xrp_state, args, val) --- computes log marginal probability of val given state, args, init_args ***and theta***
-# 
-# overrideable: calc_application_weight(init_args, xrp_state, args) --- calculates a positive integer weight used by the engine to allocate Markov chain transition steps for inference. by default, always returns a constant of 1.
-# 
-# default propagation on argument change to any application: remove the application, score, change the value, incorporate the application, and score
 # 
 # default propagation on init_arg change: remove all applications (calculating scores one by one), change the init arg, reincorporate all, calculating scores accordingly
 
@@ -91,7 +60,6 @@ class XRP:
 # 
 # there is no default kernel on theta, since the user who makes use of theta needs to manage it themselves. an easy kernel (assuming the user can track P(theta|initargs, rest_of_state) internally --- application_logprob already gives them P(val|theta, args, initargs, rest_of_state)) is MH from the prior: remove all applications (tracking scores), re-init, re-add, accept or reject internally. [[FIXME: note for vkm to send to dan roy --- yura add asana task once you've revised this doc --- ask about slice sampling and mem-as-uncomputable-object here]]
 # 
-# 
 # to use this, the engine:
 # - saves old value
 # - replaces the vals with the new vals (using inc/remove)
@@ -99,7 +67,7 @@ class XRP:
 # - does MH
 # - if reject, undoes the value changes and tells the underlying XRP to reset its theta back to the old theta_key
 # 
-# OPTIONAL: but can be used to implement men with an inner RIPL.
+# OPTIONAL: but can be used to implement mem with an inner RIPL.
 # 
 # 5. joint_prob --- efficiently computes score for the whole sequence of applications (used for changes to init_args) ***given state and theta***
 #    [ASSUME popular_die (symmetric-dirichlet-discrete alpha 2)]

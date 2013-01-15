@@ -230,8 +230,6 @@ class gamma_XRP(XRP):
     check_pos(a)
     check_pos(b)
     check_pos(val.num)
-    if val.num == 0:
-      val.num = .0000000000000001
     return (a-1) * math.log(val.num) - ((val.num + 0.0) / b) - math.log(math_gamma(a)) - a * math.log(b)
   def __str__(self):
     return 'gamma'
