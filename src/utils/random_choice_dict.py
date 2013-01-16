@@ -46,6 +46,9 @@ class RandomChoiceDict():
   def __contains__(self, x):
       return (x in self.dict)
 
+  def weight(self):
+      return len(self.dict)
+
   def __len__(self):
       return len(self.dict)
 
@@ -78,6 +81,14 @@ class MaxHeap():
         self.values[key] = val
         self.index[key] = i
         self.heapify_up(i)
+
+    def update(self, key, val):
+        assert key in self.values
+        self.values[key] = val
+        assert key in self.index
+        i = self.index[key]
+        self.heapify_up(i)
+        self.heapify_down(i)
 
     def max(self):
         return self.val(0)
@@ -128,6 +139,7 @@ class WeightedRandomChoiceDict():
       self.idToKey = []
       self.keyToId = {}
       self.heap = MaxHeap()
+      self.z = 0
 
   def __getitem__(self, key): 
       return self.dict[key]
@@ -136,9 +148,14 @@ class WeightedRandomChoiceDict():
       if weight == 0:
         return
       if key not in self.dict:
-          self.keyToId[key] = len(self.idToKey) 
-          self.idToKey.append(key)
-      self.heap.add(key, weight)
+        self.keyToId[key] = len(self.idToKey) 
+        self.idToKey.append(key)
+        self.heap.add(key, weight)
+        self.z += weight
+      else:
+        self.z -= self.heap.values[key]
+        self.heap.update(key, weight)
+        self.z += weight
       self.dict[key] = (value, weight)
 
   def __delitem__(self, key): 
@@ -146,6 +163,7 @@ class WeightedRandomChoiceDict():
         return
 
       (value, weight) = self.dict[key]
+      self.z -= weight
 
       del self.dict[key]
       self.heap.delete(key)
@@ -177,6 +195,9 @@ class WeightedRandomChoiceDict():
 
   def __contains__(self, x):
       return (x in self.dict)
+
+  def weight(self):
+      return self.z
 
   def __len__(self):
       return len(self.dict)

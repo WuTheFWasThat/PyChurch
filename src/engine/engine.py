@@ -17,6 +17,8 @@ class Engine:
     raise RException("Not implemented")
   def get_log_score(self, id):
     raise RException("Not implemented")
+  def weight(self):
+    raise RException("Not implemented")
   def random_choices(self):
     raise RException("Not implemented")
   def mhstats_on(self):

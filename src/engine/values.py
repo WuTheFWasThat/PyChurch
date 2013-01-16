@@ -24,10 +24,6 @@ class XRP:
   # A positive weight used by the engine to allocate Markov chain transition steps for inference. By default, always returns 1.
   def weight(self, args = None):
     return 1
-  def state_weight(self):
-    return 0
-  def __str__(self):
-    return 'XRP'
   def mh_prop(self, oldval, args): 
     # for re-proposing a particular application
     self.remove(oldval, args)
@@ -35,13 +31,32 @@ class XRP:
     val = self.apply(args)
     p_eval = self.prob(val, args)
     self.incorporate(val, args)
-
     return val, p_uneval, p_eval
+  def state_weight(self):
+    return 0 
+  def theta_mh_prop(self, args_list, vals):
+    # internal re-proposal
+    raise RException("Not implemented.  Either implement this, or set state weight to be constant 0.")
+  def theta_mh_restore(self):
+    raise RException("Not implemented.  Either implement this, or set state weight to be constant 0.")
+  def theta_mh_keep(self):
+    raise RException("Not implemented.  Either implement this, or set state weight to be constant 0.")
+  def theta_prob(self):
+    # internal log score
+    return 0
   # TODO: Something which forces same old val, but with changed arguments?
   def is_mem_proc(self):
     return False
   def is_mem(self):
     return False
+  def __str__(self):
+    return 'XRP'
+  def __hash__(self):
+    try:
+      return self.hashval
+    except:
+      self.hashval = rrandom.random.randbelow()
+      return self.hashval
 
 # TODO
 # 

@@ -488,6 +488,7 @@ class ReducedTraces(Engine):
     self.directives = []
 
     self.db = RandomChoiceDict() 
+    self.choices = {}
 
     self.env = EnvironmentNode()
 
@@ -525,7 +526,7 @@ class ReducedTraces(Engine):
     else:
       return self.observes[id].p
 
-  def random_choices(self):
+  def weight(self):
     return self.db.__len__()
 
   def assume(self, name, expr, id = -1):
@@ -593,12 +594,13 @@ class ReducedTraces(Engine):
       node = self.predicts[id]
     return node
 
-  def reflip(self, reflip_node):
+  def reflip(self, hashval):
     debug = False
 
     if debug:
       old_self = self.__str__()
 
+    reflip_node = self.choices[hashval]
     assert reflip_node.random_xrp_apply
     assert reflip_node.val is not None
     
@@ -607,9 +609,9 @@ class ReducedTraces(Engine):
 
     old_p = self.p
     old_val = reflip_node.val
-    old_to_new_q = - math.log(self.random_choices())
+    old_to_new_q = - math.log(self.weight())
     new_val = reflip_node.reflip()
-    new_to_old_q = - math.log(self.random_choices())
+    new_to_old_q = - math.log(self.weight())
 
     old_to_new_q += self.eval_p
     new_to_old_q += self.uneval_p
@@ -673,21 +675,27 @@ class ReducedTraces(Engine):
       print "new:\n", self
 
   # Add an XRP application node to the db
-  def add_xrp(self, args, evalnodecheck = None):
-    evalnodecheck.setargs(args)
-    assert not self.db.__contains__(evalnodecheck)
-    self.db.__setitem__(evalnodecheck, True)
+  def add_xrp(self, args, evalnode = None):
+    evalnode.setargs(args)
+    hashval = evalnode.hashval
+    assert not self.db.__contains__(hashval)
+    self.db.__setitem__(hashval, True)
+    self.choices[hashval] = evalnode
 
   def remove_xrp(self, evalnode):
-    assert self.db.__contains__(evalnode)
-    self.db.__delitem__(evalnode)
+    if evalnode.hashval not in self.choices:
+       raise RException("Choices did not already have this evalnode")
+    else:
+      del self.choices[evalnode.hashval]
+      assert self.db.__contains__(evalnode.hashval)
+      self.db.__delitem__(evalnode.hashval)
 
   def infer(self):
     try:
-      evalnode = self.db.randomKey()
+      hashval = self.db.randomKey()
     except:
       raise RException("Program has no randomness!")
-    self.reflip(evalnode)
+    self.reflip(hashval)
 
   def reset(self):
     self.__init__()

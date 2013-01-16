@@ -1,6 +1,6 @@
 assume proc (mem (lambda (x) (flip 0.8)))
 assume a (and (proc 1) (proc 2) (proc 1) (proc 2))
-infer_many a 100 5
+infer_many a 10000 1
 
 assume c (if (flip) (mem flip) (mem flip))
 assume d (c)

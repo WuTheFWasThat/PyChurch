@@ -1,127 +1,77 @@
-from traces import EvalNode
-from reducedtraces import ReducedEvalNode
+from traces import Traces
+from reducedtraces import ReducedTraces
 from expressions import *
 from xrp import *
 from utils.rexceptions import RException
 
-# THIS XRP IMPLEMENTATION IS NOT INDEPENDENT OF DIRECTIVES IMPLEMENTATION 
 class mem_proc_XRP(XRP):
   def __init__(self, procedure):
-    self.deterministic = True
+    self.deterministic = False
+
+    self.engine = Traces() # TODO: allow use of reduced traces, other engines
+    self.engine.assume('f', ConstExpression(procedure), 0)
     self.procedure = procedure
     self.n = len(procedure.vars)
     self.argsdict = {}
     self.hash = rrandom.random.randbelow()
+    self.ids = {} # args_hash -> directive id
+    self.count = {} # args_hash -> number of applications with these args
+    self.id = 0
+  def next_id(self):
+    self.id += 1
+    return self.id
+    
   def apply(self, args = None):
-    return self.apply_mem(args)
-  def apply_mem(self, args = None, engine = None, help = None):
-    raise RException("mem currently not supported")
-    if len(args) != self.n:
-      raise RException("Gave a mem'd procedure with %d arguments %d arguments instead" % (self.n, len(args)))
-    addition = ','.join([x.str_hash for x in args])
-    if engine.engine_type == 'reduced traces':
-      if addition not in self.argsdict:
-        evalnode = ReducedEvalNode(engine, engine.env, ApplyExpression(ConstExpression(self.procedure), [ConstExpression(arg) for arg in args]))
-        evalnode.mem = True
-        self.argsdict[addition] = evalnode
-        val = evalnode.evaluate()
-      else:
-        evalnode = self.argsdict[addition]
-        val = evalnode.val
-      return val
-    elif engine.engine_type == 'traces':
-      if addition not in self.argsdict:
-        evalnode = EvalNode(engine, engine.env, ApplyExpression(ConstExpression(self.procedure), [ConstExpression(arg) for arg in args]))
-        evalnode.mem = True
-        self.argsdict[addition] = evalnode
-      else:
-        evalnode = self.argsdict[addition]
-      val = evalnode.evaluate(False)
-      return val
-    elif engine.engine_type == 'randomdb':
-      # help is call_stack for db
-      if addition in self.argsdict:
-        (val, count) = self.argsdict[addition]
-      else:
-        val = engine.db.evaluate(ApplyExpression(ConstExpression(self.procedure), [ConstExpression(arg) for arg in args]), stack = help + [-1, 'mem', self.procedure.hash, addition]) 
+    args_hash = ','.join([x.str_hash for x in args])
+    if args_hash not in self.count:
+      self.count[args_hash] = 0
+      id = self.next_id()
+      val = self.engine.predict(ApplyExpression(VarExpression('f'), [ConstExpression(x) for x in args]), id)
+      self.ids[args_hash] = id
     else:
-      raise RException("Invalid engine type %s" % engine.engine_type)
+      id = self.ids[args_hash]
+      val = self.engine.report_value(id)
     return val
   def incorporate(self, val, args = None):
-    return self.incorporate_mem(val, args)
-  def incorporate_mem(self, val, args = None, engine = None, help = None):
-    raise RException("mem currently not supported")
-    addition = ','.join([x.str_hash for x in args])
-    # TODO:  assert value is correct
-    if engine.engine_type == 'reduced traces':
-      # help is evalnode
-      if addition not in self.argsdict:
-        raise RException("Should only incorporate additions that have already been applied")
-      evalnode = self.argsdict[addition]
-      if help not in evalnode.mem_calls:
-        evalnode.mem_calls[help] = 1
-      else:
-        evalnode.mem_calls[help] += 1
-    elif engine.engine_type == 'traces':
-      # help is evalnode
-      if addition not in self.argsdict:
-        raise RException("Should only incorporate additions that have already been applied")
-      evalnode = self.argsdict[addition]
-      if help in evalnode.mem_calls:
-        raise RException("Should only add a given evalnode once, as a mem_call")
-      evalnode.mem_calls[help] = True
-    elif engine.engine_type == 'randomdb':
-      if addition not in self.argsdict:
-        self.argsdict[addition] = (val, 1)
-      else:
-        (oldval, oldcount) = self.argsdict[addition]
-        if oldval != val:
-          raise RException("Old mem value disagrees with new mem value")
-        self.argsdict[addition] = (oldval, oldcount + 1)
-    else:
-      raise RException("Invalid engine type %s" % engine.engine_type)
+    args_hash = ','.join([x.str_hash for x in args])
+    try:
+      cur_val =  self.engine.report_value(self.ids[args_hash])
+      assert (val.__eq__(cur_val)).bool
+    except: 
+      # TODO
+      raise RException("Sorry!  Propagation sometimes forces mem's value.  Need to fix implementation")
+    self.count[args_hash] = self.count[args_hash] + 1
   def remove(self, val, args = None):
-    return self.remove_mem(val, args)
-  def remove_mem(self, val, args = None, engine = None, help = None):
-    raise RException("mem currently not supported")
-    addition = ','.join([x.str_hash for x in args])
-    if addition not in self.argsdict:
-      raise RException("Should only remove additions that have been applied/incorporated")
-    if engine.engine_type == 'reduced traces':
-      if help is None:
-        raise RException("remove_mem needs to be passed an evalnode")
-      evalnode = self.argsdict[addition]
-      if help not in evalnode.mem_calls:
-        raise RException("Should only remove evalnodes which called mem with the right arguments")
-      if evalnode.mem_calls[help] == 1:
-        del evalnode.mem_calls[help]
-      else:
-        evalnode.mem_calls[help] -= 1
-      if len(evalnode.mem_calls) == 0:
-        evalnode.unevaluate()
-    elif engine.engine_type == 'traces':
-      if help is None:
-        raise RException("remove_mem needs to be passed an evalnode")
-      evalnode = self.argsdict[addition]
-      if help not in evalnode.mem_calls:
-        raise RException("Should only remove evalnodes which called mem with the right arguments")
-      del evalnode.mem_calls[help]
-      if len(evalnode.mem_calls) == 0:
-        evalnode.unevaluate()
-    elif engine.engine_type == 'randomdb':
-      (oldval, oldcount) = self.argsdict[addition]
-      if oldval != val:
-        raise RException("%s is not the mem'd value of %s!" % (val.__str__(), oldval.__str__()))
-      if oldcount == 1:
-        del self.argsdict[addition]
-      else:
-        self.argsdict[addition] = (oldval, oldcount - 1)
-    else:
-      raise RException("Invalid engine type %s" % engine.engine_type)
+    args_hash = ','.join([x.str_hash for x in args])
+    cur_val =  self.engine.report_value(self.ids[args_hash])
+    assert (val.__eq__(cur_val)).bool
+
+    args_hash = ','.join([x.str_hash for x in args])
+    self.count[args_hash] = self.count[args_hash] - 1
+    if self.count[args_hash] == 0:
+      del self.count[args_hash]
+      id = self.ids[args_hash]
+      self.engine.forget(id)
+      del self.ids[args_hash]
+    return 
+  def weight(self, args):
+    return 0
   def prob(self, val, args = None):
-    return 0 
-  def is_mem_proc(self):
-    return True
+    return 0
+  def theta_mh_prop(self, args_list, vals):
+    old_p, old_to_new_q, new_p, new_to_old_q = self.engine.reflip(self.engine.randomKey())
+    new_vals = []
+    for args in args_list:
+      new_vals.append(self.apply(args))
+    return new_vals, old_to_new_q, new_to_old_q
+  def theta_mh_restore(self):
+    self.engine.restore()
+  def theta_mh_keep(self):
+    self.engine.keep()
+  def state_weight(self):
+    return self.engine.weight()
+  def theta_prob(self):
+    return self.engine.p
   def __str__(self):
     return '(MEM\'d %s)' % str(self.procedure)
 
@@ -133,7 +83,7 @@ class mem_XRP(XRP):
     if len(args) != 1:
       raise RException("Mem takes exactly one argument")
     procedure = args[0]
-    if procedure.type != 'procedure':
+    if procedure.type != 'procedure' and procedure.type != 'xrp':
       raise RException("Can only mem procedures")
     mem_proc = mem_proc_XRP(procedure)
     return XRPValue(mem_proc)
@@ -146,39 +96,8 @@ class mem_XRP(XRP):
   # TODO: What is going on here??
   def remove(self, val, args = None):
     pass
-    #if val.type != 'xrp':
-    #  raise RException("Mem should return XRPs")
-    #if val.xrp not in self.procmem:
-    #  raise RException("mem XRP proc has not been incorporated, or already been removed")
-    #self.procmem[val.xrp] = args[0]
-
-  #def remove(self, val, args = None):
-  #  if val.type != 'xrp':
-  #    raise RException("Mem should return XRPs")
-  #  if val.xrp not in self.procmem:
-  #    raise RException("mem XRP proc has not been incorporated, or already been removed")
-  #  # unevaluate val's evalnodes
-  #  if engine.engine_type == 'traces':
-  #    for args in val.xrp.argsdict:
-  #      evalnode = val.xrp.argsdict[args]
-  #      evalnode.unevaluate()
-  #  elif engine.engine_type == 'reduced traces':
-  #    for args in val.xrp.argsdict:
-  #      evalnode = val.xrp.argsdict[args]
-  #      evalnode.unevaluate()
-  #  elif engine.engine_type == 'randomdb':
-  #    pass
-  #  else:
-  #    raise RException("Invalid engine type %s" % engine.engine_type)
-  #  del self.procmem[val.xrp]
   def prob(self, val, args = None):
     return 0 # correct since other flips will be added to db? 
-  def is_mem(self):
-    return True
-  def prob(self, val, args = None):
-    return 0 # correct since other flips will be added to db? 
-  def is_mem(self):
-    return True
   def __str__(self):
     return 'mem'
 
