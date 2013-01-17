@@ -1,7 +1,7 @@
 from engine import *
 from expressions import *
 from environment import *
-from utils.random_choice_dict import RandomChoiceDict
+from utils.random_choice_dict import RandomChoiceDict, WeightedRandomChoiceDict
 import utils.rhash as rhash
 from utils.rexceptions import RException
 
@@ -40,6 +40,12 @@ class EnvironmentNode(Environment):
 
   def spawn_child(self): 
     return EnvironmentNode(self)
+
+def list_nodes(nodes):
+  nodes_list = []
+  for node in nodes:
+    nodes_list.append(node)
+  return nodes_list
 
 class ReducedEvalNode(Node):
   def __init__(self, traces, env, expression):
@@ -145,9 +151,7 @@ class ReducedEvalNode(Node):
     if self.assume:
       assert self.parent is None
       # lookups can be affected *while* propagating up. 
-      lookup_nodes = []
-      for evalnode in self.env.get_lookups(self.assume_name, self):
-        lookup_nodes.append(evalnode)
+      lookup_nodes = list_nodes(self.env.get_lookups(self.assume_name, self))
       for evalnode in lookup_nodes:
         self.propagate_to(evalnode, restore_inactive)
     elif self.parent is not None:
@@ -211,7 +215,7 @@ class ReducedEvalNode(Node):
     else:
       val = xrp_force_val
     self.add_xrp(self.xrp, val, self.args, xrp_force_val is not None)
-    self.traces.add_xrp(self.args, self)
+    self.traces.add_xrp(self.xrp, self.args, self)
     return val
 
   def evaluate(self, xrp_force_val = None, restore = False):
@@ -421,7 +425,7 @@ class ReducedEvalNode(Node):
     self.remove_xrp(self.xrp, self.val, self.args, True)
     self.traces.remove_xrp(self)
     self.add_xrp(self.xrp, val, self.args, True)
-    self.traces.add_xrp(self.args, self)
+    self.traces.add_xrp(self.xrp, self.args, self)
     self.set_val(val)
     self.propagate_up(True)
     return self.val
@@ -434,7 +438,7 @@ class ReducedEvalNode(Node):
 
     (val, p_uneval, p_eval) = self.xrp.mh_prop(self.val, self.args)
 
-    self.traces.add_xrp(self.args, self)
+    self.traces.add_xrp(self.xrp, self.args, self)
     
     self.traces.uneval_p += p_uneval
     self.traces.p -= p_uneval
@@ -446,15 +450,6 @@ class ReducedEvalNode(Node):
 
     self.propagate_up(False)
     return self.val
-
-  def mh_prop(self, oldval, args): 
-    self.remove(oldval, args)
-    p_uneval = self.prob(oldval, args)
-    val = self.apply(args)
-    p_eval = self.prob(val, args)
-    self.incorporate(val, args)
-
-    return val, p_uneval, p_eval
 
   def str_helper(self, n = 0, verbose = True):
     string = "\n" + (' ' * n) + "|- "
@@ -488,13 +483,28 @@ class ReducedTraces(Engine):
     self.directives = []
 
     self.db = RandomChoiceDict() 
-    self.choices = {}
+    self.weighted_db = WeightedRandomChoiceDict() 
+    self.choices = {} # hash -> evalnode
+    self.xrps = {} # hash -> (xrp, set of application nodes)
 
     self.env = EnvironmentNode()
 
+    self.p = 0
     self.uneval_p = 0
     self.eval_p = 0
-    self.p = 0
+    self.new_to_old_q = 0
+    self.old_to_new_q = 0
+
+    self.debug = False
+
+    self.application_reflip = False
+    self.reflip_node = ReducedEvalNode(self, self.env, VarExpression(''))
+    self.nodes = []
+    self.old_vals = []
+    self.new_vals = []
+    self.old_val = Value() 
+    self.new_val = Value() 
+    self.reflip_xrp = XRP()
 
     self.made_proposals = 0
     self.accepted_proposals = 0
@@ -527,7 +537,10 @@ class ReducedTraces(Engine):
       return self.observes[id].p
 
   def weight(self):
-    return self.db.__len__()
+    return self.db.weight() + self.weighted_db.weight()
+
+  def random_choices(self):
+    return self.db.__len__() + self.weighted_db.__len__()
 
   def assume(self, name, expr, id = -1):
     evalnode = ReducedEvalNode(self, self.env, expr)
@@ -594,108 +607,203 @@ class ReducedTraces(Engine):
       node = self.predicts[id]
     return node
 
-  def reflip(self, hashval):
-    debug = False
+  def add_accepted_proposal(self, hashval):
+    if self.mhstats_details:
+      if hashval in self.mhstats:
+        self.mhstats[hashval]['accepted-proposals'] += 1
+      else:
+        self.mhstats[hashval] = {}
+        self.mhstats[hashval]['accepted-proposals'] = 1
+        self.mhstats[hashval]['made-proposals'] = 0
+    self.accepted_proposals += 1
 
-    if debug:
+  def add_made_proposal(self, hashval):
+    if self.mhstats_details:
+      if hashval in self.mhstats:
+        self.mhstats[hashval]['made-proposals'] += 1
+      else:
+        self.mhstats[hashval] = {}
+        self.mhstats[hashval]['made-proposals'] = 1
+        self.mhstats[hashval]['accepted-proposals'] = 0
+    self.made_proposals += 1
+
+  def reflip(self, hashval):
+    if self.debug:
       old_self = self.__str__()
 
-    reflip_node = self.choices[hashval]
-    assert reflip_node.random_xrp_apply
-    assert reflip_node.val is not None
-    
+    if hashval in self.choices:
+      self.application_reflip = True
+      self.reflip_node = self.choices[hashval]
+      if not self.reflip_node.random_xrp_apply:
+        raise RException("Reflipping something which isn't a random xrp application")
+      if self.reflip_node.val is None:
+        raise RException("Reflipping something which previously had value None")
+    else:
+      self.application_reflip = False # internal reflip
+      (self.reflip_xrp, nodes) = self.xrps[hashval]
+      self.nodes = list_nodes(nodes)
+
     self.eval_p = 0
     self.uneval_p = 0
 
     old_p = self.p
-    old_val = reflip_node.val
-    old_to_new_q = - math.log(self.weight())
-    new_val = reflip_node.reflip()
-    new_to_old_q = - math.log(self.weight())
+    self.old_to_new_q = - math.log(self.weight())
 
-    old_to_new_q += self.eval_p
-    new_to_old_q += self.uneval_p
+    if self.application_reflip:
+      self.old_val = self.reflip_node.val
+      self.new_val = self.reflip_node.reflip()
+    else:
+      # TODO: this is copied from traces.  is it correct?
+      args_list = []
+      self.old_vals = []
+      for node in self.nodes:
+        args_list.append(node.args)
+        self.old_vals.append(node.val)
+      self.old_to_new_q += math.log(self.reflip_xrp.state_weight())
+      old_p += self.reflip_xrp.theta_prob()
+  
+      self.new_vals, q_forwards, q_back = self.reflip_xrp.theta_mh_prop(args_list, self.old_vals)
+      self.old_to_new_q += q_forwards
+      self.new_to_old_q += q_back
+  
+      for i in range(len(self.nodes)):
+        node = self.nodes[i]
+        val = self.new_vals[i]
+        node.set_val(val)
+        node.propagate_up(False)
 
-    if debug:
+    new_p = self.p
+    self.new_to_old_q = - math.log(self.weight())
+    self.old_to_new_q += self.eval_p
+    self.new_to_old_q += self.uneval_p
+
+    if not self.application_reflip:
+      new_p += self.reflip_xrp.theta_prob()
+      self.new_to_old_q += math.log(self.reflip_xrp.state_weight())
+
+    if self.debug:
       print "\n-----------------------------------------\n"
       print old_self
-      print "\nCHANGING ", reflip_node, "\n  FROM  :  ", old_val, "\n  TO   :  ", new_val, "\n"
-      if old_val == new_val:
-        print "SAME VAL"
-  
-    new_p = self.p
-    eval_p = self.eval_p
-    uneval_p = self.uneval_p
-    if debug:
+      if self.application_reflip:
+        print "\nCHANGING VAL OF ", self.reflip_node, "\n  FROM  :  ", self.old_val, "\n  TO   :  ", self.new_val, "\n"
+        if (self.old_val == self.new_val).bool:
+          print "SAME VAL"
+      else:
+        print "TRANSITIONING STATE OF ", self.reflip_xrp
+
       print "new db", self
-      print "\nq(old -> new) : ", math.exp(old_to_new_q)
-      print "q(new -> old) : ", math.exp(new_to_old_q )
+      print "\nq(old -> new) : ", math.exp(self.old_to_new_q)
+      print "q(new -> old) : ", math.exp(self.new_to_old_q )
       print "p(old) : ", math.exp(old_p)
       print "p(new) : ", math.exp(new_p)
-      print 'transition prob : ',  math.exp(new_p + new_to_old_q - old_p - old_to_new_q) , "\n"
+      print 'transition prob : ',  math.exp(new_p + self.new_to_old_q - old_p - self.old_to_new_q) , "\n"
 
-    self.eval_p = 0
-    self.uneval_p = 0
-  
-    p = rrandom.random.random()
-    if new_p + new_to_old_q - old_p - old_to_new_q < math.log(p):
-      new_val = reflip_node.restore(old_val)
+    return old_p, self.old_to_new_q, new_p, self.new_to_old_q
 
-      if debug: 
-        print 'restore'
-        #print "original uneval", math.exp(uneval_p)
-        #print "original eval", math.exp(eval_p)
-        #print "new uneval", math.exp(self.uneval_p)
-        #print "new eval", math.exp(self.eval_p)
-
-      #assert self.p == old_p
-      #assert self.uneval_p  + uneval_p == eval_p + self.eval_p
-
-      #assert self.uneval_p == eval_p
-      #assert self.eval_p == uneval_p
-      # May not be true, because sometimes things get removed then incorporated
+  def restore(self):
+    if self.application_reflip:
+      self.reflip_node.restore(self.old_val)
     else:
-      if self.mhstats_details:
-        if reflip_node.hashval in self.mhstats:
-          self.mhstats[reflip_node.hashval]['accepted-proposals'] += 1
-        else:
-          self.mhstats[reflip_node.hashval] = {}
-          self.mhstats[reflip_node.hashval]['accepted-proposals'] = 1
-          self.mhstats[reflip_node.hashval]['made-proposals'] = 0
-      self.accepted_proposals += 1
-    if self.mhstats_details:
-      if reflip_node.hashval in self.mhstats:
-        self.mhstats[reflip_node.hashval]['made-proposals'] += 1
-      else:
-        self.mhstats[reflip_node.hashval] = {}
-        self.mhstats[reflip_node.hashval]['made-proposals'] = 1
-        self.mhstats[reflip_node.hashval]['accepted-proposals'] = 0
-    self.made_proposals += 1
-    if debug:
-      print "new:\n", self
+      for i in range(len(self.nodes)):
+        node = self.nodes[i]
+        node.set_val(self.old_vals[i])
+        node.propagate_up(True)
+      self.reflip_xrp.theta_mh_restore()
+    if self.debug:
+      print 'restore'
+
+  def keep(self):
+    if self.application_reflip:
+      self.reflip_node.restore(self.new_val) # NOTE: Is necessary for correctness, as we must forget old branch
+    else:
+      for i in range(len(self.nodes)):
+        node = self.nodes[i]
+        node.restore(self.new_vals[i])
+      self.reflip_xrp.theta_mh_keep()
+
+  def add_for_transition(self, xrp, evalnode):
+    hashval = xrp.__hash__()
+    if hashval not in self.xrps:
+      self.xrps[hashval] = (xrp, {})
+    (xrp, evalnodes) = self.xrps[hashval]
+    evalnodes[evalnode] = True
+
+    weight = xrp.state_weight()
+    self.delete_from_db(xrp.__hash__())
+    self.add_to_db(xrp.__hash__(), weight)
 
   # Add an XRP application node to the db
-  def add_xrp(self, args, evalnode = None):
+  def add_xrp(self, xrp, args, evalnode):
+    weight = xrp.weight(args)
     evalnode.setargs(args)
-    hashval = evalnode.hashval
-    assert not self.db.__contains__(hashval)
-    self.db.__setitem__(hashval, True)
-    self.choices[hashval] = evalnode
+    try:
+      self.new_to_old_q += math.log(weight)
+    except:
+      pass # This is only necessary if we're reflipping
+    self.add_for_transition(xrp, evalnode)
+
+    if self.weighted_db.__contains__(evalnode.hashval) or self.db.__contains__(evalnode.hashval) or (evalnode.hashval in self.choices):
+      raise RException("DB already had this evalnode")
+    self.choices[evalnode.hashval] = evalnode
+    self.add_to_db(evalnode.hashval, weight)
+
+  def add_to_db(self, hashval, weight):
+    if weight == 0:
+      return
+    elif weight == 1:
+      self.db.__setitem__(hashval, True)
+    else:
+      self.weighted_db.__setitem__(hashval, True, weight)
+
+
+  def remove_for_transition(self, xrp, evalnode):
+    hashval = xrp.__hash__()
+    (xrp, evalnodes) = self.xrps[hashval]
+    del evalnodes[evalnode]
+    if len(evalnodes) == 0:
+      del self.xrps[hashval]
+      self.delete_from_db(xrp.__hash__())
 
   def remove_xrp(self, evalnode):
+    xrp = evalnode.xrp
+    self.remove_for_transition(xrp, evalnode)
+    try:
+      self.old_to_new_q += math.log(xrp.weight(evalnode.args))
+    except:
+      pass # This fails when restoring/keeping, for example
+
     if evalnode.hashval not in self.choices:
-       raise RException("Choices did not already have this evalnode")
+      raise RException("Choices did not already have this evalnode")
     else:
       del self.choices[evalnode.hashval]
-      assert self.db.__contains__(evalnode.hashval)
-      self.db.__delitem__(evalnode.hashval)
+      self.delete_from_db(evalnode.hashval)
+
+  def delete_from_db(self, hashval):
+    if self.db.__contains__(hashval):
+      self.db.__delitem__(hashval)
+    elif self.weighted_db.__contains__(hashval):
+      self.weighted_db.__delitem__(hashval)
+
+  def randomKey(self):
+    if rrandom.random.random() * self.weight() > self.db.weight():
+      return self.weighted_db.randomKey()
+    else:
+      return self.db.randomKey()
 
   def infer(self):
     try:
-      hashval = self.db.randomKey()
+      hashval = self.randomKey()
     except:
       raise RException("Program has no randomness!")
-    self.reflip(hashval)
+
+    old_p, old_to_new_q, new_p, new_to_old_q = self.reflip(hashval)
+    p = rrandom.random.random()
+    if new_p + new_to_old_q - old_p - old_to_new_q < math.log(p):
+      self.restore()
+    else:
+      self.keep()
+      self.add_accepted_proposal(hashval)
+    self.add_made_proposal(hashval)
 
   def reset(self):
     self.__init__()

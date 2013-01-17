@@ -5,10 +5,15 @@ from xrp import *
 from utils.rexceptions import RException
 
 class mem_proc_XRP(XRP):
-  def __init__(self, procedure):
+  def __init__(self, procedure, engine_type = "traces"):
     self.deterministic = False
 
-    self.engine = Traces() # TODO: allow use of reduced traces, other engines
+    if engine_type == "traces":
+      self.engine = Traces()
+    elif engine_type == "reduced traces":
+      self.engine = ReducedTraces()
+    else:
+      raise RException("Engine type not implemented")
     self.engine.assume('f', ConstExpression(procedure), 0)
     self.procedure = procedure
     self.n = len(procedure.vars)
@@ -76,24 +81,19 @@ class mem_proc_XRP(XRP):
     return '(MEM\'d %s)' % str(self.procedure)
 
 class mem_XRP(XRP):
-  def __init__(self):
+  def __init__(self, engine_type = "traces"):
     self.deterministic = True
-    self.procmem = {}
+    self.engine_type = engine_type
   def apply(self, args = None):
     if len(args) != 1:
       raise RException("Mem takes exactly one argument")
     procedure = args[0]
     if procedure.type != 'procedure' and procedure.type != 'xrp':
       raise RException("Can only mem procedures")
-    mem_proc = mem_proc_XRP(procedure)
+    mem_proc = mem_proc_XRP(procedure, self.engine_type)
     return XRPValue(mem_proc)
   def incorporate(self, val, args = None):
-    if val.type != 'xrp':
-      raise RException("mem should only return xrps")
-    if val.xrp in self.procmem:
-      raise RException("mem XRP proc has already been incorporated")
-    self.procmem[val.xrp] = args[0]
-  # TODO: What is going on here??
+    pass
   def remove(self, val, args = None):
     pass
   def prob(self, val, args = None):

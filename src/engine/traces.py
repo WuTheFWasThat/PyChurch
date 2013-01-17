@@ -144,7 +144,7 @@ class EvalNode(Node):
   def add_xrp(self, xrp, val, args, forcing = False):
     if not xrp.deterministic:
       self.random_xrp_apply = True
-      self.traces.add_xrp(xrp, args, self, xrp.weight(args))
+      self.traces.add_xrp(xrp, args, self)
     prob = xrp.prob(val, args)
     self.p = prob
     if not forcing:
@@ -504,7 +504,7 @@ class EvalNode(Node):
 
     (val, p_uneval, p_eval) = self.xrp.mh_prop(self.val, self.args)
 
-    self.traces.add_xrp(self.xrp, self.args, self, self.xrp.weight(self.args))
+    self.traces.add_xrp(self.xrp, self.args, self)
 
     self.traces.uneval_p += p_uneval
     self.traces.p -= p_uneval
@@ -558,16 +558,16 @@ class Traces(Engine):
 
     self.db = RandomChoiceDict()
     self.weighted_db = WeightedRandomChoiceDict()
-    self.choices = {} # hash -> (xrp, evalnode) ... xrp or evalnode
+    self.choices = {} # hash -> evalnode
     self.xrps = {} # hash -> (xrp, set of application nodes)
 
     self.env = EnvironmentNode()
 
+    self.p = 0
     self.uneval_p = 0
     self.eval_p = 0
     self.old_to_new_q = 0
     self.new_to_old_q = 0
-    self.p = 0
 
     self.debug = False
 
@@ -608,6 +608,12 @@ class Traces(Engine):
       return self.p
     else:
       return self.observes[id].p
+
+  def weight(self):
+    return self.db.weight() + self.weighted_db.weight()
+
+  def random_choices(self):
+    return self.db.__len__() + self.weighted_db.__len__()
 
   def assume(self, name, expr, id):
     evalnode = EvalNode(self, self.env, expr)
@@ -699,7 +705,6 @@ class Traces(Engine):
     self.made_proposals += 1
   
   def reflip(self, hashval):
-
     if self.debug:
       old_self = self.__str__()
 
@@ -759,7 +764,7 @@ class Traces(Engine):
       print old_self
       if self.application_reflip:
         print "\nCHANGING VAL OF ", self.reflip_node, "\n  FROM  :  ", self.old_val, "\n  TO   :  ", self.new_val, "\n"
-        if self.old_val == self.new_val:
+        if (self.old_val == self.new_val).bool:
           print "SAME VAL"
       else:
         print "TRANSITIONING STATE OF ", self.reflip_xrp
@@ -806,10 +811,11 @@ class Traces(Engine):
     self.add_to_db(xrp.__hash__(), weight)
 
   # Add an XRP application node to the db
-  def add_xrp(self, xrp, args, evalnode, weight = 1):
+  def add_xrp(self, xrp, args, evalnode):
+    weight = xrp.weight(args)
     evalnode.setargs(args)
     try:
-      self.new_to_old_q += math.log(xrp.weight(args))
+      self.new_to_old_q += math.log(weight)
     except:
       pass # This is only necessary if we're reflipping
     self.add_for_transition(xrp, evalnode)
@@ -826,12 +832,6 @@ class Traces(Engine):
       self.db.__setitem__(hashval, True)
     else:
       self.weighted_db.__setitem__(hashval, True, weight)
-
-  def weight(self):
-    return self.db.weight() + self.weighted_db.weight()
-
-  def random_choices(self):
-    return self.db.__len__() + self.weighted_db.__len__()
 
   def remove_for_transition(self, xrp, evalnode):
     hashval = xrp.__hash__()
@@ -880,7 +880,6 @@ class Traces(Engine):
       self.keep()
       self.add_accepted_proposal(hashval)
     self.add_made_proposal(hashval)
-
 
   def reset(self):
     self.__init__()

@@ -186,7 +186,7 @@ class Directives:
     self.assume('CRP/make', xrp(gen_CRP_XRP()), True)
     self.assume('beta-binomial/make', xrp(make_beta_bernoulli_XRP()), True)
   
-    self.assume('mem', xrp(mem_XRP()), True)
+    self.assume('mem', xrp(mem_XRP(self.engine.engine_type)), True)
 
     """DEFINITION OF DP"""
     self.assume('DP_uncollapsed', \

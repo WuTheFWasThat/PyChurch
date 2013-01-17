@@ -9,6 +9,7 @@ import math
 class XRP:
   def __init__(self):
     self.deterministic = False
+    self.hashval = 0
     return
   def apply(self, args = None):
     raise RException("Not implemented")
@@ -52,11 +53,9 @@ class XRP:
   def __str__(self):
     return 'XRP'
   def __hash__(self):
-    try:
-      return self.hashval
-    except:
+    if self.hashval == 0:
       self.hashval = rrandom.random.randbelow()
-      return self.hashval
+    return self.hashval
 
 # TODO
 # 
