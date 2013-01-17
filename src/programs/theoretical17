@@ -1,0 +1,4 @@
+assume  draw-type (CRP/make 1.0)
+assume  obs   (mem (lambda (type) (symmetric-dirichlet-multinomial/make 0.01 3)))
+infer_many (= ((obs (draw-type))) ((obs (draw-type))))
+

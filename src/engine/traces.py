@@ -575,8 +575,8 @@ class Traces(Engine):
     self.application_reflip = False
     self.reflip_node = EvalNode(self, self.env, VarExpression(''))
     self.nodes = []
-    self.old_vals = []
-    self.new_vals = []
+    self.old_vals = [Value()]
+    self.new_vals = [Value()]
     self.old_val = Value() 
     self.new_val = Value() 
     self.reflip_xrp = XRP()
@@ -762,6 +762,9 @@ class Traces(Engine):
     if self.debug:
       print "\n-----------------------------------------\n"
       print old_self
+      print "old:\n", old_self
+  
+      print "new:\n", self.__str__()
       if self.application_reflip:
         print "\nCHANGING VAL OF ", self.reflip_node, "\n  FROM  :  ", self.old_val, "\n  TO   :  ", self.new_val, "\n"
         if (self.old_val == self.new_val).bool:
@@ -769,12 +772,11 @@ class Traces(Engine):
       else:
         print "TRANSITIONING STATE OF ", self.reflip_xrp
   
-      print "new db", self
-      print "\nq(old -> new) : ", math.exp(self.old_to_new_q)
-      print "q(new -> old) : ", math.exp(self.new_to_old_q )
-      print "p(old) : ", math.exp(old_p)
-      print "p(new) : ", math.exp(new_p)
-      print 'transition prob : ',  math.exp(new_p + self.new_to_old_q - old_p - self.old_to_new_q) , "\n"
+      print "\nq(old -> new) : ", self.old_to_new_q
+      print "q(new -> old) : ", self.new_to_old_q 
+      print "p(old) : ", old_p
+      print "p(new) : ", new_p
+      print 'transition prob : ',  new_p + self.new_to_old_q - old_p - self.old_to_new_q , "\n"
 
     return old_p, self.old_to_new_q, new_p, self.new_to_old_q
 

@@ -60,9 +60,6 @@ def sample_categorical(probs, z = 1):
 # GENERALLY USEFUL XRPs
 
 class noisy_negate_XRP(XRP):
-  def __init__(self):
-    self.deterministic = False
-    return
   def apply(self, args = None):
     if len(args) != 2:
       raise RException("noisy_negate must take 2 arguments")
@@ -85,9 +82,6 @@ class noisy_negate_XRP(XRP):
     return 'noisy_negate_XRP'
 
 class noisy_XRP(XRP):
-  def __init__(self):
-    self.deterministic = False
-    return
   def apply(self, args = None):
     if len(args) != 2:
       raise RException("noisy must take 2 arguments")
@@ -116,6 +110,7 @@ class noisy_XRP(XRP):
 
 class array_XRP(XRP):
   def __init__(self, array):
+    self.initialize()
     self.deterministic = True
     self.array = array
     self.n = len(self.array)
@@ -141,6 +136,7 @@ class array_XRP(XRP):
 
 class make_array_XRP(XRP):
   def __init__(self):
+    self.initialize()
     self.deterministic = True
     return
   def apply(self, args = None):
@@ -150,6 +146,7 @@ class make_array_XRP(XRP):
 
 class make_symmetric_array_XRP(XRP):
   def __init__(self):
+    self.initialize()
     self.deterministic = True
     return
   def apply(self, args = None):
@@ -159,9 +156,6 @@ class make_symmetric_array_XRP(XRP):
     return 'array_make_XRP'
 
 class categorical_XRP(XRP):
-  def __init__(self):
-    self.deterministic = False
-    return
   def apply(self, args = None):
     probs = [check_prob(x.num) for x in args]
     if not .999 <= sum(probs) <= 1.001:
@@ -182,9 +176,6 @@ class categorical_XRP(XRP):
 # DISTRIBUTIONS
 
 class gaussian_XRP(XRP):
-  def __init__(self):
-    self.deterministic = False
-    return
   def apply(self, args = None):
     (mu, sigma) = (args[0].num, args[1].num)
     check_pos(sigma)
@@ -198,9 +189,6 @@ class gaussian_XRP(XRP):
     return 'normal'
 
 class beta_XRP(XRP):
-  def __init__(self):
-    self.deterministic = False
-    return
   def apply(self, args = None):
     (a,b) = (args[0].num, args[1].num)
     check_pos(a)
@@ -217,9 +205,6 @@ class beta_XRP(XRP):
     return 'beta'
 
 class gamma_XRP(XRP):
-  def __init__(self):
-    self.deterministic = False
-    return
   def apply(self, args = None):
     (a,b) = (args[0].num, args[1].num)
     check_pos(a)
@@ -235,9 +220,6 @@ class gamma_XRP(XRP):
     return 'gamma'
 
 class bernoulli_XRP(XRP):
-  def __init__(self):
-    self.deterministic = False
-    return
   def apply(self, args = None):
     if len(args) == 0:
       p = 0.5
@@ -263,9 +245,6 @@ class bernoulli_XRP(XRP):
     return 'bernoulli'
 
 class uniform_discrete_XRP(XRP):
-  def __init__(self):
-    self.deterministic = False
-    return
   def apply(self, args = None):
     n = args[0].nat
     return NatValue(rrandom.random.randbelow(n))
@@ -281,6 +260,7 @@ class uniform_discrete_XRP(XRP):
 
 class beta_bernoulli_XRP(XRP):
   def __init__(self, start_state = (1, 1)):
+    self.initialize()
     self.deterministic = False
     (self.h, self.t) = start_state
   def apply(self, args = None):
@@ -316,6 +296,7 @@ class beta_bernoulli_XRP(XRP):
 
 class make_beta_bernoulli_XRP(XRP):
   def __init__(self):
+    self.initialize()
     self.deterministic = True
     return
   # TODO: decide convention on heads/tails
@@ -326,9 +307,6 @@ class make_beta_bernoulli_XRP(XRP):
     return 'beta_bernoulli_make_XRP'
 
 class dirichlet_XRP(XRP):
-  def __init__(self):
-    self.deterministic = False
-    return
   def apply(self, args = None):
     array_xrp = args[0]
     probs = [NumValue(p) for p in dirichlet([alpha_i.num for alpha_i in array_xrp.xrp.array])]
@@ -358,7 +336,7 @@ class dirichlet_XRP(XRP):
 
 class dirichlet_multinomial_XRP(XRP):
   def __init__(self, args):
-    self.deterministic = False
+    self.initialize()
     self.alphas = args
     self.n = len(self.alphas)
     self.alpha = 0
@@ -398,6 +376,7 @@ class dirichlet_multinomial_XRP(XRP):
 
 class make_dirichlet_multinomial_XRP(XRP):
   def __init__(self):
+    self.initialize()
     self.deterministic = True
     return
   def apply(self, args = None):
@@ -409,9 +388,6 @@ class make_dirichlet_multinomial_XRP(XRP):
     return 'dirichlet_multinomial_make_XRP'
 
 class symmetric_dirichlet_XRP(XRP):
-  def __init__(self):
-    self.deterministic = False
-    return
   def apply(self, args = None):
     (alpha, n) = (args[0], args[1])
     probs = [NumValue(p) for p in dirichlet([alpha.num] * n.nat)]
@@ -432,6 +408,7 @@ class symmetric_dirichlet_XRP(XRP):
 
 class make_symmetric_dirichlet_multinomial_XRP(XRP):
   def __init__(self):
+    self.initialize()
     self.deterministic = True
     return
   def apply(self, args = None):
@@ -444,7 +421,7 @@ class make_symmetric_dirichlet_multinomial_XRP(XRP):
 
 class CRP_XRP(XRP):
   def __init__(self, alpha):
-    self.deterministic = False
+    self.initialize()
     self.tables = {}
     check_pos(alpha)
     self.alpha = alpha
@@ -493,6 +470,7 @@ class CRP_XRP(XRP):
 
 class gen_CRP_XRP(XRP):
   def __init__(self):
+    self.initialize()
     self.deterministic = True
     return
   def apply(self, args = None):

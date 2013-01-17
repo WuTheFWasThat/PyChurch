@@ -75,7 +75,13 @@ if __name__ == "__main__":
     if msg == 'exit':
       break
     elif msg:
-      ret_msg = directives.parse_and_run_command(msg)
+      try:
+        ret_msg = directives.parse_and_run_command(msg)
+      except Exception as e:
+        if use_pypy:
+          ret_msg = "Error occured"
+        else:
+          ret_msg = e.message
       print
       print ret_msg
       print

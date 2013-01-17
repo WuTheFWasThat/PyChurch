@@ -1,0 +1,15 @@
+assume cloudy (bernoulli 0.5)
+assume sprinkler (bernoulli (if cloudy 0.1 0.3))
+
+infer_many cloudy 1000 1
+infer_many sprinkler 1000 1
+
+observe (noisy sprinkler 0.0001) True
+
+infer_many cloudy 10000 1
+infer_many sprinkler 10000 1
+
+report_directives DIRECTIVES-ASSUME
+report_directives DIRECTIVES-OBSERVE
+
+exit

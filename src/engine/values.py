@@ -8,8 +8,11 @@ import math
 
 class XRP:
   def __init__(self):
+    self.initialize()
+    return
+  def initialize(self):
     self.deterministic = False
-    self.hashval = 0
+    self.hashval = rrandom.random.randbelow()
     return
   def apply(self, args = None):
     raise RException("Not implemented")
@@ -53,8 +56,6 @@ class XRP:
   def __str__(self):
     return 'XRP'
   def __hash__(self):
-    if self.hashval == 0:
-      self.hashval = rrandom.random.randbelow()
     return self.hashval
 
 # TODO
