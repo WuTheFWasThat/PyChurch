@@ -354,7 +354,7 @@ class Directives:
   
       self.infer(skip)
   
-      val = self.report_value(id).__hash__()
+      val = self.report_value(id).__str__()
       if val in dict:
         dict[val] += 1
       else:

@@ -686,7 +686,7 @@ class ReducedTraces(Engine):
       print old_self
       if self.application_reflip:
         print "\nCHANGING VAL OF ", self.reflip_node, "\n  FROM  :  ", self.old_val, "\n  TO   :  ", self.new_val, "\n"
-        if (self.old_val == self.new_val).bool:
+        if (self.old_val.__eq__(self.new_val)).bool:
           print "SAME VAL"
       else:
         print "TRANSITIONING STATE OF ", self.reflip_xrp
