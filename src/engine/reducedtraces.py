@@ -73,17 +73,20 @@ class ReducedEvalNode(Node):
   def reset(self):
     self.active = False # Whether this node is currently activated
 
+    # Relative path (hash) -> evalnode
     self.children = {}  
     self.active_children = {}  
-    # relative path -> evalnode
 
+    # Bookkeeping for all references made.  Necessary since they are deleted sometimes, so we should stop propagating to this node from that variable.
     self.lookups = {}  
 
+    # List of (xrp, args).  Bookkeeping for all un-forcing XRPs.  Necessary to keep track, so we can remove their old applications
     self.xrp_applies = []  
-    # (xrp, args) list
+
     self.random_xrp_apply = False
     self.xrp = XRP()
     self.args = None
+
     self.p = 0
 
     self.val = None
@@ -507,11 +510,10 @@ class ReducedTraces(Engine):
     self.new_val = Value() 
     self.reflip_xrp = XRP()
 
-    self.made_proposals = 0
-    self.accepted_proposals = 0
-    
     self.mhstats_details = False
     self.mhstats = {}
+    self.made_proposals = 0
+    self.accepted_proposals = 0
 
     self.hashval = rrandom.random.randbelow()
     return
