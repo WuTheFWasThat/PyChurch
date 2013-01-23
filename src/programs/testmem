@@ -6,3 +6,14 @@ assume c (if (flip) (mem flip) (mem flip))
 assume d (c)
 
 infer_many d 1000 5
+
+assume fib (lambda (x) (if (< x 2) x (+ (fib (- x 1)) (fib (- x 2)))))
+
+predict (fib 10)
+predict (fib 10)
+
+assume memfib (mem fib)
+
+predict (memfib 10)
+predict (memfib 10)
+

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.4-1.40.13 (TeX Live 2012) (format=pdflatex 2012.6.30)  11 DEC 2012 11:16
+This is pdfTeX, Version 3.1415926-2.4-1.40.13 (TeX Live 2012) (format=pdflatex 2012.6.30)  22 JAN 2013 21:47
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -19,8 +19,8 @@ lovak, slovenian, spanish, swedish, turkish, turkmen, ukrainian, uppersorbian,
 welsh, loaded.
 (/usr/local/texlive/2012/texmf-dist/tex/latex/base/article.cls
 Document Class: article 2007/10/19 v1.4h Standard LaTeX document class
-(/usr/local/texlive/2012/texmf-dist/tex/latex/base/size10.clo
-File: size10.clo 2007/10/19 v1.4h Standard LaTeX file (size option)
+(/usr/local/texlive/2012/texmf-dist/tex/latex/base/size12.clo
+File: size12.clo 2007/10/19 v1.4h Standard LaTeX file (size option)
 )
 \c@part=\count79
 \c@section=\count80
@@ -664,15 +664,15 @@ LaTeX Font Info:    Try loading font information for U+rsfs on input line 37.
 (/usr/local/texlive/2012/texmf-dist/tex/latex/jknapltx/ursfs.fd
 File: ursfs.fd 1998/03/24 rsfs font definition file (jk)
 )
-(./MEng thesis.toc)
+(./MEng thesis.toc [1
+
+
+
+{/usr/local/texlive/2012/texmf-var/fonts/map/pdftex/updmap/pdftex.map}])
 \tf@toc=\write6
 \openout6 = `"MEng thesis.toc"'.
 
- [1
 
-
-
-{/usr/local/texlive/2012/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
 Underfull \hbox (badness 10000) in paragraph at lines 80--81
 
  []
@@ -692,826 +692,144 @@ Underfull \hbox (badness 10000) in paragraph at lines 170--171
 
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 172--173
-
- []
-
-LaTeX Font Info:    Try loading font information for OMS+cmr on input line 181.
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 176.
 
 (/usr/local/texlive/2012/texmf-dist/tex/latex/base/omscmr.fd
 File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
 )
-LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 181.
-
-Underfull \hbox (badness 10000) in paragraph at lines 229--230
+LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <12> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 176.
+ [3]
+Underfull \hbox (badness 10000) in paragraph at lines 235--236
 
  []
 
-[3]
-LaTeX Font Info:    Try loading font information for OMS+cmtt on input line 252
+[4]
+LaTeX Font Info:    Try loading font information for OMS+cmtt on input line 258
 .
-LaTeX Font Info:    No file OMScmtt.fd. on input line 252.
+LaTeX Font Info:    No file OMScmtt.fd. on input line 258.
 
 
 LaTeX Font Warning: Font shape `OMS/cmtt/m/n' undefined
 (Font)              using `OMS/cmsy/m/n' instead
-(Font)              for symbol `textbraceleft' on input line 252.
-
-[4]
-Underfull \hbox (badness 10000) in paragraph at lines 318--319
-
- []
+(Font)              for symbol `textbraceleft' on input line 258.
 
 [5]
-Underfull \hbox (badness 10000) in paragraph at lines 334--335
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 336--337
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 338--339
-
+Overfull \hbox (3.50609pt too wide) in paragraph at lines 275--277
+\OT1/cmr/m/n/12 syn-tac-tic sugar for \OT1/cmtt/m/n/12 (bernoulli (if [observat
+ion] (- 1 [noise]) [noise]))\OT1/cmr/m/n/12 , where you
  []
 
 [6]
-Underfull \hbox (badness 10000) in paragraph at lines 358--359
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 380--381
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 382--383
+Underfull \hbox (badness 10000) in paragraph at lines 324--325
 
  []
 
 [7]
-Underfull \hbox (badness 10000) in paragraph at lines 498--499
+Overfull \hbox (0.91396pt too wide) in paragraph at lines 339--340
+[]\OT1/cmtt/m/n/12 prob(state, value, args)\OT1/cmr/m/n/12 , which re-turns the
+ (log) prob-a-bil-ity of re-turn-ing the value,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 356--357
 
  []
 
 [8]
-Underfull \hbox (badness 10000) in paragraph at lines 513--514
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 521--522
+Underfull \hbox (badness 10000) in paragraph at lines 376--377
 
  []
 
 [9]
-Underfull \hbox (badness 10000) in paragraph at lines 537--538
+Underfull \hbox (badness 10000) in paragraph at lines 406--407
 
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 553--556
-
- []
-
-[10]
-Underfull \hbox (badness 10000) in paragraph at lines 580--581
+[10] [11]
+Underfull \hbox (badness 10000) in paragraph at lines 526--527
 
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 608--609
-
- []
-
-[11]
-Underfull \hbox (badness 10000) in paragraph at lines 616--617
+[12]
+Underfull \hbox (badness 10000) in paragraph at lines 614--615
 
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 618--619
-
+[13]
+Overfull \hbox (24.23694pt too wide) in paragraph at lines 636--637
+[]\OT1/cmr/m/n/12 One so-lu-tion is to ``col-lapse" this sam-pling into an XRP.
+ That is, we turn \OT1/cmtt/m/n/12 sample-categorical
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 626--627
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 628--629
-
- []
-
-[12] [13]
-Underfull \hbox (badness 10000) in paragraph at lines 707--708
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 720--721
+Underfull \hbox (badness 10000) in paragraph at lines 642--643
 
  []
 
 [14]
-<../graphs/categorical/categorical-reduced-c-space.png, id=258, 578.16pt x 433.
-62pt>
-File: ../graphs/categorical/categorical-reduced-c-space.png Graphic file (type 
-png)
- <use ../graphs/categorical/categorical-reduced-c-space.png>
-Package pdftex.def Info: ../graphs/categorical/categorical-reduced-c-space.png 
-used on input line 762.
-(pdftex.def)             Requested size: 231.2599pt x 173.44492pt.
+Underfull \hbox (badness 10000) in paragraph at lines 662--663
 
-<../graphs/categorical/categorical-reduced-py-space.png, id=260, 578.16pt x 433
-.62pt>
-File: ../graphs/categorical/categorical-reduced-py-space.png Graphic file (type
- png)
- <use ../graphs/categorical/categorical-reduced-py-space.png>
-Package pdftex.def Info: ../graphs/categorical/categorical-reduced-py-space.png
- used on input line 763.
-(pdftex.def)             Requested size: 231.2599pt x 173.44492pt.
-
-<../graphs/categorical/categorical-traces-c-space.png, id=261, 578.16pt x 433.6
-2pt>
-File: ../graphs/categorical/categorical-traces-c-space.png Graphic file (type p
-ng)
- <use ../graphs/categorical/categorical-traces-c-space.png>
-Package pdftex.def Info: ../graphs/categorical/categorical-traces-c-space.png u
-sed on input line 765.
-(pdftex.def)             Requested size: 231.2599pt x 173.44492pt.
-
-<../graphs/categorical/categorical-traces-py-space.png, id=262, 578.16pt x 433.
-62pt>
-File: ../graphs/categorical/categorical-traces-py-space.png Graphic file (type 
-png)
- <use ../graphs/categorical/categorical-traces-py-space.png>
-Package pdftex.def Info: ../graphs/categorical/categorical-traces-py-space.png 
-used on input line 766.
-(pdftex.def)             Requested size: 231.2599pt x 173.44492pt.
- [15 <../graphs/categorical/categorical-reduced-c-space.png> <../graphs/categor
-ical/categorical-reduced-py-space.png> <../graphs/categorical/categorical-trace
-s-c-space.png> <../graphs/categorical/categorical-traces-py-space.png>]
-<../graphs/categorical/categorical-reduced-c-time.png, id=271, 578.16pt x 433.6
-2pt>
-File: ../graphs/categorical/categorical-reduced-c-time.png Graphic file (type p
-ng)
- <use ../graphs/categorical/categorical-reduced-c-time.png>
-Package pdftex.def Info: ../graphs/categorical/categorical-reduced-c-time.png u
-sed on input line 770.
-(pdftex.def)             Requested size: 231.2599pt x 173.44492pt.
-
-<../graphs/categorical/categorical-reduced-py-time.png, id=272, 578.16pt x 433.
-62pt>
-File: ../graphs/categorical/categorical-reduced-py-time.png Graphic file (type 
-png)
- <use ../graphs/categorical/categorical-reduced-py-time.png>
-Package pdftex.def Info: ../graphs/categorical/categorical-reduced-py-time.png 
-used on input line 771.
-(pdftex.def)             Requested size: 231.2599pt x 173.44492pt.
-
-<../graphs/categorical/categorical-traces-c-time.png, id=273, 578.16pt x 433.62
-pt>
-File: ../graphs/categorical/categorical-traces-c-time.png Graphic file (type pn
-g)
- <use ../graphs/categorical/categorical-traces-c-time.png>
-Package pdftex.def Info: ../graphs/categorical/categorical-traces-c-time.png us
-ed on input line 773.
-(pdftex.def)             Requested size: 231.2599pt x 173.44492pt.
-
-<../graphs/categorical/categorical-traces-py-time.png, id=274, 578.16pt x 433.6
-2pt>
-File: ../graphs/categorical/categorical-traces-py-time.png Graphic file (type p
-ng)
- <use ../graphs/categorical/categorical-traces-py-time.png>
-Package pdftex.def Info: ../graphs/categorical/categorical-traces-py-time.png u
-sed on input line 774.
-(pdftex.def)             Requested size: 231.2599pt x 173.44492pt.
-
-Overfull \hbox (20.46446pt too wide) in paragraph at lines 832--832
-[]          \OT1/cmtt/m/n/9 (symmetric-dirichlet-multinomial/make (/ (get-docum
-ent-topic-hyper doc) ntopics) ntopics)))[] 
  []
 
 
-Overfull \hbox (1.56468pt too wide) in paragraph at lines 832--832
-[]          \OT1/cmtt/m/n/9 (symmetric-dirichlet-multinomial/make (/ (get-topic
--word-hyper topic) nwords) nwords)))[] 
+Underfull \hbox (badness 10000) in paragraph at lines 664--665
+
  []
 
+[15] [16]
+Underfull \hbox (badness 10000) in paragraph at lines 747--748
 
-Overfull \hbox (25.1894pt too wide) in paragraph at lines 832--832
-[]\OT1/cmtt/m/n/9 ASSUME get-word (mem (lambda (doc pos) ((get-topic-word-sampl
-er ((get-document-topic-sampler doc))))))[] 
  []
 
-[16 <../graphs/categorical/categorical-reduced-c-time.png> <../graphs/categoric
-al/categorical-reduced-py-time.png> <../graphs/categorical/categorical-traces-c
--time.png> <../graphs/categorical/categorical-traces-py-time.png>]
-<../graphs/topic_models/topic-model-collapsed-traces-py-memory.png, id=283, 578
-.16pt x 433.62pt>
-File: ../graphs/topic_models/topic-model-collapsed-traces-py-memory.png Graphic
- file (type png)
+[17]
+Underfull \hbox (badness 10000) in paragraph at lines 833--834
 
-<use ../graphs/topic_models/topic-model-collapsed-traces-py-memory.png>
-Package pdftex.def Info: ../graphs/topic_models/topic-model-collapsed-traces-py
--memory.png used on input line 838.
-(pdftex.def)             Requested size: 231.2599pt x 173.44492pt.
-
-<../graphs/topic_models/topic-model-collapsed-reduced-traces-py-memory.png, id=
-284, 578.16pt x 433.62pt>
-File: ../graphs/topic_models/topic-model-collapsed-reduced-traces-py-memory.png
- Graphic file (type png)
-
-<use ../graphs/topic_models/topic-model-collapsed-reduced-traces-py-memory.png>
-Package pdftex.def Info: ../graphs/topic_models/topic-model-collapsed-reduced-t
-races-py-memory.png used on input line 839.
-(pdftex.def)             Requested size: 231.2599pt x 173.44492pt.
-
-<../graphs/topic_models/topic-model-collapsed-traces-py-time.png, id=285, 578.1
-6pt x 433.62pt>
-File: ../graphs/topic_models/topic-model-collapsed-traces-py-time.png Graphic f
-ile (type png)
-
-<use ../graphs/topic_models/topic-model-collapsed-traces-py-time.png>
-Package pdftex.def Info: ../graphs/topic_models/topic-model-collapsed-traces-py
--time.png used on input line 842.
-(pdftex.def)             Requested size: 231.2599pt x 173.44492pt.
-
-<../graphs/topic_models/topic-model-collapsed-reduced-traces-py-time.png, id=28
-6, 578.16pt x 433.62pt>
-File: ../graphs/topic_models/topic-model-collapsed-reduced-traces-py-time.png G
-raphic file (type png)
-
-<use ../graphs/topic_models/topic-model-collapsed-reduced-traces-py-time.png>
-Package pdftex.def Info: ../graphs/topic_models/topic-model-collapsed-reduced-t
-races-py-time.png used on input line 843.
-(pdftex.def)             Requested size: 231.2599pt x 173.44492pt.
-
-<logscores.png, id=287, 578.16pt x 433.62pt>
-File: logscores.png Graphic file (type png)
- <use logscores.png>
-Package pdftex.def Info: logscores.png used on input line 849.
-(pdftex.def)             Requested size: 202.35902pt x 151.76927pt.
- [17 <../graphs/topic_models/topic-model-collapsed-traces-py-memory.png> <../gr
-aphs/topic_models/topic-model-collapsed-reduced-traces-py-memory.png> <../graph
-s/topic_models/topic-model-collapsed-traces-py-time.png> <../graphs/topic_model
-s/topic-model-collapsed-reduced-traces-py-time.png> <./logscores.png>]
-Overfull \hbox (1220.73027pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 0: model(0.0337) structure(0.0278) algorithm(0.0272) n
-etwork(0.0259) system(0.0226) sonn(0.0223) number(0.0213) node(0.0209) paramete
-r(0.0181) function(0.0175) neural(0.0163) mdl(0.016) estimation(0.0154) organiz
-ing(0.0139) criterion(0.013) performance(0.0125) search(0.0125) input(0.0103) o
-utput(0.0101) sec(0.0097)[] 
  []
 
-
-Overfull \hbox (1330.97931pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 1: case(0.0099) fraction(0.0083) training(0.0082) prob
-ability(0.0073) weight(0.0069) appreciated(0.0064) compensating(0.0057) sional(
-0.0006) predictive(0.0005) comparative(0.0005) inferred(0.0005) push(0.0005) sc
-hmidt(0.0005) neighbout(0.0005) thn(0.0005) aminergic(0.0005) combiner(0.0005) 
-allinson(0.0005) songbird(0.0005) mrtd(0.0005)[] 
- []
-
-
-Overfull \hbox (1299.47958pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 2: tension(0.0006) lhe(0.0006) extremely(0.0005) induc
-tive(0.0005) modularity(0.0005) ensuring(0.0005) continu(0.0005) kosowsky(0.000
-5) loth(0.0005) leverages(0.0005) bmu(0.0005) oid(0.0005) ventional(0.0005) cre
-atures(0.0005) approximation(0.0004) simulation(0.0004) provide(0.0004) traject
-ory(0.0004) world(0.0004) nature(0.0004)[] 
- []
-
-
-Overfull \hbox (1220.73027pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 3: florida(0.0006) frames(0.0005) prototypes(0.0005) g
-enes(0.0005) atr(0.0005) sym(0.0005) benign(0.0005) internally(0.0005) kronecke
-r(0.0005) lstm(0.0005) illill(0.0005) foun(0.0005) tme(0.0005) leary(0.0005) ad
-demup(0.0005) activation(0.0004) statistical(0.0004) synapses(0.0004) validatio
-n(0.0004) limited(0.0004)[] 
- []
-
-
-Overfull \hbox (1283.72972pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 4: annealing(0.0262) equilibrium(0.0178) average(0.017
-5) spin(0.0157) simulated(0.0143) network(0.0134) mean(0.0134) hopfield(0.0109)
- found(0.0107) operation(0.0107) temperature(0.0107) providing(0.0107) performa
-nce(0.0101) nonlinear(0.0081) bin(0.0079) graph(0.0075) case(0.0074) variance(0
-.0071) system(0.0066) ability(0.0065)[] 
- []
-
-
-Overfull \hbox (1141.98096pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 5: count(0.0088) modify(0.0088) error(0.0082) output(0
-.008) total(0.0078) numeral(0.0072) set(0.0069) threshold(0.0065) wij(0.005) pr
-ovidence(0.0006) top(0.0005) pole(0.0005) jitter(0.0005) pay(0.0005) neck(0.000
-5) converting(0.0005) glove(0.0005) analogical(0.0005) symptom(0.0005) extincti
-on(0.0005)[] 
- []
-
-
-Overfull \hbox (1288.97968pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 6: network(0.0412) solution(0.0402) human(0.0379) patt
-ern(0.0339) generalization(0.0317) subject(0.0311) number(0.0246) unit(0.0206) 
-minimal(0.0189) analysis(0.0179) response(0.0161) categorization(0.0151) adapti
-ve(0.015) hidden(0.0141) training(0.0135) initial(0.0126) result(0.0123) proble
-m(0.0121) learning(0.0108) set(0.0102)[] 
- []
-
-
-Overfull \hbox (1304.72954pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 7: solution(0.0221) generalization(0.0174) human(0.011
-9) cursor(0.0115) network(0.0105) external(0.0077) xor(0.0074) experiment(0.007
-) response(0.0067) system(0.0066) expected(0.0065) profiles(0.0065) perfusion(0
-.0065) examine(0.0062) implying(0.0062) inv(0.0062) probabilistic(0.0061) graph
-(0.006) desired(0.006) artificial(0.0059)[] 
- []
-
-
-Overfull \hbox (1136.731pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 8: learning(0.0264) point(0.0231) algorithm(0.0195) ne
-twork(0.0175) function(0.0166) layer(0.0153) local(0.0144) linear(0.0143) error
-(0.0127) data(0.0122) matrix(0.0118) multi(0.0117) convex(0.0116) set(0.0111) i
-nput(0.0104) saddle(0.0103) unit(0.0102) resolution(0.0101) problem(0.0099) rea
-l(0.0091)[] 
- []
-
-
-Overfull \hbox (1210.23036pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 9: classifier(0.0933) network(0.0557) system(0.0425) m
-essage(0.0407) set(0.0403) match(0.0365) node(0.0343) link(0.028) post(0.0221) 
-neural(0.0204) strength(0.0198) environment(0.019) weight(0.0181) learning(0.01
-59) algorithm(0.0146) messages(0.0134) nodes(0.0127) bid(0.0121) environmental(
-0.0118) genetic(0.0117)[] 
- []
-
-
-Overfull \hbox (1315.22945pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 10: dimensional(0.0191) ability(0.0172) sum(0.0108) sp
-ace(0.0107) input(0.0095) inventory(0.0093) fixed(0.0067) concentric(0.0067) fa
-cto(0.0065) eigenvector(0.0064) detail(0.0063) hierarchy(0.0063) lattice(0.0062
-) integrating(0.0062) associates(0.0062) network(0.0061) level(0.0061) mapping(
-0.0061) resolution(0.0061) matrices(0.0061)[] 
- []
-
-
-Overfull \hbox (1341.47922pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 11: number(0.0088) conceptual(0.0006) overcomes(0.0006
-) perceptron(0.0005) development(0.0005) diagonal(0.0005) numerical(0.0005) ari
-thmetic(0.0005) infinitely(0.0005) optima(0.0005) ues(0.0005) laminar(0.0005) t
-riad(0.0005) nism(0.0005) eigenfeatures(0.0005) dynamic(0.0004) measured(0.0004
-) processes(0.0004) text(0.0004) primary(0.0004)[] 
- []
-
-
-Overfull \hbox (1252.23pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 12: remarkably(0.0006) doubly(0.0006) herbster(0.0006)
- net(0.0005) conclusion(0.0005) empirical(0.0005) sides(0.0005) cation(0.0005) 
-tanaka(0.0005) volt(0.0005) dopamine(0.0005) ito(0.0005) weaken(0.0005) lades(0
-.0005) synchronizing(0.0005) fedorov(0.0005) section(0.0004) computation(0.0004
-) note(0.0004) modeling(0.0004)[] 
- []
-
-
-Overfull \hbox (1325.72935pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 13: phonetic(0.0007) stationary(0.0006) xij(0.0006) hu
-ngry(0.0006) session(0.0005) entered(0.0005) stant(0.0005) symmetrically(0.0005
-) dam(0.0005) services(0.0005) deterministically(0.0005) eaton(0.0005) dumais(0
-.0005) siggraph(0.0005) stringent(0.0005) shortening(0.0005) small(0.0004) cont
-ext(0.0004) chosen(0.0004) evaluation(0.0004)[] 
- []
-
-
-Overfull \hbox (1183.98059pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 14: examples(0.0351) function(0.0333) net(0.0268) thre
-shold(0.0201) nodes(0.0196) random(0.0195) weight(0.0192) bound(0.0182) distrib
-ution(0.0168) theorem(0.0166) learning(0.0163) input(0.0156) network(0.0143) no
-de(0.013) layer(0.0128) set(0.0119) size(0.0116) fraction(0.0115) number(0.011)
- algorithm(0.0109)[] 
- []
-
-
-Overfull \hbox (1273.22981pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 15: lipschitz(0.0081) jaakkola(0.0006) sual(0.0006) sy
-naptic(0.0005) energy(0.0005) combination(0.0005) column(0.0005) technologies(0
-.0005) factorized(0.0005) decided(0.0005) goldberg(0.0005) ballistic(0.0005) sh
-h(0.0005) hildreth(0.0005) ospf(0.0005) carlson(0.0005) carnevale(0.0005) speec
-h(0.0004) due(0.0004) human(0.0004)[] 
- []
-
-
-Overfull \hbox (1357.22908pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 16: effort(0.0085) britten(0.0085) hopfield(0.0072) ri
-ssanen(0.0071) drives(0.0006) accepted(0.0005) designing(0.0005) luminance(0.00
-05) inhibited(0.0005) strongest(0.0005) leak(0.0005) schematically(0.0005) mini
-misation(0.0005) overload(0.0005) jmi(0.0005) tsividis(0.0005) collapses(0.0005
-) cylindrical(0.0005) unify(0.0005) suppose(0.0004)[] 
- []
-
-
-Overfull \hbox (1241.73009pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 17: occlusion(0.0008) wechsler(0.0007) quadratic(0.000
-6) calcium(0.0006) getting(0.0006) brownlow(0.0006) lwpca(0.0006) requires(0.00
-05) unlike(0.0005) lack(0.0005) eng(0.0005) isotropic(0.0005) institut(0.0005) 
-inadequate(0.0005) inte(0.0005) sperduti(0.0005) envi(0.0005) sprite(0.0005) cc
-r(0.0005) diophantine(0.0005)[] 
- []
-
-
-Overfull \hbox (1220.73027pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 18: leading(0.0087) sort(0.0079) gij(0.0006) closure(0
-.0006) vision(0.0005) inhibition(0.0005) nip(0.0005) nervous(0.0005) handbook(0
-.0005) inferences(0.0005) invoking(0.0005) trec(0.0005) quiet(0.0005) vos(0.000
-5) obscure(0.0005) permissible(0.0005) large(0.0004) respect(0.0004) feedback(0
-.0004) conclusion(0.0004)[] 
- []
-
-
-Overfull \hbox (1231.23018pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 19: resolution(0.028) data(0.025) level(0.0227) hierar
-chy(0.0198) input(0.0192) function(0.0183) system(0.0169) exemplar(0.0169) mult
-i(0.0155) algorithm(0.014) mapping(0.0138) point(0.0134) problem(0.0131) timese
-ries(0.0126) training(0.0122) learning(0.0103) adaptive(0.0103) real(0.0102) lo
-okup(0.0092) linear(0.0091)[] 
- []
-
-
-Overfull \hbox (1278.47977pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 20: output(0.0093) bound(0.0087) criterion(0.0066) exh
-austively(0.0007) table(0.0006) eoo(0.0006) hold(0.0005) storage(0.0005) worksp
-ace(0.0005) reverse(0.0005) severely(0.0005) angeles(0.0005) unrealistic(0.0005
-) unlearnable(0.0005) matrix(0.0004) computer(0.0004) low(0.0004) markov(0.0004
-) resulting(0.0004) advances(0.0004)[] 
- []
-
-
-Overfull \hbox (1105.23128pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 21: network(0.0437) output(0.0303) input(0.0259) unit(
-0.0246) error(0.0223) learning(0.02) algorithm(0.0198) joint(0.0162) layer(0.01
-5) goal(0.0147) problem(0.0144) linear(0.0132) weight(0.0102) hidden(0.0099) ar
-m(0.0095) set(0.0094) vector(0.0089) robot(0.0088) sanger(0.0088) training(0.00
-86)[] 
- []
-
-
-Overfull \hbox (1262.7299pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 22: cem(0.0006) lung(0.0006) principles(0.0005) concat
-enated(0.0005) alexander(0.0005) joseph(0.0005) tolerant(0.0005) parcor(0.0005)
- presidential(0.0005) intend(0.0005) fell(0.0005) tomaso(0.0005) lpc(0.0005) in
-h(0.0005) malvern(0.0005) reestimate(0.0005) distinctly(0.0005) loglog(0.0005) 
-operation(0.0004) finding(0.0004)[] 
- []
-
-
-Overfull \hbox (1236.48013pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 23: symmetric(0.0005) wind(0.0005) token(0.0005) shepa
-rd(0.0005) molecules(0.0005) server(0.0005) differentiate(0.0005) triple(0.0005
-) blank(0.0005) vaadia(0.0005) reiterant(0.0005) sussex(0.0005) rsp(0.0005) cca
-(0.0005) dennis(0.0005) graceful(0.0005) tonotopic(0.0005) expert(0.0004) evalu
-ation(0.0004) period(0.0004)[] 
- []
-
-
-Overfull \hbox (1273.22981pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 24: activates(0.0006) obeying(0.0006) refer(0.0005) ge
-neric(0.0005) generality(0.0005) minus(0.0005) concentrated(0.0005) copies(0.00
-05) carries(0.0005) grbf(0.0005) clockwise(0.0005) gmdh(0.0005) emulator(0.0005
-) identifiable(0.0005) turbo(0.0005) logo(0.0005) kabsch(0.0005) otolith(0.0005
-) strawman(0.0005) pothesis(0.0005)[] 
- []
-
-
-Overfull \hbox (1178.73064pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 25: sequentially(0.0008) tive(0.0006) timothy(0.0006) 
-kung(0.0006) interna(0.0006) amir(0.0006) fll(0.0006) mension(0.0006) ventional
-(0.0006) thirteen(0.0006) robust(0.0005) conducted(0.0005) utterances(0.0005) s
-kill(0.0005) token(0.0005) yang(0.0005) helmholtz(0.0005) dmm(0.0005) chi(0.000
-5) tectum(0.0005)[] 
- []
-
-
-Overfull \hbox (1320.4794pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 26: net(0.0308) examples(0.0279) network(0.0251) funct
-ion(0.0179) training(0.0177) feedforward(0.0174) learning(0.0166) random(0.0159
-) nodes(0.0146) corollary(0.0143) linear(0.0137) architecture(0.0133) bound(0.0
-131) distribution(0.012) future(0.012) layer(0.0116) weight(0.0115) threshold(0
-.0114) dichotomies(0.0103) algorithm(0.0097)[] 
- []
-
-
-Overfull \hbox (1231.23018pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 27: order(0.0078) search(0.0006) extract(0.0006) ject(
-0.0006) unix(0.0005) cocktail(0.0005) hin(0.0005) olution(0.0005) diate(0.0005)
- level(0.0004) negative(0.0004) equivalent(0.0004) design(0.0004) york(0.0004) 
-similarity(0.0004) hebbian(0.0004) numerical(0.0004) presentation(0.0004) close
-ly(0.0004) composed(0.0004)[] 
- []
-
-
-Overfull \hbox (1220.73027pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 28: initializes(0.0006) tuning(0.0005) structural(0.00
-05) ideas(0.0005) geiger(0.0005) opponent(0.0005) perturbing(0.0005) pnas(0.000
-5) decomposes(0.0005) diabetes(0.0005) eoo(0.0005) eec(0.0005) decent(0.0005) s
-meared(0.0005) alphas(0.0005) kent(0.0005) computer(0.0004) study(0.0004) proce
-sses(0.0004) face(0.0004)[] 
- []
-
-
-Overfull \hbox (1189.23055pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 29: restrictive(0.0006) broadcast(0.0006) implicated(0
-.0006) patch(0.0005) replica(0.0005) slice(0.0005) ron(0.0005) hme(0.0005) big(
-0.0005) amherst(0.0005) latency(0.0005) ben(0.0005) triple(0.0005) dead(0.0005)
- rec(0.0005) pushdown(0.0005) sory(0.0005) sullivan(0.0005) neurogenesy(0.0005)
- mesterharm(0.0005)[] 
- []
-
-
-Overfull \hbox (1225.98022pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 30: output(0.0256) wij(0.0157) hidden(0.0152) number(0
-.0116) current(0.0114) weight(0.0107) unit(0.0106) problem(0.0105) table(0.0101
-) integer(0.0084) input(0.0078) pattern(0.0067) presented(0.0067) median(0.0067
-) representation(0.0065) plr(0.0064) learning(0.0062) view(0.0061) perceptton(0
-.0061) architecture(0.006)[] 
- []
-
-
-Overfull \hbox (1330.97931pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 31: occipital(0.0006) set(0.0005) neuron(0.0005) curve
-(0.0005) crossing(0.0005) incoming(0.0005) washington(0.0005) intrator(0.0005) 
-obermayer(0.0005) cylinder(0.0005) attributed(0.0005) imaginary(0.0005) saturat
-es(0.0005) gary(0.0005) refining(0.0005) isolate(0.0005) genevieve(0.0005) spec
-tively(0.0005) holler(0.0005) bayesian(0.0004)[] 
- []
-
-
-Overfull \hbox (1246.98004pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 32: extensively(0.0006) gpp(0.0006) curve(0.0005) mlp(
-0.0005) nucleus(0.0005) autonomous(0.0005) paul(0.0005) echoes(0.0005) crosses(
-0.0005) preferences(0.0005) auxiliary(0.0005) formulae(0.0005) strongest(0.0005
-) quadrature(0.0005) dig(0.0005) deemed(0.0005) vedelsby(0.0005) til(0.0005) ic
-kinger(0.0005) thirdly(0.0005)[] 
- []
-
-
-Overfull \hbox (1252.23pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 33: mfa(0.0241) mean(0.0238) field(0.019) annealing(0.
-0143) averages(0.0127) problem(0.0103) operation(0.0101) network(0.0097) algori
-thm(0.0096) graph(0.0096) force(0.0094) hopfield(0.0093) simulated(0.0086) temp
-erature(0.0086) compared(0.0084) speedup(0.0081) ece(0.0067) cease(0.0064) opti
-mum(0.0061) analytically(0.006)[] 
- []
-
-
-Overfull \hbox (1257.47995pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 34: sphering(0.0059) marginally(0.0007) ebl(0.0006) as
-pect(0.0005) published(0.0005) file(0.0005) contrary(0.0005) rapture(0.0005) al
-beit(0.0005) stochas(0.0005) gsm(0.0005) ade(0.0005) posture(0.0005) hummel(0.0
-005) misadjustment(0.0005) troublesome(0.0005) progressive(0.0005) current(0.00
-04) press(0.0004) domain(0.0004)[] 
- []
-
-
-Overfull \hbox (1157.73082pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 35: hidden(0.0085) perform(0.0084) internal(0.0084) al
-gorithm(0.0081) exact(0.0078) solve(0.0078) process(0.0076) learning(0.0072) pa
-ttern(0.0069) plr(0.0065) row(0.0063) fail(0.0063) sharpness(0.006) output(0.00
-57) training(0.0056) nadel(0.0006) prc(0.0006) provided(0.0005) presence(0.0005
-) mem(0.0005)[] 
- []
-
-
-Overfull \hbox (1231.23018pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 36: learning(0.0257) function(0.0161) resolution(0.015
-4) input(0.0152) lattice(0.0148) system(0.0143) representation(0.0139) table(0.
-0137) problem(0.0136) point(0.0135) training(0.0134) data(0.0127) weight(0.0125
-) output(0.0124) network(0.0123) algorithm(0.0123) set(0.012) internal(0.0118) 
-space(0.0109) error(0.0103)[] 
- []
-
-
-Overfull \hbox (1278.47977pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 37: network(0.0644) subject(0.0351) solution(0.0289) h
-uman(0.028) pattern(0.0174) minimal(0.0174) learning(0.0169) analysis(0.0165) h
-idden(0.0157) training(0.0149) adaptive(0.0143) initial(0.0137) unit(0.0128) pr
-ofiles(0.0123) generalization(0.0114) find(0.0108) dimension(0.0103) problem(0.
-0099) finding(0.0091) profile(0.009)[] 
- []
-
-
-Overfull \hbox (1199.73045pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 38: learning(0.0326) internal(0.0302) input(0.0271) re
-presentation(0.0267) layer(0.0237) algorithm(0.0225) network(0.0208) unit(0.020
-7) output(0.0205) plr(0.0197) weight(0.019) hidden(0.0186) number(0.0176) table
-(0.016) solution(0.0154) training(0.0146) pattern(0.0128) set(0.0126) problem(0
-.0121) values(0.0112)[] 
- []
-
-
-Overfull \hbox (1304.72954pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 39: learning(0.0419) problem(0.0393) algorithm(0.0374)
- vector(0.0221) propagation(0.0202) function(0.0195) gradient(0.0186) network(0
-.0183) weight(0.0157) descent(0.0153) steepest(0.0153) optimization(0.0152) err
-or(0.0147) convergence(0.0139) set(0.0135) input(0.0131) method(0.0124) techniq
-ues(0.0122) unit(0.0121) parallel(0.0119)[] 
- []
-
-
-Overfull \hbox (1120.98114pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 40: pasadena(0.0087) unit(0.008) data(0.0079) truncati
-ng(0.0079) model(0.0078) output(0.007) lattice(0.007) space(0.0006) comparable(
-0.0006) roc(0.0006) corr(0.0006) finland(0.0006) finite(0.0005) server(0.0005) 
-inserted(0.0005) crf(0.0005) mae(0.0005) numeric(0.0005) arx(0.0005) balltree(0
-.0005)[] 
- []
-
-
-Overfull \hbox (1299.47958pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 41: appealing(0.014) function(0.0139) problem(0.0131) 
-generate(0.0083) paper(0.008) set(0.0078) equation(0.0076) factored(0.0076) far
-mer(0.0074) lattice(0.0073) processing(0.0071) propagation(0.007) performance(0
-.0069) obtainable(0.0067) data(0.0065) prediction(0.0065) table(0.0065) values(
-0.0063) computation(0.006) spline(0.006)[] 
- []
-
-
-Overfull \hbox (1225.98022pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 42: mean(0.0363) field(0.0331) mfa(0.0327) spin(0.0317
-) temperature(0.0256) graph(0.0234) problem(0.0181) average(0.0178) solution(0.
-0158) averages(0.0156) annealing(0.0155) ssa(0.0147) simulated(0.0143) network(
-0.0142) iteration(0.0133) nodes(0.013) system(0.0129) point(0.0117) optimizatio
-n(0.0113) hopfield(0.0111)[] 
- []
-
-
-Overfull \hbox (1189.23055pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 43: levy(0.0006) rosci(0.0006) excised(0.0006) identic
-al(0.0005) carried(0.0005) composition(0.0005) writer(0.0005) hrr(0.0005) smear
-(0.0005) passage(0.0005) rolling(0.0005) steep(0.0005) rvm(0.0005) arose(0.0005
-) mhaskar(0.0005) chernoff(0.0005) impression(0.0005) seeger(0.0005) analysis(0
-.0004) rule(0.0004)[] 
- []
-
-
-Overfull \hbox (1320.4794pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 44: increased(0.0005) multilayer(0.0005) beginning(0.0
-005) saturation(0.0005) unlikely(0.0005) funded(0.0005) shawe(0.0005) oam(0.000
-5) stochasticity(0.0005) nen(0.0005) engr(0.0005) escapes(0.0005) conceived(0.0
-005) method(0.0004) seen(0.0004) common(0.0004) magnitude(0.0004) estimating(0.
-0004) connectivity(0.0004) partially(0.0004)[] 
- []
-
-
-Overfull \hbox (1357.22908pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 45: unit(0.0087) choice(0.0087) hidden(0.0081) problem
-(0.0074) row(0.0072) parity(0.0058) discard(0.0006) suppresses(0.0006) accumula
-ted(0.0005) syllables(0.0005) interspike(0.0005) functionally(0.0005) accessibl
-e(0.0005) hexagonal(0.0005) asynchronously(0.0005) deviates(0.0005) orthographi
-c(0.0005) wsj(0.0005) schyn(0.0005) current(0.0004)[] 
- []
-
-
-Overfull \hbox (1210.23036pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 46: slot(0.0007) traffic(0.0006) critical(0.0005) band
-width(0.0005) trace(0.0005) jacobian(0.0005) alternatively(0.0005) andreou(0.00
-05) tar(0.0005) analogously(0.0005) cov(0.0005) barrett(0.0005) shear(0.0005) u
-le(0.0005) riesenhuber(0.0005) nnl(0.0005) parallelizable(0.0005) elf(0.0005) l
-ftc(0.0005) chl(0.0005)[] 
- []
-
-
-Overfull \hbox (1346.72917pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 47: distributed(0.0005) clearly(0.0005) hardware(0.000
-5) subspace(0.0005) begin(0.0005) improving(0.0005) straight(0.0005) continuous
-ly(0.0005) psychophysical(0.0005) nonetheless(0.0005) heavily(0.0005) graf(0.00
-05) nih(0.0005) scientist(0.0005) shi(0.0005) symmetries(0.0005) oooo(0.0005) e
-mbodies(0.0005) amap(0.0005) echolocation(0.0005)[] 
- []
-
-
-Overfull \hbox (1225.98022pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 48: psth(0.0006) implies(0.0005) spectrum(0.0005) form
-ation(0.0005) splines(0.0005) poorly(0.0005) annealed(0.0005) conjecture(0.0005
-) optimisation(0.0005) believed(0.0005) hebrew(0.0005) boxlet(0.0005) primed(0.
-0005) steep(0.0005) donoho(0.0005) mdac(0.0005) trl(0.0005) brunel(0.0005) popu
-larity(0.0005) ssp(0.0005)[] 
- []
-
-
-Overfull \hbox (1120.98114pt too wide) in paragraph at lines 905--905
-[]\OT1/cmtt/m/n/10 topic 49: network(0.008) uyar(0.0007) think(0.0006) srn(0.00
-06) coggin(0.0006) oracle(0.0006) garzon(0.0006) capacity(0.0005) actor(0.0005)
- cognition(0.0005) dealing(0.0005) captures(0.0005) ave(0.0005) named(0.0005) s
-ector(0.0005) cgm(0.0005) zue(0.0005) browsing(0.0005) gabaergic(0.0005) mrsh(0
-.0005)[] 
- []
-
-[18]
-Overfull \hbox (162.21281pt too wide) in paragraph at lines 921--921
-[]\OT1/cmtt/m/n/9 ASSUME get-cluster-model (mem (lambda (cluster) (lambda ( ) (
-gaussian (get-cluster-mean cluster) (get-cluster-variance cluster)))))[] 
- []
-
-
-<../graphs/CRP_mixture/CRP-mixture-model-collapsed-traces-py-memory.png, id=301
-, 578.16pt x 433.62pt>
-File: ../graphs/CRP_mixture/CRP-mixture-model-collapsed-traces-py-memory.png Gr
-aphic file (type png)
-
-<use ../graphs/CRP_mixture/CRP-mixture-model-collapsed-traces-py-memory.png>
-Package pdftex.def Info: ../graphs/CRP_mixture/CRP-mixture-model-collapsed-trac
-es-py-memory.png used on input line 927.
-(pdftex.def)             Requested size: 231.2599pt x 173.44492pt.
-
-<../graphs/CRP_mixture/CRP-mixture-model-collapsed-reduced-traces-py-memory.png
-, id=302, 578.16pt x 433.62pt>
-File: ../graphs/CRP_mixture/CRP-mixture-model-collapsed-reduced-traces-py-memor
-y.png Graphic file (type png)
-
-<use ../graphs/CRP_mixture/CRP-mixture-model-collapsed-reduced-traces-py-memory
-.png>
-Package pdftex.def Info: ../graphs/CRP_mixture/CRP-mixture-model-collapsed-redu
-ced-traces-py-memory.png used on input line 928.
-(pdftex.def)             Requested size: 231.2599pt x 173.44492pt.
-
-<../graphs/CRP_mixture/CRP-mixture-model-collapsed-traces-py-time.png, id=303, 
-578.16pt x 433.62pt>
-File: ../graphs/CRP_mixture/CRP-mixture-model-collapsed-traces-py-time.png Grap
-hic file (type png)
-
-<use ../graphs/CRP_mixture/CRP-mixture-model-collapsed-traces-py-time.png>
-Package pdftex.def Info: ../graphs/CRP_mixture/CRP-mixture-model-collapsed-trac
-es-py-time.png used on input line 931.
-(pdftex.def)             Requested size: 231.2599pt x 173.44492pt.
-
-<../graphs/CRP_mixture/CRP-mixture-model-collapsed-reduced-traces-py-time.png, 
-id=304, 578.16pt x 433.62pt>
-File: ../graphs/CRP_mixture/CRP-mixture-model-collapsed-reduced-traces-py-time.
-png Graphic file (type png)
-
-<use ../graphs/CRP_mixture/CRP-mixture-model-collapsed-reduced-traces-py-time.p
-ng>
-Package pdftex.def Info: ../graphs/CRP_mixture/CRP-mixture-model-collapsed-redu
-ced-traces-py-time.png used on input line 932.
-(pdftex.def)             Requested size: 231.2599pt x 173.44492pt.
- [19 <../graphs/CRP_mixture/CRP-mixture-model-collapsed-traces-py-memory.png> <
-../graphs/CRP_mixture/CRP-mixture-model-collapsed-reduced-traces-py-memory.png>
- <../graphs/CRP_mixture/CRP-mixture-model-collapsed-traces-py-time.png> <../gra
-phs/CRP_mixture/CRP-mixture-model-collapsed-reduced-traces-py-time.png>]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1407.
-
-[20]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 1407.
+[18] [19]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1521.
+ [20]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 1521.
  (./MEng thesis.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1407.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1407.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1521.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1521.
 
 Package rerunfilecheck Info: File `"MEng thesis".out' has not changed.
-(rerunfilecheck)             Checksum: 501CAB5A1DEB5235DD84B2C416929C41;1867.
+(rerunfilecheck)             Checksum: B81267DDE98FAAC8B1F76806C33076BA;1937.
 
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1407.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1521.
  ) 
 Here is how much of TeX's memory you used:
- 15100 strings out of 493488
- 271216 string characters out of 3141326
- 383015 words of memory out of 3000000
- 18015 multiletter control sequences out of 15000+200000
- 15446 words of font info for 62 fonts, out of 3000000 for 9000
+ 15018 strings out of 493488
+ 266413 string characters out of 3141326
+ 351786 words of memory out of 3000000
+ 17958 multiletter control sequences out of 15000+200000
+ 16814 words of font info for 68 fonts, out of 3000000 for 9000
  957 hyphenation exceptions out of 8191
- 56i,10n,55p,697b,631s stack positions out of 5000i,500n,10000p,200000b,50000s
-</usr/local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb
-></usr/local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb>
-</usr/local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><
-/usr/local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></
-usr/local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></us
-r/local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/
-local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/lo
-cal/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/loca
-l/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/local/t
-exlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/local/texl
-ive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive
-/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/20
-12/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb></usr/local/texlive/2012/
-texmf-dist/fonts/type1/public/amsfonts/cm/cmssbx10.pfb></usr/local/texlive/2012
-/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2012/
-texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2012/te
-xmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texlive/2012/tex
-mf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2012/texm
-f-dist/fonts/type1/public/amsfonts/cm/cmtt8.pfb></usr/local/texlive/2012/texmf-
-dist/fonts/type1/public/amsfonts/cm/cmtt9.pfb>
-Output written on "MEng thesis.pdf" (20 pages, 563664 bytes).
+ 56i,10n,55p,638b,631s stack positions out of 5000i,500n,10000p,200000b,50000s
+</usr/local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb
+></usr/local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb>
+</usr/local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><
+/usr/local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></u
+sr/local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr
+/local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/l
+ocal/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/loc
+al/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/local/
+texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/tex
+live/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texliv
+e/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmssbx10.pfb></usr/local/texli
+ve/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texliv
+e/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/
+2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2
+012/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
+Output written on "MEng thesis.pdf" (20 pages, 219835 bytes).
 PDF statistics:
- 401 PDF objects out of 1000 (max. 8388607)
- 321 compressed objects within 4 object streams
+ 348 PDF objects out of 1000 (max. 8388607)
+ 307 compressed objects within 4 object streams
  67 named destinations out of 1000 (max. 500000)
- 338 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 261 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -497,6 +497,7 @@ class ReducedTraces(Engine):
 
     self.debug = False
 
+    # necessary because of the new XRP interface requiring some state kept while doing inference
     self.application_reflip = False
     self.reflip_node = ReducedEvalNode(self, self.env, VarExpression(''))
     self.nodes = []
