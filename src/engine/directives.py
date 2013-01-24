@@ -1,7 +1,6 @@
 from expressions import *
 from mem import *
 from xrp import *
-from basic_xrps import *
 
 import utils.rrandom as rrandom
 
@@ -148,6 +147,15 @@ class Directives:
     self.assume('floor', xrp(floor_XRP()), True)
     self.assume('ceil', xrp(ceil_XRP()), True)
 
+    self.assume('pi', num_expr(3.141592653589793238), True)
+    self.assume('sin', xrp(sin_XRP()), True)
+    self.assume('cos', xrp(cos_XRP()), True)
+    self.assume('tan', xrp(tan_XRP()), True)
+    self.assume('asin', xrp(asin_XRP()), True)
+    self.assume('acos', xrp(acos_XRP()), True)
+    self.assume('atan', xrp(atan_XRP()), True)
+    self.assume('atan2', xrp(atan2_XRP()), True)
+
     # BASIC XRPs
 
     self.assume('if', function(['cond', 'cons', 'alt'], apply(apply(xrp(if_XRP()), [var('cond'), function([], var('cons')), function([], var('alt'))]), [])), True)
@@ -158,6 +166,8 @@ class Directives:
 
     self.assume('list', xrp(make_array_XRP()), True)
     self.assume('repeat', xrp(make_symmetric_array_XRP()), True)
+    self.assume('first', function(['x'], apply(var('x'), [nat_expr(0)])), True)
+    self.assume('rest', xrp(rest_array_XRP()), True)
 
     self.assume('categorical', xrp(categorical_XRP()), True)
 

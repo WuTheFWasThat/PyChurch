@@ -19,6 +19,14 @@ def parse_token(s, i = 0):
         j += 1
       return (s[i:j], j)
 
+def parse_integer(s, i):
+  (token, i) = parse_token(s, i)
+  try:
+    integer = int(token)
+  except:
+    raise RException("Expected integer, got %s" % token)
+  return (integer, i)
+
 def parse_expr_list(s, i):
     (token, j) = parse_token(s, i)
     expr_list = []

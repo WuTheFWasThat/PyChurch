@@ -1,6 +1,4 @@
-from values import *
-import math
-from utils.rexceptions import RException
+from basic_xrps import *
 
 # HELPERS
 
@@ -109,30 +107,41 @@ class noisy_XRP(XRP):
     return 'noisy_XRP'
 
 class array_XRP(XRP):
-  def __init__(self, array):
+  def __init__(self, array, i_start = 0):
     self.initialize()
     self.resample = True
     self.array = array
     self.n = len(self.array)
+    self.i_start = i_start;
     return
   def apply(self, args = None):
     if len(args) != 1:
       raise RException("Should have 1 argument, not %d" % len(args))
-    i = args[0].nat
+    i = args[0].nat + self.i_start
     if not 0 <= i < self.n:
-      raise RException("Index must from 0 to %d - 1" % self.n)
+      raise RException("Index must from 0 to %d - 1" % self.n - self.i_start)
     return self.array[i]
   def prob(self, val, args = None):
     if len(args) != 1:
       raise RException("Should have 1 argument, not %d" % len(args))
-    i = args[0].nat
+    i = args[0].nat + self.i_start
     if not 0 <= i < self.n:
-      raise RException("Index must from 0 to %d - 1" % self.n)
+      raise RException("Index must from 0 to %d - 1" % self.n - self.i_start)
     if val != self.array[i]:
       raise RException("Array at index %d should've been %s" % (i, val.__str__()))
     return 0
   def __str__(self):
-    return ('array(%s)' % str(self.array))
+    return str(self.array[self.i_start:])
+
+class rest_array_XRP(XRP):
+  def __init__(self):
+    self.initialize()
+    self.resample = True
+  def apply(self, args):
+    check_num_args(args, 1)
+    return XRPValue(array_XRP(args[0].xrp.array, args[0].xrp.i_start + 1))
+  def __str__(self):
+    return 'rest'
 
 class make_array_XRP(XRP):
   def __init__(self):

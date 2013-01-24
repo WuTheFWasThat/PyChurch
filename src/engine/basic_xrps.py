@@ -240,52 +240,75 @@ class not_XRP(XRP):
   def __str__(self):
     return '~'
 
-# LISTS
+# TRIG
 
-class array_XRP(XRP):
-  def __init__(self, array):
-    self.initialize()
-    self.resample = True
-    self.array = array
-    self.n = len(self.array)
-    return
-  def apply(self, args = None):
-    if len(args) != 1:
-      raise RException("Should have 1 argument, not %d" % len(args))
-    i = args[0].nat
-    if not 0 <= i < self.n:
-      raise RException("Index must from 0 to %d - 1" % self.n)
-    return self.array[i]
-  def prob(self, val, args = None):
-    if len(args) != 1:
-      raise RException("Should have 1 argument, not %d" % len(args))
-    i = args[0].nat
-    if not 0 <= i < self.n:
-      raise RException("Index must from 0 to %d - 1" % self.n)
-    if val != self.array[i]:
-      raise RException("Array at index %d should've been %s" % (i, val.__str__()))
-    return 0
-  def __str__(self):
-    return ('array(%s)' % str(self.array))
-
-class make_array_XRP(XRP):
+class sin_XRP(XRP):
   def __init__(self):
     self.initialize()
     self.resample = True
-    return
   def apply(self, args = None):
-    return XRPValue(array_XRP(args)) 
+    check_num_args(args, 1)
+    return NumValue(math.sin(args[0].num))
   def __str__(self):
-    return 'array_make_XRP'
+    return 'sin'
 
-class make_symmetric_array_XRP(XRP):
+class cos_XRP(XRP):
   def __init__(self):
     self.initialize()
     self.resample = True
-    return
   def apply(self, args = None):
-    (el, n)  = (args[0], args[1].nat)
-    return XRPValue(array_XRP([el] * n)) 
+    check_num_args(args, 1)
+    return NumValue(math.cos(args[0].num))
   def __str__(self):
-    return 'array_make_XRP'
+    return 'cos'
+
+class tan_XRP(XRP):
+  def __init__(self):
+    self.initialize()
+    self.resample = True
+  def apply(self, args = None):
+    check_num_args(args, 1)
+    return NumValue(math.tan(args[0].num))
+  def __str__(self):
+    return 'tan'
+
+class asin_XRP(XRP):
+  def __init__(self):
+    self.initialize()
+    self.resample = True
+  def apply(self, args = None):
+    check_num_args(args, 1)
+    return NumValue(math.asin(args[0].num))
+  def __str__(self):
+    return 'asin'
+
+class acos_XRP(XRP):
+  def __init__(self):
+    self.initialize()
+    self.resample = True
+  def apply(self, args = None):
+    check_num_args(args, 1)
+    return NumValue(math.acos(args[0].num))
+  def __str__(self):
+    return 'acos'
+
+class atan_XRP(XRP):
+  def __init__(self):
+    self.initialize()
+    self.resample = True
+  def apply(self, args = None):
+    check_num_args(args, 1)
+    return NumValue(math.atan(args[0].num))
+  def __str__(self):
+    return 'atan'
+
+class atan2_XRP(XRP):
+  def __init__(self):
+    self.initialize()
+    self.resample = True
+  def apply(self, args = None):
+    check_num_args(args, 2)
+    return NumValue(math.atan2(args[0].num, args[1].num))
+  def __str__(self):
+    return 'atan2'
 
