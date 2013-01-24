@@ -1,11 +1,3 @@
-assume proc (mem (lambda (x) (flip 0.8)))
-assume a (and (proc 1) (proc 2) (proc 1) (proc 2))
-infer_many a 10000 1
-
-assume c (if (flip) (mem flip) (mem flip))
-assume d (c)
-
-infer_many d 1000 5
 
 assume fib (lambda (x) (if (< x 2) x (+ (fib (- x 1)) (fib (- x 2)))))
 
@@ -16,4 +8,13 @@ assume memfib (mem fib)
 
 predict (memfib 10)
 predict (memfib 10)
+
+assume proc (mem (lambda (x) (flip 0.8)))
+assume a (and (proc 1) (proc 2) (proc 1) (proc 2))
+infer_many a 10000 1
+
+assume c (if (flip) (mem flip) (mem flip))
+assume d (c)
+
+infer_many d 1000 5
 

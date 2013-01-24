@@ -344,15 +344,15 @@ class EvalNode(Node):
               val = self.val
             else:
               self.remove_xrp()
-              val = xrp.apply(args)
+              val = xrp.sample(args)
               self.add_xrp(xrp, val, args)
           else:
-            val = xrp.apply(args)
+            val = xrp.sample(args)
             self.add_xrp(xrp, val, args)
         else: # not resampling, but needs reflipping
           if self.active:
             self.remove_xrp()
-          val = xrp.apply(args)
+          val = xrp.sample(args)
           self.add_xrp(xrp, val, args)
 
         self.xrp = xrp
@@ -364,8 +364,7 @@ class EvalNode(Node):
       self.args = args
     elif self.type == 'function':
       n = len(expr.vars)
-      procedure_body = expr.body
-      val = Procedure(expr.vars, procedure_body, self.env)
+      val = Procedure(expr.vars, expr.body, self.env)
     else:
       raise RException('Invalid expression type %s' % self.type)
 

@@ -214,7 +214,7 @@ class ReducedEvalNode(Node):
     self.args = args
 
     if xrp_force_val is None:
-      val = self.xrp.apply(self.args)
+      val = self.xrp.sample(self.args)
     else:
       val = xrp_force_val
     self.add_xrp(self.xrp, val, self.args, xrp_force_val is not None)
@@ -282,9 +282,7 @@ class ReducedEvalNode(Node):
         new_env.set(expr.vars[i], values[i])
         if val.type == 'procedure':
           val.env = new_env
-      #new_body = expr.body.replace(new_env, {}, self)
-      new_body = expr.body
-      val = self.evaluate_recurse(new_body, new_env, hashval, 1, None, restore)
+      val = self.evaluate_recurse(expr.body, new_env, hashval, 1, None, restore)
 
     elif expr.type == 'apply':
       n = len(expr.children)
@@ -309,7 +307,7 @@ class ReducedEvalNode(Node):
             child = self.get_child(hashval, env, expr, restore)
             val = child.val
         else:
-          val = xrp.apply(args)
+          val = xrp.sample(args)
           self.add_xrp(xrp, val, args)
           self.xrp_applies.append((xrp, val, args))
         assert val is not None
@@ -319,12 +317,7 @@ class ReducedEvalNode(Node):
     elif expr.type == 'function':
       n = len(expr.vars)
       new_env = env.spawn_child()
-      #bound = {}
-      #for i in range(n): # Bind variables
-      #  bound[expr.vars[i]] = True
-      #procedure_body = expr.body.replace(new_env, bound, self)
-      procedure_body = expr.body
-      val = Procedure(expr.vars, procedure_body, env)
+      val = Procedure(expr.vars, expr.body, env)
     else:
       raise RException('Invalid expression type %s' % expr.type)
 

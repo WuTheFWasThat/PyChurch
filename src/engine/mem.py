@@ -22,11 +22,12 @@ class mem_proc_XRP(XRP):
     self.ids = {} # args_hash -> directive id
     self.count = {} # args_hash -> number of applications with these args
     self.id = 0
+
   def next_id(self):
     self.id += 1
     return self.id
     
-  def apply(self, args = None):
+  def sample(self, args = None):
     args_hash = ','.join([x.str_hash for x in args])
     if args_hash not in self.count:
       self.count[args_hash] = 0
@@ -35,49 +36,62 @@ class mem_proc_XRP(XRP):
       self.ids[args_hash] = id
     else:
       id = self.ids[args_hash]
+      # TODO get actual node, and evaluate (without reflip)
       val = self.engine.report_value(id)
     return val
+
   def incorporate(self, val, args = None):
     args_hash = ','.join([x.str_hash for x in args])
-    try:
-      cur_val =  self.engine.report_value(self.ids[args_hash])
-      assert (val.__eq__(cur_val)).bool
-    except: 
-      # TODO
-      raise RException("Sorry!  Propagation sometimes forces mem's value.  Need to fix implementation")
+    if not args_hash in self.ids:
+      raise RException("Engine bug in mem.  Did not sample before incorporating?")
+    # TODO get actual node, and evaluate (without reflip)
+    cur_val =  self.engine.report_value(self.ids[args_hash])
+    if not (val.__eq__(cur_val)).bool:
+      raise RException("Engine bug in mem.  Incongruous values")
     self.count[args_hash] = self.count[args_hash] + 1
+
   def remove(self, val, args = None):
     args_hash = ','.join([x.str_hash for x in args])
     cur_val =  self.engine.report_value(self.ids[args_hash])
     assert (val.__eq__(cur_val)).bool
-
     args_hash = ','.join([x.str_hash for x in args])
     self.count[args_hash] = self.count[args_hash] - 1
     if self.count[args_hash] == 0:
+      # TODO unevaluate the node
+      pass # self.engine.predicts[self.ids[args_hash]].
+
+  def unsample(self, val, args):
+    if self.count[args_hash] == 0:
       id = self.ids[args_hash]
-      # del self.count[args_hash]
-      # id = self.ids[args_hash]
-      # self.engine.forget(id)
-      # del self.ids[args_hash]
-    return 
+      del self.count[args_hash]
+      self.engine.forget(id)
+      del self.ids[args_hash]
+
   def weight(self, args):
     return 0
+
   def prob(self, val, args = None):
     return 0
+
   def theta_mh_prop(self, args_list, vals):
     old_p, old_to_new_q, new_p, new_to_old_q = self.engine.reflip(self.engine.randomKey())
     new_vals = []
     for args in args_list:
-      new_vals.append(self.apply(args))
+      new_vals.append(self.sample(args))
     return new_vals, old_to_new_q, new_to_old_q
+
   def theta_mh_restore(self):
     self.engine.restore()
+
   def theta_mh_keep(self):
     self.engine.keep()
+
   def state_weight(self):
     return self.engine.weight()
+
   def theta_prob(self):
     return self.engine.p
+
   def __str__(self):
     return '(MEM\'d %s)' % str(self.procedure)
 
@@ -86,7 +100,7 @@ class mem_XRP(XRP):
     self.initialize()
     self.resample = True
     self.engine_type = engine_type
-  def apply(self, args = None):
+  def sample(self, args = None):
     if len(args) != 1:
       raise RException("Mem takes exactly one argument")
     procedure = args[0]

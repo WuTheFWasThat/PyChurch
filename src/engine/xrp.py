@@ -58,7 +58,7 @@ def sample_categorical(probs, z = 1):
 # GENERALLY USEFUL XRPs
 
 class noisy_negate_XRP(XRP):
-  def apply(self, args = None):
+  def sample(self, args = None):
     if len(args) != 2:
       raise RException("noisy_negate must take 2 arguments")
     (b, p) = (args[0].bool, args[1].num)
@@ -80,7 +80,7 @@ class noisy_negate_XRP(XRP):
     return 'noisy_negate_XRP'
 
 class noisy_XRP(XRP):
-  def apply(self, args = None):
+  def sample(self, args = None):
     if len(args) != 2:
       raise RException("noisy must take 2 arguments")
     (b, p) = (args[0].bool, args[1].num)
@@ -114,21 +114,21 @@ class array_XRP(XRP):
     self.n = len(self.array)
     self.i_start = i_start;
     return
-  def apply(self, args = None):
+  def sample(self, args = None):
     if len(args) != 1:
       raise RException("Should have 1 argument, not %d" % len(args))
     i = args[0].nat + self.i_start
     if not 0 <= i < self.n:
-      raise RException("Index must from 0 to %d - 1" % self.n - self.i_start)
+      raise RException("Index %d out of bounds in array %s" % (args[0].nat, self.__str__()))
     return self.array[i]
   def prob(self, val, args = None):
     if len(args) != 1:
       raise RException("Should have 1 argument, not %d" % len(args))
     i = args[0].nat + self.i_start
     if not 0 <= i < self.n:
-      raise RException("Index must from 0 to %d - 1" % self.n - self.i_start)
+      raise RException("Index %d out of bounds in array %s" % (args[0].nat, self.__str__()))
     if val != self.array[i]:
-      raise RException("Array at index %d should've been %s" % (i, val.__str__()))
+      raise RException("Array at index %d should've been %s" % (args[0].nat, val.__str__()))
     return 0
   def __str__(self):
     return str(self.array[self.i_start:])
@@ -137,7 +137,7 @@ class rest_array_XRP(XRP):
   def __init__(self):
     self.initialize()
     self.resample = True
-  def apply(self, args):
+  def sample(self, args):
     check_num_args(args, 1)
     return XRPValue(array_XRP(args[0].xrp.array, args[0].xrp.i_start + 1))
   def __str__(self):
@@ -148,7 +148,7 @@ class make_array_XRP(XRP):
     self.initialize()
     self.resample = True
     return
-  def apply(self, args = None):
+  def sample(self, args = None):
     return XRPValue(array_XRP(args)) 
   def __str__(self):
     return 'array_make_XRP'
@@ -158,14 +158,14 @@ class make_symmetric_array_XRP(XRP):
     self.initialize()
     self.resample = True
     return
-  def apply(self, args = None):
+  def sample(self, args = None):
     (el, n)  = (args[0], args[1].nat)
     return XRPValue(array_XRP([el] * n)) 
   def __str__(self):
     return 'array_make_XRP'
 
 class categorical_XRP(XRP):
-  def apply(self, args = None):
+  def sample(self, args = None):
     probs = [check_prob(x.num) for x in args]
     if not .999 <= sum(probs) <= 1.001:
       raise RException("Categorical probabilities must sum to 1")
@@ -185,7 +185,7 @@ class categorical_XRP(XRP):
 # DISTRIBUTIONS
 
 class gaussian_XRP(XRP):
-  def apply(self, args = None):
+  def sample(self, args = None):
     (mu, sigma) = (args[0].num, args[1].num)
     check_pos(sigma)
     return NumValue(rrandom.random.normalvariate(mu, sigma))
@@ -198,7 +198,7 @@ class gaussian_XRP(XRP):
     return 'normal'
 
 class beta_XRP(XRP):
-  def apply(self, args = None):
+  def sample(self, args = None):
     (a,b) = (args[0].num, args[1].num)
     check_pos(a)
     check_pos(b)
@@ -214,7 +214,7 @@ class beta_XRP(XRP):
     return 'beta'
 
 class gamma_XRP(XRP):
-  def apply(self, args = None):
+  def sample(self, args = None):
     (a,b) = (args[0].num, args[1].num)
     check_pos(a)
     check_pos(b)
@@ -229,7 +229,7 @@ class gamma_XRP(XRP):
     return 'gamma'
 
 class bernoulli_XRP(XRP):
-  def apply(self, args = None):
+  def sample(self, args = None):
     if len(args) == 0:
       p = 0.5
     elif len(args) == 1:
@@ -254,7 +254,7 @@ class bernoulli_XRP(XRP):
     return 'bernoulli'
 
 class uniform_discrete_XRP(XRP):
-  def apply(self, args = None):
+  def sample(self, args = None):
     n = args[0].nat
     return NatValue(rrandom.random.randbelow(n))
   def prob(self, val, args = None):
@@ -268,40 +268,34 @@ class uniform_discrete_XRP(XRP):
 ### MORE SPECIFIC XRPs
 
 class beta_bernoulli_XRP(XRP):
-  def __init__(self, start_state = (1, 1)):
+  def __init__(self, array):
     self.initialize()
     self.resample = False
-    (self.h, self.t) = start_state
-  def apply(self, args = None):
-    if (self.h | self.t == 0):
-      val = (rrandom.random.random() < 0.5)
+    self.array = array
+    self.n = len(array)
+    self.z = sum(array)
+  def sample(self, args = None):
+    check_num_args(args, 0)
+    if (self.z == 0):
+      val = rrandom.random.randbelow(self.n)
     else:
-      val = (rrandom.random.random() * (self.h + self.t) < self.h)
-    return BoolValue(val)
+      val = sample_categorical(self.array, self.z)
+    return NatValue(val)
   def incorporate(self, val, args = None):
-    if val.bool:
-      self.h += 1
-    else:
-      self.t += 1
+    check_num_args(args, 0)
+    self.array[val.nat] += 1
+    self.z += 1
   def remove(self, val, args = None):
-    if val.bool:
-      if not self.h > 0:
-        raise RException("Removing too many heads from beta_bernoulli")
-      self.h -= 1
-    else:
-      if not self.t > 0:
-        raise RException("Removing too many tails from beta_bernoulli")
-      self.t -= 1
+    check_num_args(args, 0)
+    self.array[val.nat] -= 1
+    if self.array[val.nat] < 0:
+      raise RException("Something went wrong in beta_bernoulli")
+    self.z -= 1
   def prob(self, val, args = None):
-    if (self.h | self.t) == 0:
-      return - math.log(2)
-    else:
-      if val.num:
-        return math.log(self.h) - math.log(self.h + self.t)
-      else:
-        return math.log(self.t) - math.log(self.h + self.t)
+    check_num_args(args, 0)
+    return math.log(self.array[val.nat]) - math.log(self.z)
   def __str__(self):
-    return 'beta_bernoulli'
+    return 'beta_bernoulli(%s)' % str(self.array)
 
 class make_beta_bernoulli_XRP(XRP):
   def __init__(self):
@@ -309,14 +303,17 @@ class make_beta_bernoulli_XRP(XRP):
     self.resample = True
     return
   # TODO: decide convention on heads/tails
-  def apply(self, args = None):
-    (t, h) = (args[0].nat, args[1].nat)
-    return XRPValue(beta_bernoulli_XRP((h, t))) 
+  def sample(self, args = None):
+    if len(args) == 1:
+      array = [arg.nat for arg in args[0].xrp.array]
+    else:
+      array = [arg.nat for arg in args]
+    return XRPValue(beta_bernoulli_XRP(array)) 
   def __str__(self):
     return 'beta_bernoulli_make_XRP'
 
 class dirichlet_XRP(XRP):
-  def apply(self, args = None):
+  def sample(self, args = None):
     array_xrp = args[0]
     probs = [NumValue(p) for p in dirichlet([alpha_i.num for alpha_i in array_xrp.xrp.array])]
     return XRPValue(array_XRP(probs))
@@ -353,7 +350,7 @@ class dirichlet_multinomial_XRP(XRP):
       check_pos(alpha_i)
       self.alpha += alpha_i
     return
-  def apply(self, args = None):
+  def sample(self, args = None):
     if args is not None and len(args) != 0:
       raise RException('dirichlet_no_args_XRP has no need to take in arguments %s' % str(args))
     return NatValue(sample_categorical(self.alphas, self.alpha))
@@ -388,7 +385,7 @@ class make_dirichlet_multinomial_XRP(XRP):
     self.initialize()
     self.resample = True
     return
-  def apply(self, args = None):
+  def sample(self, args = None):
     if len(args) != 1:
       raise RException("Dirichlet generator takes one argument, an array_XRP")
     array_xrp = args[0]
@@ -397,7 +394,7 @@ class make_dirichlet_multinomial_XRP(XRP):
     return 'dirichlet_multinomial_make_XRP'
 
 class symmetric_dirichlet_XRP(XRP):
-  def apply(self, args = None):
+  def sample(self, args = None):
     (alpha, n) = (args[0], args[1])
     probs = [NumValue(p) for p in dirichlet([alpha.num] * n.nat)]
     return XRPValue(array_XRP(probs))
@@ -420,7 +417,7 @@ class make_symmetric_dirichlet_multinomial_XRP(XRP):
     self.initialize()
     self.resample = True
     return
-  def apply(self, args = None):
+  def sample(self, args = None):
     if len(args) != 2:
       raise RException("Symmetric dirichlet generator takes two arguments, alpha and n")
     (alpha, n) = (args[0], args[1])
@@ -436,7 +433,7 @@ class CRP_XRP(XRP):
     self.alpha = alpha
     self.z = alpha
     return
-  def apply(self, args = None):
+  def sample(self, args = None):
     if args is not None and len(args) != 0:
       raise RException('CRP_XRP has no need to take in arguments %s' % str(args))
     x = rrandom.random.random() * self.z
@@ -482,7 +479,7 @@ class gen_CRP_XRP(XRP):
     self.initialize()
     self.resample = True
     return
-  def apply(self, args = None):
+  def sample(self, args = None):
     alpha = args[0].num
     check_pos(alpha)
     return XRPValue(CRP_XRP(alpha))

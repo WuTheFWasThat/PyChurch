@@ -19,7 +19,8 @@ class Environment:
       return (self.assignments[name], self)
     else:
       if self.parent is None:
-        raise RException('Variable %s undefined in env:\n%s' % (name, self.__str__()))
+        raise RException('Variable %s undefined')
+        # raise RException('Variable %s undefined in env:\n%s' % (name, self.__str__()))
       else:
         return self.parent.lookup(name)
 

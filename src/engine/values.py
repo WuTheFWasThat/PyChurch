@@ -15,8 +15,10 @@ class XRP:
     self.resample = False
     self.hashval = rrandom.random.randbelow()
     return
-  def apply(self, args = None):
+  def sample(self, args = None):
     raise RException("Not implemented")
+  def unsample(self, val, args = None):
+    pass
   def incorporate(self, val, args = None):
     pass
   def remove(self, val, args = None):
@@ -33,7 +35,7 @@ class XRP:
     # for re-proposing a particular application
     self.remove(oldval, args)
     p_uneval = self.prob(oldval, args)
-    val = self.apply(args)
+    val = self.sample(args)
     p_eval = self.prob(val, args)
     self.incorporate(val, args)
     return val, p_uneval, p_eval
@@ -149,7 +151,6 @@ class Value:
     raise RException("Invalid operation")
   def __nonzero__(self):
     return BoolValue((self.num > 0))
-  pass 
 
 class Procedure(Value):
   def __init__(self, vars, body, env):
