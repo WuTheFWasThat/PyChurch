@@ -74,6 +74,7 @@ class FunctionExpression(Expression):
   def __str__(self):
     return '(lambda %s %s)' % (str(self.vars), str(self.body))
 
+# TODO: get rid of
 class IfExpression(Expression):
   def __init__(self, cond, true, false):
     self.initialize()
@@ -84,6 +85,9 @@ class IfExpression(Expression):
 
   def __str__(self):
     return '(if %s %s %s)' % (str(self.cond), str(self.true), str(self.false))
+
+def ifelse(ifvar, truevar, falsevar):
+  return IfExpression(ifvar, truevar, falsevar)
 
 class LetExpression(Expression):
   def __init__(self, bindings, body):

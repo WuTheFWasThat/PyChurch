@@ -253,14 +253,6 @@ class ReducedEvalNode(Node):
 
     return val
 
-  def binary_op_evaluate(self, expr, env, hashval, restore):
-    val1 = self.evaluate_recurse(expr.children[0], env, hashval, 1, None, restore)
-    val2 = self.evaluate_recurse(expr.children[1], env, hashval, 2, None, restore)
-    return (val1 , val2)
-
-  def children_evaluate(self, expr, env, hashval, restore):
-    return [self.evaluate_recurse(expr.children[i], env, hashval, i+1, None, restore) for i in range(len(expr.children))]
-  
   def evaluate_recurse(self, expr, env, hashval, addition, xrp_force_val = None, restore = False):
     hashval = rhash.hash_pair(hashval, addition)
 
@@ -269,6 +261,13 @@ class ReducedEvalNode(Node):
     elif expr.type == 'variable':
       (val, lookup_env) = env.lookup(expr.name)
       self.addlookup(expr.name, lookup_env)
+    # TODO: get rid of.  Works with proper if, but not in traces
+    elif expr.type == 'if':
+      cond = self.evaluate_recurse(expr.cond, env, hashval, 1, None, restore)
+      if cond.bool:
+        val = self.evaluate_recurse(expr.true, env, hashval, 2, None, restore)
+      else:
+        val = self.evaluate_recurse(expr.false, env, hashval, 3, None, restore)
     elif expr.type == 'let':
       # TODO: this really is a let*
       # Does environment stuff work properly?

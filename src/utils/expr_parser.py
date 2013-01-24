@@ -100,13 +100,24 @@ def parse_value(s, i):
   (token, i) = parse_token(s, i)
   return (parse_value_token(token), i)
 
+# TODO: fix traces and get rid of this
+def parse_if(s, i):
+    (cond_expr, i) = parse_expression(s, i)
+    (true_expr, i) = parse_expression(s, i)
+    (false_expr, i) = parse_expression(s, i)
+    expr = ifelse(cond_expr, true_expr, false_expr)
+    return (expr, i)
+
 def parse_expression(s, i):
     (token, i) = parse_token(s, i)
     if len(token) < 0:
       raise RException("No token")
     if token == '(':
       (token, j) = parse_token(s, i)
-      if token == 'lambda':
+      # TODO: lose this
+      if token == 'if':
+        (expr, i) = parse_if(s, j)
+      elif token == 'lambda':
         (expr, i) = parse_lambda(s, j)
       elif token == 'let':
         (expr, i) = parse_let(s, j)

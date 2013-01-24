@@ -158,7 +158,7 @@ class Directives:
 
     # BASIC XRPs
 
-    self.assume('if', function(['cond', 'cons', 'alt'], apply(apply(xrp(if_XRP()), [var('cond'), function([], var('cons')), function([], var('alt'))]), [])), True)
+    # self.assume('if', function(['cond', 'cons', 'alt'], apply(apply(xrp(if_XRP()), [var('cond'), function([], var('cons')), function([], var('alt'))]), [])), True)
 
     self.assume('noisy-negate', xrp(noisy_negate_XRP()), True)
     self.assume('noise-negate', xrp(noisy_negate_XRP()), True)

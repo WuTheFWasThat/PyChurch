@@ -231,14 +231,6 @@ class EvalNode(Node):
     val = child.evaluate(reflip == True, None)
     return val
   
-  def binary_op_evaluate(self, reflip):
-    val1 = self.evaluate_recurse(self.expression.children[0], self.env, 'operand0', reflip)
-    val2 = self.evaluate_recurse(self.expression.children[1], self.env, 'operand1', reflip)
-    return (val1 , val2)
-
-  def children_evaluate(self, reflip):
-    return [self.evaluate_recurse(self.expression.children[i], self.env, 'child' + str(i), reflip) for i in range(len(self.expression.children))]
-  
   # reflip = 1 # reflip all
   #          0.5 # reflip current, but don't recurse
   #          0 # reflip nothing (unless inactive)
@@ -263,6 +255,23 @@ class EvalNode(Node):
     elif self.type == 'variable':
       (val, lookup_env) = self.env.lookup(expr.name)
       self.setlookup(lookup_env)
+    # TODO: get rid of this and do properly
+    elif self.type == 'if':
+      cond = self.evaluate_recurse(expr.cond, self.env, 'cond', reflip)
+      if cond.bool:
+        false_child = self.get_child('false', self.env, expr.false)
+        if false_child.active:
+          false_child.unevaluate()
+          val = self.evaluate_recurse(expr.true, self.env, 'true', reflip)
+        else:
+          val = self.evaluate_recurse(expr.true, self.env, 'true', reflip)
+      else:
+        true_child = self.get_child('true', self.env, expr.true)
+        if true_child.active:
+          true_child.unevaluate()
+          val = self.evaluate_recurse(expr.false, self.env, 'false', reflip)
+        else:
+          val = self.evaluate_recurse(expr.false, self.env, 'false', reflip)
     elif self.type == 'let':
       # TODO: this really is a let*
       # Does environment stuff work properly?
@@ -278,7 +287,6 @@ class EvalNode(Node):
         new_env.set(expr.vars[i], values[i])
         if val.type == 'procedure':
           val.env = new_env
-      #new_body = expr.body.replace(new_env, {}, self)
       new_body = expr.body
       self.get_child('letbody', new_env, new_body).unevaluate()
       val = self.evaluate_recurse(new_body, new_env, 'letbody', reflip)
@@ -356,11 +364,6 @@ class EvalNode(Node):
       self.args = args
     elif self.type == 'function':
       n = len(expr.vars)
-      #new_env = self.env.spawn_child()
-      #bound = {}
-      #for i in range(n): # Bind variables
-      #  bound[expr.vars[i]] = True
-      #procedure_body = expr.body.replace(new_env, bound, self)
       procedure_body = expr.body
       val = Procedure(expr.vars, procedure_body, self.env)
     else:
