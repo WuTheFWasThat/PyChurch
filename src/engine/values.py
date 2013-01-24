@@ -31,6 +31,7 @@ class XRP:
   # A positive weight used by the engine to allocate Markov chain transition steps for inference. By default, always returns 1.
   def weight(self, args = None):
     return 1
+  # TODO: break up
   def mh_prop(self, oldval, args): 
     # for re-proposing a particular application
     self.remove(oldval, args)

@@ -87,7 +87,6 @@ class EvalNode(Node):
     self.random_xrp_apply = False
     self.procedure_apply = False
     self.args = None
-    self.p = 0
 
     self.expression = expression
     self.type = expression.type
@@ -142,15 +141,7 @@ class EvalNode(Node):
       self.traces.remove_xrp(self)
 
   def add_xrp(self, xrp, val, args, forcing = False):
-    if not xrp.resample:
-      self.random_xrp_apply = True
-      self.traces.add_xrp(xrp, args, self)
-    prob = xrp.prob(val, args)
-    self.p = prob
-    if not forcing:
-      self.traces.eval_p += prob
-    self.traces.p += prob
-    xrp.incorporate(val, args)
+    self.traces.add_xrp(xrp, args, val, self, forcing)
 
   def delete_children(self):
     # TODO: NOT ACTUALLY SAFE, because of multiple propagation
@@ -401,14 +392,17 @@ class EvalNode(Node):
 
     self.traces.remove_xrp(self)
 
-    (val, p_uneval, p_eval) = self.xrp.mh_prop(self.val, self.args)
+    # TODO re-add something like this
+    # (val, p_uneval, p_eval) = self.xrp.mh_prop(self.val, self.args)
 
-    self.traces.add_xrp(self.xrp, self.args, self)
+    self.xrp.remove(self.val, self.args)
+    p_uneval = self.xrp.prob(self.val, self.args)
+    val = self.xrp.sample(self.args)
+
+    self.traces.add_xrp(self.xrp, self.args, val, self)
 
     self.traces.uneval_p += p_uneval
     self.traces.p -= p_uneval
-    self.traces.eval_p += p_eval
-    self.traces.p += p_eval
     self.p = p_eval
 
     self.set_val(val)
@@ -709,9 +703,17 @@ class Traces(Engine):
     self.add_to_db(xrp.__hash__(), weight)
 
   # Add an XRP application node to the db
-  def add_xrp(self, xrp, args, evalnode):
-    weight = xrp.weight(args)
+  def add_xrp(self, xrp, args, val, evalnode, forcing = False):
+    if not xrp.resample:
+      evalnode.random_xrp_apply = True
+    prob = xrp.prob(val, args)
     evalnode.setargs(args)
+    xrp.incorporate(val, args)
+    if not forcing:
+      self.eval_p += prob
+    self.p += prob
+
+    weight = xrp.weight(args)
     try:
       self.new_to_old_q += math.log(weight)
     except:
@@ -742,7 +744,8 @@ class Traces(Engine):
   def remove_xrp(self, evalnode):
     xrp = evalnode.xrp
     self.remove_for_transition(xrp, evalnode)
-    try:
+    # TODO xrp.remove??
+    try: # TODO: dont do this here.. dont do cancellign
       self.old_to_new_q += math.log(xrp.weight(evalnode.args))
     except:
       pass # This fails when restoring/keeping, for example
