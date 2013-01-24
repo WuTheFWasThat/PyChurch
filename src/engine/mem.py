@@ -7,7 +7,7 @@ from utils.rexceptions import RException
 class mem_proc_XRP(XRP):
   def __init__(self, procedure, engine_type = "traces"):
     self.initialize()
-    self.deterministic = False
+    self.resample = False
 
     if engine_type == "traces":
       self.engine = Traces()
@@ -55,10 +55,11 @@ class mem_proc_XRP(XRP):
     args_hash = ','.join([x.str_hash for x in args])
     self.count[args_hash] = self.count[args_hash] - 1
     if self.count[args_hash] == 0:
-      del self.count[args_hash]
       id = self.ids[args_hash]
-      self.engine.forget(id)
-      del self.ids[args_hash]
+      # del self.count[args_hash]
+      # id = self.ids[args_hash]
+      # self.engine.forget(id)
+      # del self.ids[args_hash]
     return 
   def weight(self, args):
     return 0
@@ -84,7 +85,7 @@ class mem_proc_XRP(XRP):
 class mem_XRP(XRP):
   def __init__(self, engine_type = "traces"):
     self.initialize()
-    self.deterministic = True
+    self.resample = True
     self.engine_type = engine_type
   def apply(self, args = None):
     if len(args) != 1:

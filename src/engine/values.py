@@ -11,7 +11,8 @@ class XRP:
     self.initialize()
     return
   def initialize(self):
-    self.deterministic = False
+    # Is this XRP a resampler or a rescorer?
+    self.resample = False
     self.hashval = rrandom.random.randbelow()
     return
   def apply(self, args = None):
@@ -22,8 +23,8 @@ class XRP:
     pass
   # computes *log* marginal probability of val, given the current state/state/init_args, and that we are applying args
   def prob(self, val, args = None):
-    if not self.deterministic:
-      raise RException("This XRP is non-deterministic, and you should overwrite this function!")
+    if not self.resample:
+      raise RException("This XRP is a re-scorer, and you should overwrite this function!")
     return 0
   # A positive weight used by the engine to allocate Markov chain transition steps for inference. By default, always returns 1.
   def weight(self, args = None):

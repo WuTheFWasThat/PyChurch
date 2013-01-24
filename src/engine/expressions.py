@@ -1,6 +1,7 @@
 from utils.rexceptions import RException
 from values import *
 from xrp import *
+from xrp import *
 
 #Class representing expressions 
 class Expression:
@@ -167,25 +168,25 @@ def xrp(xrp):
 
 ### DISTRIBUTIONS ### 
 
-bernoulli_xrp = ConstExpression(XRPValue(bernoulli_XRP()))
+bernoulli_xrp = xrp(bernoulli_XRP())
 def bernoulli(p):
   return ApplyExpression(bernoulli_xrp, [p])
 
-beta_xrp = ConstExpression(XRPValue(beta_XRP()))
+beta_xrp = xrp(beta_XRP())
 def beta(a, b): 
   return ApplyExpression(beta_xrp, [a, b])
 
-gamma_xrp = ConstExpression(XRPValue(gamma_XRP()))
+gamma_xrp = xrp(gamma_XRP())
 def gamma(a, b): 
   return ApplyExpression(gamma_xrp, [a, b])
 
-uniform_xrp = ConstExpression(XRPValue(uniform_discrete_XRP()))
+uniform_xrp = xrp(uniform_discrete_XRP())
 def uniform(n = None):
   if n is None:
     return beta(int_expr(1), int_expr(1))
   else:
     return ApplyExpression(uniform_xrp, [n])
 
-gaussian_xrp = ConstExpression(XRPValue(gaussian_XRP()))
+gaussian_xrp = xrp(gaussian_XRP())
 def gaussian(mu, sigma):
   return ApplyExpression(gaussian_xrp, [mu, sigma])

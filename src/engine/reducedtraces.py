@@ -240,7 +240,7 @@ class ReducedEvalNode(Node):
 
     if not self.random_xrp_apply:
       if xrp_force_val is not None:
-        raise RException("Can only force non-deterministic XRP applications")
+        raise RException("Can only force re-scoring XRP applications")
       assert self.assume  or self.predict
 
     self.set_val(val)
@@ -308,7 +308,7 @@ class ReducedEvalNode(Node):
         val = self.evaluate_recurse(op.body, new_env, hashval, addition, None, restore)
       elif op.type == 'xrp':
         xrp = op.xrp
-        if not xrp.deterministic:
+        if not xrp.resample:
           if hashval == 0:
             self.random_xrp_apply = True
             val = self.apply_random_xrp(xrp, args, xrp_force_val)

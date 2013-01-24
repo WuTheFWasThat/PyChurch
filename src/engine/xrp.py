@@ -111,7 +111,7 @@ class noisy_XRP(XRP):
 class array_XRP(XRP):
   def __init__(self, array):
     self.initialize()
-    self.deterministic = True
+    self.resample = True
     self.array = array
     self.n = len(self.array)
     return
@@ -137,7 +137,7 @@ class array_XRP(XRP):
 class make_array_XRP(XRP):
   def __init__(self):
     self.initialize()
-    self.deterministic = True
+    self.resample = True
     return
   def apply(self, args = None):
     return XRPValue(array_XRP(args)) 
@@ -147,7 +147,7 @@ class make_array_XRP(XRP):
 class make_symmetric_array_XRP(XRP):
   def __init__(self):
     self.initialize()
-    self.deterministic = True
+    self.resample = True
     return
   def apply(self, args = None):
     (el, n)  = (args[0], args[1].nat)
@@ -261,7 +261,7 @@ class uniform_discrete_XRP(XRP):
 class beta_bernoulli_XRP(XRP):
   def __init__(self, start_state = (1, 1)):
     self.initialize()
-    self.deterministic = False
+    self.resample = False
     (self.h, self.t) = start_state
   def apply(self, args = None):
     if (self.h | self.t == 0):
@@ -297,7 +297,7 @@ class beta_bernoulli_XRP(XRP):
 class make_beta_bernoulli_XRP(XRP):
   def __init__(self):
     self.initialize()
-    self.deterministic = True
+    self.resample = True
     return
   # TODO: decide convention on heads/tails
   def apply(self, args = None):
@@ -377,7 +377,7 @@ class dirichlet_multinomial_XRP(XRP):
 class make_dirichlet_multinomial_XRP(XRP):
   def __init__(self):
     self.initialize()
-    self.deterministic = True
+    self.resample = True
     return
   def apply(self, args = None):
     if len(args) != 1:
@@ -409,7 +409,7 @@ class symmetric_dirichlet_XRP(XRP):
 class make_symmetric_dirichlet_multinomial_XRP(XRP):
   def __init__(self):
     self.initialize()
-    self.deterministic = True
+    self.resample = True
     return
   def apply(self, args = None):
     if len(args) != 2:
@@ -471,7 +471,7 @@ class CRP_XRP(XRP):
 class gen_CRP_XRP(XRP):
   def __init__(self):
     self.initialize()
-    self.deterministic = True
+    self.resample = True
     return
   def apply(self, args = None):
     alpha = args[0].num

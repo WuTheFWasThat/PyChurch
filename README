@@ -71,3 +71,13 @@ See /src/engine/directives.py for examples. (Search for "PRIMITIVE PROCEDURES".)
 The syntax for expressions can be found near the bottom of /src/engine/expressions.py (or you can simply follow the examples).
 Don't forget the 3rd argument must be set to 'True'.
 
+--------------------
+KNOWN ISSUES
+--------------------
+- Proposal is wrong sometimes: ASSUME a (flip), ASSUME b (beta-bernoulli/make), PREDICT (if a (b) (b)), PREDICT (if a (b) (b))
+- Needs new full XRP interface (including breaking up mh-proposal, theta-mh-propose, rescore-or-resample, unsample, which important for mem)
+- More things should be implemented as XRPs
+- Traces (but probably not reduced traces?) could be more intelligent at propagating up through arguments
+- Some Jenkins tests fail (lists implemented differently)
+- Some memory leaks
+- Outermost observe shouldn't be required

@@ -138,11 +138,11 @@ class EvalNode(Node):
     if not forcing:
       self.traces.uneval_p += prob
     self.traces.p -= prob
-    if not self.xrp.deterministic:
+    if not self.xrp.resample:
       self.traces.remove_xrp(self)
 
   def add_xrp(self, xrp, val, args, forcing = False):
-    if not xrp.deterministic:
+    if not xrp.resample:
       self.random_xrp_apply = True
       self.traces.add_xrp(xrp, args, self)
     prob = xrp.prob(val, args)
@@ -346,15 +346,15 @@ class EvalNode(Node):
         elif xrp_force_val is not None:
           if reflip == True and not self.observed:
             raise RException("Forcing value that is not observe, and wants reflip")
-          if xrp.deterministic:
-            raise RException("Forced XRP application should not be deterministic")
+          if xrp.resample:
+            raise RException("Forced XRP application should be re-scorable")
             
           val = xrp_force_val
           if self.active:
             self.remove_xrp(True)
           self.add_xrp(xrp, val, args, True)
 
-        elif xrp.deterministic or (not reflip):
+        elif xrp.resample or (not reflip):
           if self.active:
             if self.args == args and self.xrp == xrp:
               val = self.val
@@ -365,7 +365,7 @@ class EvalNode(Node):
           else:
             val = xrp.apply(args)
             self.add_xrp(xrp, val, args)
-        else: # not deterministic, needs reflipping
+        else: # not resampling, but needs reflipping
           if self.active:
             self.remove_xrp()
           val = xrp.apply(args)
