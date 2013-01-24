@@ -263,30 +263,6 @@ class EvalNode(Node):
     elif self.type == 'variable':
       (val, lookup_env) = self.env.lookup(expr.name)
       self.setlookup(lookup_env)
-    elif self.type == 'if':
-      cond = self.evaluate_recurse(expr.cond, self.env, 'cond', reflip)
-      if cond.bool:
-        false_child = self.get_child('false', self.env, expr.false)
-        if false_child.active:
-          false_child.unevaluate()
-          val = self.evaluate_recurse(expr.true, self.env, 'true', reflip)
-        else:
-          val = self.evaluate_recurse(expr.true, self.env, 'true', reflip)
-      else:
-        true_child = self.get_child('true', self.env, expr.true)
-        if true_child.active:
-          true_child.unevaluate()
-          val = self.evaluate_recurse(expr.false, self.env, 'false', reflip)
-        else:
-          val = self.evaluate_recurse(expr.false, self.env, 'false', reflip)
-    #elif self.type == 'switch':
-    #  index = self.evaluate_recurse(expr.index, self.env, 'index', reflip)
-    #  if not 0 <= index.num < expr.n:
-    #    raise RException("Invalid index for switch")
-    #  for i in range(expr.n):
-    #    if i != index.num:
-    #      self.get_child('child' + str(i), self.env, expr.children[i]).unevaluate()
-    #  val = self.evaluate_recurse(self.children[index.num] , self.env, 'child' + str(index.num), reflip)
     elif self.type == 'let':
       # TODO: this really is a let*
       # Does environment stuff work properly?
@@ -387,85 +363,6 @@ class EvalNode(Node):
       #procedure_body = expr.body.replace(new_env, bound, self)
       procedure_body = expr.body
       val = Procedure(expr.vars, procedure_body, self.env)
-    elif self.type == '=':
-      (val1, val2) = self.binary_op_evaluate(reflip)
-      val = val1.__eq__(val2)
-    elif self.type == '<':
-      (val1, val2) = self.binary_op_evaluate(reflip)
-      val = val1.__lt__(val2)
-    elif self.type == '>':
-      (val1, val2) = self.binary_op_evaluate(reflip)
-      val = val1.__gt__(val2)
-    elif self.type == '<=':
-      (val1, val2) = self.binary_op_evaluate(reflip)
-      val = val1.__le__(val2)
-    elif self.type == '>=':
-      (val1, val2) = self.binary_op_evaluate(reflip)
-      val = val1.__ge__(val2)
-    elif self.type == '&':
-      vals = self.children_evaluate(reflip)
-      andval = BoolValue(True)
-      for x in vals:
-        andval = andval.__and__(x)
-      val = andval
-    elif self.type == '^':
-      vals = self.children_evaluate(reflip)
-      xorval = BoolValue(True)
-      for x in vals:
-        xorval = xorval.__xor__(x)
-      val = xorval
-    elif self.type == '|':
-      vals = self.children_evaluate(reflip)
-      orval = BoolValue(False)
-      for x in vals:
-        orval = orval.__or__(x)
-      val = orval
-    elif self.type == '~':
-      negval = self.evaluate_recurse(expr.children[0] , self.env, 'neg', reflip)
-      val = negval.__inv__()
-    elif self.type == 'abs':
-      orig_val = self.evaluate_recurse(expr.children[0] , self.env, 'abs', reflip)
-      val = orig_val.__abs__()
-    elif self.type == 'int':
-      orig_val = self.evaluate_recurse(expr.children[0] , self.env, 'int', reflip)
-      val = orig_val.__int__()
-    elif self.type == 'round':
-      orig_val = self.evaluate_recurse(expr.children[0] , self.env, 'round', reflip)
-      val = orig_val.__round__()
-    elif self.type == 'floor':
-      orig_val = self.evaluate_recurse(expr.children[0] , self.env, 'floor', reflip)
-      val = orig_val.__floor__()
-    elif self.type == 'ceil':
-      orig_val = self.evaluate_recurse(expr.children[0] , self.env, 'ceil', reflip)
-      val = orig_val.__ceil__()
-    elif self.type == '+':
-      vals = self.children_evaluate(reflip)
-      sum_val = NatValue(0)
-      for x in vals:
-        sum_val = sum_val.__add__(x)
-      val = sum_val
-    elif self.type == '-':
-      val1 = self.evaluate_recurse(expr.children[0] , self.env, 'sub0', reflip)
-      val2 = self.evaluate_recurse(expr.children[1] , self.env, 'sub1', reflip)
-      val = val1.__sub__(val2)
-    elif self.type == '*':
-      vals = self.children_evaluate(reflip)
-      prod_val = NatValue(1)
-      for x in vals:
-        prod_val = prod_val.__mul__(x)
-      val = prod_val
-    elif self.type == '/':
-      val1 = self.evaluate_recurse(expr.children[0] , self.env, 'div0', reflip)
-      val2 = self.evaluate_recurse(expr.children[1] , self.env, 'div1', reflip)
-      val = val1.__div__(val2)
-    elif self.type == '**':
-      val1 = self.evaluate_recurse(expr.children[0] , self.env, 'base', reflip)
-      val2 = self.evaluate_recurse(expr.children[1] , self.env, 'exp', reflip)
-      val = val1.__pow__(val2)
-    elif self.type == '%':
-      val1 = self.evaluate_recurse(expr.children[0] , self.env, 'val', reflip)
-      val2 = self.evaluate_recurse(expr.children[1] , self.env, 'modulus', reflip)
-      val = val1.__mod__(val2)
     else:
       raise RException('Invalid expression type %s' % self.type)
 

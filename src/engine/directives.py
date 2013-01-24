@@ -1,5 +1,7 @@
 from expressions import *
 from mem import *
+from xrp import *
+from basic_xrps import *
 
 import utils.rrandom as rrandom
 
@@ -117,37 +119,38 @@ class Directives:
 
     # BASIC OPERATIONS
 
-    self.assume('inc', function(['x'], op('+', [var('x'), nat_expr(1)])), True)
-    self.assume('dec', function(['x'], op('-', [var('x'), nat_expr(1)])), True)
-    self.assume('abs', function(['x'], op('abs', [var('x')])), True)
+    self.assume('=', xrp(eq_XRP()), True);
+    self.assume('<', xrp(lt_XRP()), True);
+    self.assume('>', xrp(gt_XRP()), True);
+    self.assume('<=', xrp(le_XRP()), True);
+    self.assume('>=', xrp(ge_XRP()), True);
+    self.assume('+', xrp(sum_XRP()), True);
+    self.assume('-', xrp(sub_XRP()), True);
+    self.assume('*', xrp(mul_XRP()), True);
+    self.assume('/', xrp(div_XRP()), True);
+    self.assume('**', xrp(pow_XRP()), True);
+    self.assume('power', xrp(pow_XRP()), True);
+    self.assume('%', xrp(mod_XRP()), True);
+    self.assume('&', xrp(and_XRP()), True);
+    self.assume('and', xrp(and_XRP()), True);
+    self.assume('|', xrp(or_XRP()), True);
+    self.assume('or', xrp(or_XRP()), True);
+    self.assume('^', xrp(xor_XRP()), True);
+    self.assume('xor', xrp(xor_XRP()), True);
+    self.assume('!', xrp(not_XRP()), True);
+    self.assume('not', xrp(not_XRP()), True);
 
-    self.assume('int', function(['x'], op('int', [var('x')])), True)
-    self.assume('round', function(['x'], op('round', [var('x')])), True)
-    self.assume('floor', function(['x'], op('floor', [var('x')])), True)
-    self.assume('ceil', function(['x'], op('ceil', [var('x')])), True)
-
-    self.assume('power', function(['x', 'y'], op('**', [var('x'), var('y')])), True)
-
-    #self.assume('=', function(['x', 'y'], op('=', [var('x'), var('y')])))
-    #self.assume('<', function(['x', 'y'], op('<', [var('x'), var('y')])))
-    #self.assume('<=', function(['x', 'y'], op('<=', [var('x'), var('y')])))
-    #self.assume('>', function(['x', 'y'], op('>', [var('x'), var('y')])))
-    #self.assume('>=', function(['x', 'y'], op('>=', [var('x'), var('y')])))
-    #self.assume('+', function(['x', 'y'], op('+', [var('x'), var('y')])))
-    #self.assume('-', function(['x', 'y'], op('-', [var('x'), var('y')])))
-    #self.assume('*', function(['x', 'y'], op('*', [var('x'), var('y')])))
-    #self.assume('/', function(['x', 'y'], op('/', [var('x'), var('y')])))
-    #self.assume('%', function(['x', 'y'], op('%', [var('x'), var('y')])))
-    #self.assume('&', function(['x', 'y'], op('&', [var('x'), var('y')])))
-    #self.assume('|', function(['x', 'y'], op('|', [var('x'), var('y')])))
-    #self.assume('^', function(['x', 'y'], op('^', [var('x'), var('y')])))
-    #self.assume('~', function(['x'], op('~', [var('x')])))
-    #self.assume('and', function(['x', 'y'], op('&', [var('x'), var('y')])))
-    #self.assume('or', function(['x', 'y'], op('|', [var('x'), var('y')])))
-    #self.assume('xor', function(['x', 'y'], op('^', [var('x'), var('y')])))
-    #self.assume('not', function(['x'], op('~', [var('x')])))
+    self.assume('inc', function(['x'], apply(var('+'), [var('x'), nat_expr(1)])), True)
+    self.assume('dec', function(['x'], apply(var('-'), [var('x'), nat_expr(1)])), True)
+    self.assume('abs', xrp(abs_XRP()), True)
+    self.assume('int', xrp(int_XRP()), True)
+    self.assume('round', xrp(round_XRP()), True)
+    self.assume('floor', xrp(floor_XRP()), True)
+    self.assume('ceil', xrp(ceil_XRP()), True)
 
     # BASIC XRPs
+
+    self.assume('if', function(['cond', 'cons', 'alt'], apply(apply(xrp(if_XRP()), [var('cond'), function([], var('cons')), function([], var('alt'))]), [])), True)
 
     self.assume('noisy-negate', xrp(noisy_negate_XRP()), True)
     self.assume('noise-negate', xrp(noisy_negate_XRP()), True)
@@ -170,10 +173,10 @@ class Directives:
     self.assume('rand', function([], apply(var('beta'), [num_expr(1), num_expr(1)])), True)
 
     self.assume('uniform-discrete', function(['min-inclusive', 'max-inclusive'],
-                                    op('+', [apply(var('randbelow'), [op('+', [op('-', [var('max-inclusive'), var('min-inclusive')]), nat_expr(1)])]), var('min-inclusive')])),
+                                    apply(var('+'), [apply(var('randbelow'), [apply(var('+'), [apply(var('-'), [var('max-inclusive'), var('min-inclusive')]), nat_expr(1)])]), var('min-inclusive')])),
                 True)
     self.assume('uniform-continuous', function(['min-inclusive', 'max-inclusive'],
-                                      op('+', [op('*', [apply(var('rand'), []), op('-', [var('max-inclusive'), var('min-inclusive')])]), var('min-inclusive')])),
+                                      apply(var('+'), [apply(var('*'), [apply(var('rand'), []), apply(var('-'), [var('max-inclusive'), var('min-inclusive')])]), var('min-inclusive')])),
                 True)
    
     # MORE COMPLICATED PROCESSES
@@ -195,9 +198,9 @@ class Directives:
                          ('atoms',  apply(var('mem'), [function(['j'], apply(var('basemeasure'), []))])),
                          ('loop', \
                           function(['j'], 
-                                   ifelse(apply(var('bernoulli'), [apply(var('sticks'), [var('j')])]), \
+                                   apply(var('if'), [apply(var('bernoulli'), [apply(var('sticks'), [var('j')])]), \
                                           apply(var('atoms'), [var('j')]), \
-                                          apply(var('loop'), [op('+', [var('j'), num_expr(1)])])))) \
+                                          apply(var('loop'), [apply(var('+'), [var('j'), num_expr(1)])])]))) \
                         ], \
                         function([], apply(var('loop'), [num_expr(1)])))),
            True) 

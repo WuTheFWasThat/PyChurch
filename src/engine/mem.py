@@ -1,7 +1,6 @@
 from traces import Traces
 from reducedtraces import ReducedTraces
 from expressions import *
-from xrp import *
 from utils.rexceptions import RException
 
 class mem_proc_XRP(XRP):

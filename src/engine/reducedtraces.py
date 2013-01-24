@@ -269,12 +269,6 @@ class ReducedEvalNode(Node):
     elif expr.type == 'variable':
       (val, lookup_env) = env.lookup(expr.name)
       self.addlookup(expr.name, lookup_env)
-    elif expr.type == 'if':
-      cond = self.evaluate_recurse(expr.cond, env, hashval, 1, None, restore)
-      if cond.bool:
-        val = self.evaluate_recurse(expr.true, env, hashval, 2, None, restore)
-      else:
-        val = self.evaluate_recurse(expr.false, env, hashval, 3, None, restore)
     elif expr.type == 'let':
       # TODO: this really is a let*
       # Does environment stuff work properly?
@@ -332,85 +326,6 @@ class ReducedEvalNode(Node):
       #procedure_body = expr.body.replace(new_env, bound, self)
       procedure_body = expr.body
       val = Procedure(expr.vars, procedure_body, env)
-    elif expr.type == '=':
-      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, restore)
-      val = val1.__eq__(val2)
-    elif expr.type == '<':
-      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, restore)
-      val = val1.__lt__(val2)
-    elif expr.type == '>':
-      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, restore)
-      val = val1.__gt__(val2)
-    elif expr.type == '<=':
-      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, restore)
-      val = val1.__le__(val2)
-    elif expr.type == '>=':
-      (val1, val2) = self.binary_op_evaluate(expr, env, hashval, restore)
-      val = val1.__ge__(val2)
-    elif expr.type == '&':
-      vals = self.children_evaluate(expr, env, hashval, restore)
-      andval = BoolValue(True)
-      for x in vals:
-        andval = andval.__and__(x)
-      val = andval
-    elif expr.type == '^':
-      vals = self.children_evaluate(expr, env, hashval, restore)
-      xorval = BoolValue(True)
-      for x in vals:
-        xorval = xorval.__xor__(x)
-      val = xorval
-    elif expr.type == '|':
-      vals = self.children_evaluate(expr, env, hashval, restore)
-      orval = BoolValue(False)
-      for x in vals:
-        orval = orval.__or__(x)
-      val = orval
-    elif expr.type == '~':
-      negval = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
-      val = negval.__inv__()
-    elif expr.type == 'abs':
-      orig_val = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
-      val = orig_val.__abs__()
-    elif expr.type == 'int':
-      orig_val = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
-      val = orig_val.__int__()
-    elif expr.type == 'round':
-      orig_val = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
-      val = orig_val.__round__()
-    elif expr.type == 'floor':
-      orig_val = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
-      val = orig_val.__floor__()
-    elif expr.type == 'ceil':
-      orig_val = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
-      val = orig_val.__ceil__()
-    elif expr.type == '+':
-      vals = self.children_evaluate(expr, env, hashval, restore)
-      sum_val = NatValue(0)
-      for x in vals:
-        sum_val = sum_val.__add__(x)
-      val = sum_val
-    elif expr.type == '-':
-      val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
-      val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 2, None, restore)
-      val = val1.__sub__(val2)
-    elif expr.type == '*':
-      vals = self.children_evaluate(expr, env, hashval, restore)
-      prod_val = NatValue(1)
-      for x in vals:
-        prod_val = prod_val.__mul__(x)
-      val = prod_val
-    elif expr.type == '/':
-      val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
-      val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 2, None, restore)
-      val = val1.__div__(val2)
-    elif expr.type == '**':
-      val1 = self.evaluate_recurse(expr.children[0] , env, hashval, 1, None, restore)
-      val2 = self.evaluate_recurse(expr.children[1] , env, hashval, 2, None, restore)
-      val = val1.__pow__(val2)
-    elif expr.type == '%':
-      val1 = self.evaluate_recurse(expr.children[0], env, hashval, 1, None, restore)
-      val2 = self.evaluate_recurse(expr.children[1], env, hashval, 2, None, restore)
-      val = val1.__mod__(val2)
     else:
       raise RException('Invalid expression type %s' % expr.type)
 
