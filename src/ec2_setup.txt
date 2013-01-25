@@ -10,12 +10,19 @@ sudo apt-get install make
 sudo apt-get install python-setuptools
 sudo easy_install flask
 sudo easy_install pip
+sudo pip install objgraph
 
 # clone this repo!
 git clone https://github.com/WuTheFWasThat/Church-interpreter.git
 # clone the pypy repo!
 hg clone https://bitbucket.org/pypy/pypy
 
+# to compile C version
+python ../../pypy/rpython/bin/rpython socket_server.py
+cp socket_server-c [SOCKET SERVER NAME, e.g. socket_server-ec2-ubuntu-c]
+
+# To run, use
+python server.py -s [SOCKET SERVER NAME]
 
 ######################################
 # DIRECTIONS for setup on our EC2 AMI?
@@ -36,20 +43,12 @@ hg clone https://bitbucket.org/pypy/pypy
 
 cd Church-interpreter/src/
 
-MAKE_NEW_SERVER=true
-if $MAKE_NEW_SERVER; then
-vim ~/pypy/pypy/annotation/annrpython.py
-# comment out line 180
-python ../../pypy/pypy/translator/goal/translate.py socket_server.py
-# maybe reduced traces
-cp socket_server-c ec2-jeff-traces-server
-fi
+# to compile C version
+python ../../pypy/rpython/bin/rpython socket_server.py
+cp socket_server-c [SOCKET SERVER NAME, e.g. socket_server-ec2-ubuntu-c]
 
-cd ~
-screen
-
-# At this point, run
-# python server.py
+# To run, use
+python server.py -s [SOCKET SERVER NAME]
 
 ################################################################################
 # To run the lda stuff
