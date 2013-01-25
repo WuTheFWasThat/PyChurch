@@ -7,7 +7,7 @@ import random
 from ripl import RIPL
 
 try:
-  from pypy.rlib import rsocket as socket
+  from rpython.rlib import rsocket as socket
   use_pypy = True
 except:
   import socket

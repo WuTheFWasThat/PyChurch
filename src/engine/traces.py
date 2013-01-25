@@ -11,7 +11,7 @@ from utils.rexceptions import RException
 # crosslinked by symbol lookup nodes and by the env argument to eval
 
 try:
-  from pypy.rlib.jit import JitDriver
+  from rpython.rlib.jit import JitDriver
   jitdriver = JitDriver(greens = [], reds=['node'])
   
   def jitpolicy(driver):
@@ -87,6 +87,8 @@ class EvalNode(Node):
     self.random_xrp_apply = False
     self.procedure_apply = False
     self.args = None
+    self.p = 0
+    self.forcing = False
 
     self.expression = expression
     self.type = expression.type
@@ -124,21 +126,17 @@ class EvalNode(Node):
     self.lookup = None
     env.rem_lookup(name, self)
 
-  def setargs(self, args):
+  def setargs(self, xrp, args, p):
     if not self.type == 'apply':
       raise RException("Setting args in a non-apply expression")
     self.args = args
+    self.p = p
 
-  def remove_xrp(self, forcing = False):
+  def remove_xrp(self):
     if not self.active:
       raise RException("Removing XRP from inactive node")
-    self.xrp.remove(self.val, self.args)
-    prob = self.xrp.prob(self.val, self.args)
-    if not forcing:
-      self.traces.uneval_p += prob
-    self.traces.p -= prob
-    if not self.xrp.resample:
-      self.traces.remove_xrp(self)
+    # TODO seems like forcing shoudlnt be passed into remove
+    self.traces.remove_xrp(self.xrp, self.args, self.val, self)
 
   def add_xrp(self, xrp, val, args, forcing = False):
     self.traces.add_xrp(xrp, args, val, self, forcing)
@@ -326,7 +324,7 @@ class EvalNode(Node):
             
           val = xrp_force_val
           if self.active:
-            self.remove_xrp(True)
+            self.remove_xrp()
           self.add_xrp(xrp, val, args, True)
 
         elif xrp.resample or (not reflip):
@@ -346,7 +344,6 @@ class EvalNode(Node):
           val = xrp.sample(args)
           self.add_xrp(xrp, val, args)
 
-        self.xrp = xrp
         if val is None:
           raise RException("Value is not set")
       else:
@@ -390,20 +387,14 @@ class EvalNode(Node):
     if self.observed:
       return self.val
 
-    self.traces.remove_xrp(self)
+    self.traces.remove_xrp(self.xrp, self.args, self.val, self)
 
     # TODO re-add something like this
     # (val, p_uneval, p_eval) = self.xrp.mh_prop(self.val, self.args)
 
-    self.xrp.remove(self.val, self.args)
-    p_uneval = self.xrp.prob(self.val, self.args)
     val = self.xrp.sample(self.args)
 
     self.traces.add_xrp(self.xrp, self.args, val, self)
-
-    self.traces.uneval_p += p_uneval
-    self.traces.p -= p_uneval
-    self.p = p_eval
 
     self.set_val(val)
 
@@ -704,10 +695,11 @@ class Traces(Engine):
 
   # Add an XRP application node to the db
   def add_xrp(self, xrp, args, val, evalnode, forcing = False):
+    evalnode.forcing = forcing
     if not xrp.resample:
       evalnode.random_xrp_apply = True
     prob = xrp.prob(val, args)
-    evalnode.setargs(args)
+    evalnode.setargs(xrp, args, prob)
     xrp.incorporate(val, args)
     if not forcing:
       self.eval_p += prob
@@ -741,7 +733,15 @@ class Traces(Engine):
       del self.xrps[hashval]
       self.delete_from_db(xrp.__hash__())
 
-  def remove_xrp(self, evalnode):
+  def remove_xrp(self, xrp, args, val, evalnode):
+    xrp.remove(val, args)
+    prob = xrp.prob(val, args)
+    if not evalnode.forcing:
+      self.uneval_p += prob
+    self.p -= prob 
+    if xrp.resample:
+      return
+
     xrp = evalnode.xrp
     self.remove_for_transition(xrp, evalnode)
     # TODO xrp.remove??

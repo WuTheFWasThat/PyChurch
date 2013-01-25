@@ -407,9 +407,21 @@ However, how do we consider the probabilities of these other applications?  Unfo
 
 Unfortunately, doing this would mean that we can't decide the values while we propagate up, and so we cannot stop propagating, even if the values are the same.  To fix this, we will use a different MH proposal.  
 
-Let's simply apply and incorporate all new values encountered, but refrain from removing the old values, and querying the probabilities as we go.  This way, we can still propagate up dynamically.  Then, at the end of our calculation, we can remove all old values, again querying the ``unevaluation" probabiltiies.  This determines our ``forwards" transition probability, or the denominator of the MH ratio (with some cancelling).  
+Let's simply apply and incorporate all new values encountered, but refrain from removing the old values, and querying the probabilities as we go.  This will give us our ``forwards" transition probability the denominator of the MH ratio (with some cancelling).  Then, only at the end of our calculation, we can remove all old unused values, again getting the ``unevaluation" probabiltiies.  This determines our ``backwards" transition probability, or the numerator of the MH ratio (with some cancelling).  
 
-Then, we essentially do the process in reverse, to calculate the ``backwards" transition probability, the numerator of the MH ratio.  We simply re-incorporate all the old values, querying the probabilities as we go, and then remove all the new values, querying the ``unevaluation" probabilities.    
+Let's outline more explicitly.  We will assume access to a global variable which will keep track of the probability of the current state.  Also, each node should keep track of whether it was forced
+% Using (if P C A) as an example.
+\begin{enumerate}
+\item Before the proposal: P = true, C is evaluated, A is not evaluated.    Global p = $P(X_{old})$ and number of unconstrained random choices is already known.
+\item Proposal.  A is being evaluated without removing things (sampled values from XRP application nodes) in C. Calculating $Q(X_{old} \rightarrow X_{new})$, not including constraint random choices. Update global p.
+\item Proposal is finished. Removing things in C. Calculating $Q(X_{new} \rightarrow X_{old})$, not including constraint random choices.
+\item $P(X_{new})$ and number of unconstrained random choices is now known. 
+\item Make MH decision basing on MH ratio.
+	\begin{itemize}
+\item PROPOSAL ACCEPTED: unsample and remove A, add C back.
+\item PROPOSAL REJECTED: unsample C.
+	\end{itemize}
+\end{enumerate}
 
 % hash table with get random key
 \subsection{Propagation}

@@ -271,7 +271,7 @@ class beta_bernoulli_XRP(XRP):
   def __init__(self, array):
     self.initialize()
     self.resample = False
-    self.array = array
+    self.num_array = array
     self.n = len(array)
     self.z = sum(array)
   def sample(self, args = None):
@@ -279,23 +279,23 @@ class beta_bernoulli_XRP(XRP):
     if (self.z == 0):
       val = rrandom.random.randbelow(self.n)
     else:
-      val = sample_categorical(self.array, self.z)
+      val = sample_categorical(self.num_array, self.z)
     return NatValue(val)
   def incorporate(self, val, args = None):
     check_num_args(args, 0)
-    self.array[val.nat] += 1
+    self.num_array[val.nat] += 1
     self.z += 1
   def remove(self, val, args = None):
     check_num_args(args, 0)
-    self.array[val.nat] -= 1
-    if self.array[val.nat] < 0:
+    self.num_array[val.nat] -= 1
+    if self.num_array[val.nat] < 0:
       raise RException("Something went wrong in beta_bernoulli")
     self.z -= 1
   def prob(self, val, args = None):
     check_num_args(args, 0)
-    return math.log(self.array[val.nat]) - math.log(self.z)
+    return math.log(self.num_array[val.nat]) - math.log(self.z)
   def __str__(self):
-    return 'beta_bernoulli(%s)' % str(self.array)
+    return 'beta_bernoulli(%s)' % str(self.num_array)
 
 class make_beta_bernoulli_XRP(XRP):
   def __init__(self):

@@ -1,5 +1,5 @@
 """
-Based on the PyPy tutorial by Andrew Brown
+ueased on the PyPy tutorial by Andrew Brown
 Parts copied from http://www.smipple.net/snippet/Shibukawa%20Yoshi/RPython%20echo%20server
 """
 
@@ -13,14 +13,14 @@ from engine.traces import *
 from engine.reducedtraces import *
 
 try:
-  from pypy.rlib import rsocket
+  from rpython.rlib import rsocket
   use_pypy = True
 except:
   import socket as rsocket
   use_pypy = False
 
 try:
-  from pypy.rlib.jit import JitDriver
+  from rpython.rlib.jit import JitDriver
   jitdriver = JitDriver(greens = [ \
                                  ### INTs 
                                  ### REFs 

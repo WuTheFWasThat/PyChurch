@@ -1,21 +1,37 @@
-# DIRECTIONS for setup on EC2
+######################################
+# DIRECTIONS for setup on EC2 Ubuntu 
+######################################
 
-sudo yum -y install git
-# clone this repo!
-git clone https://github.com/WuTheFWasThat/Church-interpreter.git
-
-sudo yum -y install mercurial
-sudo yum -y install gcc
-sudo yum -y install make
-
-git config --global user.email "wuthefwasthat@gmail.com"
-git config --global user.name "Jeff Wu"
-
+sudo apt-get update
+sudo apt-get install git
+sudo apt-get install mercurial
+sudo apt-get install gcc
+sudo apt-get install make
+sudo apt-get install python-setuptools
 sudo easy_install flask
 sudo easy_install pip
 
+# clone this repo!
+git clone https://github.com/WuTheFWasThat/Church-interpreter.git
+# clone the pypy repo!
+hg clone https://bitbucket.org/pypy/pypy
 
 
+######################################
+# DIRECTIONS for setup on our EC2 AMI?
+######################################
+
+sudo yum -y install git
+sudo yum -y install mercurial
+sudo yum -y install gcc
+sudo yum -y install make
+sudo easy_install flask
+sudo easy_install pip
+sudo pip install objgraph
+
+# clone this repo!
+git clone https://github.com/WuTheFWasThat/Church-interpreter.git
+# clone the pypy repo!
 hg clone https://bitbucket.org/pypy/pypy
 
 cd Church-interpreter/src/

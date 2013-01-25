@@ -4,7 +4,7 @@
 # https://bitbucket.org/pypy/pypy/src/default/pypy/rlib/rrandom.py
 
 try:
-    from pypy.rlib.rarithmetic import r_uint
+    from rpython.rlib.rarithmetic import r_uint
 except:
     def r_uint(x):
       return x

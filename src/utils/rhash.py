@@ -1,5 +1,5 @@
 try:
-    from pypy.rlib.rarithmetic import r_uint, intmask
+    from rpython.rlib.rarithmetic import r_uint, intmask
 except:
     def r_uint(x):
       return x
@@ -16,7 +16,7 @@ def hash_many(args):
   return hashval
 
 try:
-  from pypy.rlib.objectmodel import _hash_float as hash_float
+  from rpython.rlib.objectmodel import _hash_float as hash_float
 except:
   def hash_float(num):
     return hash(num)

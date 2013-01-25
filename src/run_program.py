@@ -7,7 +7,7 @@ import time
 import argparse
 
 try:
-  from pypy.rlib import rsocket
+  from rpython.rlib import rsocket
   use_pypy = True
 except:
   use_pypy = False
@@ -75,13 +75,14 @@ if __name__ == "__main__":
     if msg == 'exit':
       break
     elif msg:
-      try:
-        ret_msg = directives.parse_and_run_command(msg)
-      except Exception as e:
-        if use_pypy:
-          ret_msg = "Error occured"
-        else:
-          ret_msg = e.message
+      ret_msg = directives.parse_and_run_command(msg)
+      # try:
+      #   ret_msg = directives.parse_and_run_command(msg)
+      # except Exception as e:
+      #   if use_pypy:
+      #     ret_msg = "Error occured"
+      #   else:
+      #     ret_msg = e.message
       print
       print ret_msg
       print
