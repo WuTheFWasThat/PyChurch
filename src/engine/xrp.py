@@ -166,13 +166,19 @@ class make_symmetric_array_XRP(XRP):
 
 class categorical_XRP(XRP):
   def sample(self, args = None):
-    probs = [check_prob(x.num) for x in args]
+    if ((len(args) >= 1) and (args[0].type == 'xrp')):
+      probs = [check_prob(x.num) for x in args[0].xrp.array]
+    else:
+      probs = [check_prob(x.num) for x in args]
     if not .999 <= sum(probs) <= 1.001:
       raise RException("Categorical probabilities must sum to 1")
     i = sample_categorical(probs)
     return IntValue(i)
   def prob(self, val, args = None):
-    probs = [check_prob(x.num) for x in args]
+    if ((len(args) >= 1) and (args[0].type == 'xrp')):
+      probs = [check_prob(x.num) for x in args[0].xrp.array]
+    else:
+      probs = [check_prob(x.num) for x in args]
     if not .999 <= sum(probs) <= 1.001:
       raise RException("Categorical probabilities must sum to 1")
     if not 0 <= val.int < len(probs):

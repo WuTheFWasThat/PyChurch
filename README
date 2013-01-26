@@ -79,4 +79,5 @@ KNOWN ISSUES
 - Traces could be more intelligent at propagating up through arguments (and then, we can use the proper XRP if)
 - Some Jenkins tests fail (lists implemented differently)
 - Outermost observe shouldn't be required
+- Assumes resampling XRPs are all deterministic
 

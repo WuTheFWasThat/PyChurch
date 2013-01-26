@@ -129,6 +129,7 @@ class EvalNode(Node):
   def setargs(self, xrp, args, p):
     if not self.type == 'apply':
       raise RException("Setting args in a non-apply expression")
+    self.xrp = xrp
     self.args = args
     self.p = p
 
@@ -704,6 +705,8 @@ class Traces(Engine):
     if not forcing:
       self.eval_p += prob
     self.p += prob
+    if xrp.resample:
+      return
 
     weight = xrp.weight(args)
     try:
