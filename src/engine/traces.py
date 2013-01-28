@@ -55,6 +55,14 @@ class EnvironmentNode(Environment):
     else:
       return {}
 
+  def propagate_link(self, evalnode, val, restore_inactive):
+    if self.assumes[evalnode.assume_name] is not evalnode:
+      raise RException("Wrong evalnode getting lookups for %s" % evalnode.assume_name)
+    evalnode.val = val
+    lookup_nodes = list_nodes(self.get_lookups(evalnode.assume_name, evalnode))
+    for new_evalnode in lookup_nodes:
+      new_evalnode.propagate_up(restore_inactive)
+
   def spawn_child(self): 
     return EnvironmentNode(self)
 
@@ -69,6 +77,8 @@ class EvalNode(Node):
     self.traces = traces
 
     self.active = False # Whether this node is currently activated
+
+    self.out_link = None # An XRP which is a "link" to the outside
 
     self.parent = None 
     self.children = {} 
@@ -136,7 +146,6 @@ class EvalNode(Node):
   def remove_xrp(self):
     if not self.active:
       raise RException("Removing XRP from inactive node")
-    # TODO seems like forcing shoudlnt be passed into remove
     self.traces.remove_xrp(self.xrp, self.args, self.val, self)
 
   def add_xrp(self, xrp, val, args, forcing = False):
@@ -175,11 +184,12 @@ class EvalNode(Node):
       if not self.parent is None:
         raise RException("Assume node should not have parent")
       # lookups can be affected *while* propagating up. 
-      lookup_nodes = list_nodes(self.env.get_lookups(self.assume_name, self))
-      for evalnode in lookup_nodes:
-        evalnode.propagate_up(restore_inactive)
+      self.env.propagate_link(self, val, restore_inactive)
     elif self.parent is not None:
       self.parent.propagate_up(restore_inactive)
+
+    if self.out_link is not None:
+      self.out_link.propagate_link(self, val, restore_inactive)
 
     self.val = val
     return self.val
@@ -449,10 +459,11 @@ class Traces(Engine):
     self.env = EnvironmentNode()
 
     self.p = 0
-    self.uneval_p = 0
-    self.eval_p = 0
     self.old_to_new_q = 0
     self.new_to_old_q = 0
+
+    self.eval_xrps = [] # (xrp, args, val)
+    self.uneval_xrps = [] # (xrp, args, val)
 
     self.debug = False
 
@@ -460,8 +471,8 @@ class Traces(Engine):
     self.application_reflip = False
     self.reflip_node = EvalNode(self, self.env, VarExpression(''))
     self.nodes = []
-    self.old_vals = [Value()]
-    self.new_vals = [Value()]
+    self.old_vals = []
+    self.new_vals = []
     self.old_val = Value() 
     self.new_val = Value() 
     self.reflip_xrp = XRP()
@@ -605,10 +616,11 @@ class Traces(Engine):
       (self.reflip_xrp, nodes) = self.xrps[hashval]
       self.nodes = list_nodes(nodes)
     
-    self.eval_p = 0
-    self.uneval_p = 0
+    self.old_to_new_q = 0
+    self.new_to_old_q = 0
 
     old_p = self.p
+
     self.old_to_new_q = - math.log(self.weight())
 
     if self.application_reflip:
@@ -636,9 +648,7 @@ class Traces(Engine):
         node.propagate_up(False, True)
 
     new_p = self.p
-    self.new_to_old_q = - math.log(self.weight())
-    self.old_to_new_q += self.eval_p
-    self.new_to_old_q += self.uneval_p
+    self.new_to_old_q -= math.log(self.weight())
 
     if not self.application_reflip:
       new_p += self.reflip_xrp.theta_prob()
@@ -696,14 +706,17 @@ class Traces(Engine):
 
   # Add an XRP application node to the db
   def add_xrp(self, xrp, args, val, evalnode, forcing = False):
+    self.eval_xrps.append((xrp, args, val))
+
     evalnode.forcing = forcing
     if not xrp.resample:
       evalnode.random_xrp_apply = True
     prob = xrp.prob(val, args)
     evalnode.setargs(xrp, args, prob)
     xrp.incorporate(val, args)
+    xrp.make_link(evalnode)
     if not forcing:
-      self.eval_p += prob
+      self.old_to_new_q += prob
     self.p += prob
     if xrp.resample:
       return
@@ -737,17 +750,19 @@ class Traces(Engine):
       self.delete_from_db(xrp.__hash__())
 
   def remove_xrp(self, xrp, args, val, evalnode):
+    self.uneval_xrps.append((xrp, args, val))
+
+    xrp.break_link(evalnode)
     xrp.remove(val, args)
     prob = xrp.prob(val, args)
     if not evalnode.forcing:
-      self.uneval_p += prob
+      self.new_to_old_q += prob
     self.p -= prob 
     if xrp.resample:
       return
 
     xrp = evalnode.xrp
     self.remove_for_transition(xrp, evalnode)
-    # TODO xrp.remove??
     try: # TODO: dont do this here.. dont do cancellign
       self.old_to_new_q += math.log(xrp.weight(evalnode.args))
     except:

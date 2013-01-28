@@ -397,31 +397,31 @@ The evaluation nodes are connected in a directed graph structure, via dependenci
 
 Each node caches the relative locations and values of all its children.  Furthermore, if it is an application node, we also cache the procedure and arguments.  And for every node, we cache its most recent value.  
 
-\subsection{The proposal}
-
-When we re-flip the value of some XRP application, we would like to simply remove the old value, and then incorporate a new value directly, asking for the probabilities as we do so, in order to calculate the MH ratio.  This appears to be valid, by the exchangeability property.  
-
-We'd then like to propagate the new value throughout the trace, by repeatedly propagating new values to parents.   If we reach a ``re-scoring" XRP application, we simply reuse its old value, so that we do not need to propagate computation any further (even if its arguments have changed).   If new branches need to be evaluated, it is done on demand.  
-
-However, how do we consider the probabilities of these other applications?  Unfortunately, the singular remove and then apply is only valid once.  We can't imagine multiple XRP applications to be the last one.  We can at best imagine $n$ applications to be the last $n$.  Thus, conceptually, we must remove all old values before applying and incorporating the new ones (and calculating their probabilities). \\
-
-Unfortunately, doing this would mean that we can't decide the values while we propagate up, and so we cannot stop propagating, even if the values are the same.  To fix this, we will use a different MH proposal.  
-
-Let's simply apply and incorporate all new values encountered, but refrain from removing the old values, and querying the probabilities as we go.  This will give us our ``forwards" transition probability the denominator of the MH ratio (with some cancelling).  Then, only at the end of our calculation, we can remove all old unused values, again getting the ``unevaluation" probabiltiies.  This determines our ``backwards" transition probability, or the numerator of the MH ratio (with some cancelling).  
-
-Let's outline more explicitly.  We will assume access to a global variable which will keep track of the probability of the current state.  Also, each node should keep track of whether it was forced
-% Using (if P C A) as an example.
-\begin{enumerate}
-\item Before the proposal: P = true, C is evaluated, A is not evaluated.    Global p = $P(X_{old})$ and number of unconstrained random choices is already known.
-\item Proposal.  A is being evaluated without removing things (sampled values from XRP application nodes) in C. Calculating $Q(X_{old} \rightarrow X_{new})$, not including constraint random choices. Update global p.
-\item Proposal is finished. Removing things in C. Calculating $Q(X_{new} \rightarrow X_{old})$, not including constraint random choices.
-\item $P(X_{new})$ and number of unconstrained random choices is now known. 
-\item Make MH decision basing on MH ratio.
-	\begin{itemize}
-\item PROPOSAL ACCEPTED: unsample and remove A, add C back.
-\item PROPOSAL REJECTED: unsample C.
-	\end{itemize}
-\end{enumerate}
+%\subsection{The proposal}
+%
+%When we re-flip the value of some XRP application, we would like to simply remove the old value, and then incorporate a new value directly, asking for the probabilities as we do so, in order to calculate the MH ratio.  This appears to be valid, by the exchangeability property.  
+%
+%We'd then like to propagate the new value throughout the trace, by repeatedly propagating new values to parents.   If we reach a ``re-scoring" XRP application, we simply reuse its old value, so that we do not need to propagate computation any further (even if its arguments have changed).   If new branches need to be evaluated, it is done on demand.  
+%
+%However, how do we consider the probabilities of these other applications?  Unfortunately, the singular remove and then apply is only valid once.  We can't imagine multiple XRP applications to be the last one.  We can at best imagine $n$ applications to be the last $n$.  Thus, conceptually, we must remove all old values before applying and incorporating the new ones (and calculating their probabilities). \\
+%
+%Unfortunately, doing this would mean that we can't decide the values while we propagate up, and so we cannot stop propagating, even if the values are the same.  To fix this, we will use a different MH proposal.  
+%
+%Let's simply apply and incorporate all new values encountered, but refrain from removing the old values, and querying the probabilities as we go.  This will give us our ``forwards" transition probability the denominator of the MH ratio (with some cancelling).  Then, only at the end of our calculation, we can remove all old unused values, again getting the ``unevaluation" probabiltiies.  This determines our ``backwards" transition probability, or the numerator of the MH ratio (with some cancelling).  
+%
+%Let's outline more explicitly.  We will assume access to a global variable which will keep track of the probability of the current state.  Also, each node should keep track of whether it was forced
+%% Using (if P C A) as an example.
+%\begin{enumerate}
+%\item Before the proposal: P = true, C is evaluated, A is not evaluated.    Global p = $P(X_{old})$ and number of unconstrained random choices is already known.
+%\item Proposal.  A is being evaluated without removing things (sampled values from XRP application nodes) in C. Calculating $Q(X_{old} \rightarrow X_{new})$, not including constraint random choices. Update global p.
+%\item Proposal is finished. Removing things in C. Calculating $Q(X_{new} \rightarrow X_{old})$, not including constraint random choices.
+%\item $P(X_{new})$ and number of unconstrained random choices is now known. 
+%\item Make MH decision basing on MH ratio.
+%	\begin{itemize}
+%\item PROPOSAL ACCEPTED: unsample and remove A, add C back.
+%\item PROPOSAL REJECTED: unsample C.
+%	\end{itemize}
+%\end{enumerate}
 
 % hash table with get random key
 \subsection{Propagation}
@@ -768,7 +768,7 @@ We now discuss some extensions to the XRP interface, to give the user more power
 
 By default, all XRP applications are equally likely to be reflipped.  But what if we would like to reflip some XRP applications more than others?  This won't affect the resulting distribution, so long as we correctly calculate transition probabilities, but it could be helpful for making our chain mix much faster.  
 
-To achieve this, we will assign each XRP application a weight, which tells us how often we should reflip it relative to other XRP applications.  This is extremely useful for certain programs.  % For example, one might want to assign XRP applications a weight which reflects the number of possible values it could take on.  
+To achieve this, we will assign each XRP a weight, which tells us how often we should reflip its applications, relative to other ones.  This is extremely useful for certain programs.  % For example, one might want to assign XRP applications a weight which reflects the number of possible values it could take on.  
 However, in order to use this, we'd like a data structure supporting the following operations:
 
 \begin{itemize}
@@ -781,7 +781,9 @@ Previously, we needed a data structure to support this in the special case where
 
 Unfortunately, the weighted case is much more difficult.  It is slightly reminiscent of the problem of implementing malloc.  A simple solution is to do the following:  Maintain the same augmented hash table as before, but also keeping track of weights.  Also, keep track of the maximum weight currently held, using a heap.  When we sample, use rejection sampling, by dividing by the maximum weight currently held.  
 
-Unfortunately, this sampling algorithm has complexity proportional to the ratio of the maximum weight to the average weight, which can get arbitrarily large.  However, insertion and removal happen in $O(k \log n)$.  Insertion and removal are much more important, as they can happen many times (during propagation), whereas sampling only happens once per round of iteration.  
+Unfortunately, this sampling algorithm has complexity proportional to the ratio of the maximum weight to the average weight, which can get arbitrarily large.  However, insertion and removal happen in $O(k \log n)$.  Insertion and removal are much more important, as they can happen many times (during propagation), whereas sampling only happens once per round of iteration.  \\
+
+In fact, one can imagine having weights more finely controllable.  For example, they could be different for particular applications on the same XRP, changing based on the XRP's internal state.  They could even perhaps be given as an argument to the XRP application, and be themselves random variables in the program.  This would let us do a certain form of inference over inference.  These extensions have not yet been implemented or fully thought out, but would be one research direction to head in.
 
 \subsection{}
 

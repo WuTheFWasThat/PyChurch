@@ -38,6 +38,15 @@ class EnvironmentNode(Environment):
     else:
       return {}
 
+
+  def propagate_link(self, evalnode, val, restore_inactive):
+    if self.assumes[evalnode.assume_name] is not evalnode:
+      raise RException("Wrong evalnode getting lookups for %s" % evalnode.assume_name)
+    evalnode.val = val 
+    lookup_nodes = list_nodes(self.get_lookups(evalnode.assume_name, evalnode))
+    for new_evalnode in lookup_nodes:
+      evalnode.propagate_to(new_evalnode, restore_inactive)
+
   def spawn_child(self): 
     return EnvironmentNode(self)
 
@@ -61,6 +70,8 @@ class ReducedEvalNode(Node):
 
     self.observed = False
     self.observe_val = None 
+
+    self.out_link = None
 
     self.expression = expression
     self.type = expression.type
@@ -154,11 +165,13 @@ class ReducedEvalNode(Node):
     if self.assume:
       assert self.parent is None
       # lookups can be affected *while* propagating up. 
-      lookup_nodes = list_nodes(self.env.get_lookups(self.assume_name, self))
-      for evalnode in lookup_nodes:
-        self.propagate_to(evalnode, restore_inactive)
+      self.env.propagate_link(self, self.val, restore_inactive)
     elif self.parent is not None:
       self.propagate_to(self.parent, restore_inactive)
+
+    if self.out_link is not None:
+      self.out_link.propagate_link(self, self.val, restore_inactive)
+
 
   def unevaluate(self):
     # NOTE:  We may want to remove references to nodes when we unevaluate, such as when we have arguments
@@ -189,6 +202,7 @@ class ReducedEvalNode(Node):
     return
 
   def remove_xrp(self, xrp, val, args, forcing = False):
+    xrp.break_link(self)
     xrp.remove(val, args)
     prob = xrp.prob(val, args)
     if not forcing:
@@ -202,6 +216,7 @@ class ReducedEvalNode(Node):
     self.traces.p += prob
     self.p = prob
     xrp.incorporate(val, args)
+    xrp.make_link(self)
 
   # reflips own XRP, possibly with a forced value
   def apply_random_xrp(self, xrp, args, xrp_force_val = None):

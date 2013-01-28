@@ -6,7 +6,7 @@ from utils.rexceptions import RException
 class mem_proc_XRP(XRP):
   def __init__(self, procedure, engine_type = "traces"):
     self.initialize()
-    self.resample = False
+    self.resample = True
 
     if engine_type == "traces":
       self.engine = Traces()
@@ -21,6 +21,7 @@ class mem_proc_XRP(XRP):
     self.hash = rrandom.random.randbelow()
     self.ids = {} # args_hash -> directive id
     self.count = {} # args_hash -> number of applications with these args
+    self.links = {} # args_hash -> set of evalnodes
     self.id = 0
 
   def next_id(self):
@@ -33,6 +34,7 @@ class mem_proc_XRP(XRP):
       self.count[args_hash] = 0
       id = self.next_id()
       val = self.engine.predict(ApplyExpression(VarExpression('f'), [ConstExpression(x) for x in args]), id)
+      self.engine.predicts[id].out_link = self
       self.ids[args_hash] = id
     else:
       id = self.ids[args_hash]
@@ -53,7 +55,7 @@ class mem_proc_XRP(XRP):
   def remove(self, val, args = None):
     args_hash = ','.join([x.str_hash for x in args])
     cur_val =  self.engine.report_value(self.ids[args_hash])
-    assert (val.__eq__(cur_val)).bool
+    #assert (val.__eq__(cur_val)).bool // Can be false when propagating new value!
     args_hash = ','.join([x.str_hash for x in args])
     self.count[args_hash] = self.count[args_hash] - 1
     if self.count[args_hash] == 0:
@@ -91,6 +93,27 @@ class mem_proc_XRP(XRP):
 
   def theta_prob(self):
     return self.engine.p
+
+  def make_link(self, evalnode):
+    args_hash = ','.join([x.str_hash for x in evalnode.args])
+    if args_hash not in self.links:
+      self.links[args_hash] = {}
+    self.links[args_hash][evalnode] = True
+
+  def break_link(self, evalnode):
+    args_hash = ','.join([x.str_hash for x in evalnode.args])
+    if args_hash not in self.links:
+      raise RException("Something went wrong breaking links in mem")
+    if evalnode not in self.links[args_hash]:
+      raise RException("Something went wrong breaking links in mem, 2")
+    del self.links[args_hash][evalnode]
+    evalnode.out_link = None
+
+  def propagate_link(self, evalnode, val, restore_inactive):
+    args_hash = ','.join([x.str_hash for x in evalnode.args])
+    for new_evalnode in self.links[args_hash]:
+      new_evalnode.val = val
+      new_evalnode.propagate_up(restore_inactive)
 
   def __str__(self):
     return '(MEM\'d %s)' % str(self.procedure)
