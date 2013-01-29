@@ -52,9 +52,9 @@ class XRP:
   def theta_prob(self):
     # internal log score
     return 0
-  def make_link(self, evalnode):
+  def make_link(self, evalnode, args):
     pass
-  def break_link(self, evalnode):
+  def break_link(self, evalnode, args):
     pass
   # TODO: Something which forces same old val, but with changed arguments?
   def is_mem_proc(self):

@@ -202,7 +202,7 @@ class ReducedEvalNode(Node):
     return
 
   def remove_xrp(self, xrp, val, args, forcing = False):
-    xrp.break_link(self)
+    xrp.break_link(self, args)
     xrp.remove(val, args)
     prob = xrp.prob(val, args)
     if not forcing:
@@ -216,7 +216,7 @@ class ReducedEvalNode(Node):
     self.traces.p += prob
     self.p = prob
     xrp.incorporate(val, args)
-    xrp.make_link(self)
+    xrp.make_link(self, args)
 
   # reflips own XRP, possibly with a forced value
   def apply_random_xrp(self, xrp, args, xrp_force_val = None):
@@ -305,6 +305,8 @@ class ReducedEvalNode(Node):
       args = [self.evaluate_recurse(expr.children[i], env, hashval, i+2, None, restore) for i in range(n)]
 
       if op.type == 'procedure':
+        if hashval == 0:
+          self.args = args
         if n != len(op.vars):
           raise RException('Procedure should have %d arguments.  \nVars were \n%s\n, but had %d children.' % (n, op.vars, len(expr.children)))
         new_env = op.env.spawn_child()

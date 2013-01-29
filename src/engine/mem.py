@@ -94,14 +94,14 @@ class mem_proc_XRP(XRP):
   def theta_prob(self):
     return self.engine.p
 
-  def make_link(self, evalnode):
-    args_hash = ','.join([x.str_hash for x in evalnode.args])
+  def make_link(self, evalnode, args):
+    args_hash = ','.join([x.str_hash for x in args])
     if args_hash not in self.links:
       self.links[args_hash] = {}
     self.links[args_hash][evalnode] = True
 
-  def break_link(self, evalnode):
-    args_hash = ','.join([x.str_hash for x in evalnode.args])
+  def break_link(self, evalnode, args):
+    args_hash = ','.join([x.str_hash for x in args])
     if args_hash not in self.links:
       raise RException("Something went wrong breaking links in mem")
     if evalnode not in self.links[args_hash]:

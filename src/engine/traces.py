@@ -714,7 +714,7 @@ class Traces(Engine):
     prob = xrp.prob(val, args)
     evalnode.setargs(xrp, args, prob)
     xrp.incorporate(val, args)
-    xrp.make_link(evalnode)
+    xrp.make_link(evalnode, args)
     if not forcing:
       self.old_to_new_q += prob
     self.p += prob
@@ -752,7 +752,7 @@ class Traces(Engine):
   def remove_xrp(self, xrp, args, val, evalnode):
     self.uneval_xrps.append((xrp, args, val))
 
-    xrp.break_link(evalnode)
+    xrp.break_link(evalnode, args)
     xrp.remove(val, args)
     prob = xrp.prob(val, args)
     if not evalnode.forcing:
