@@ -170,7 +170,7 @@ A {\bf value} is a valid binding for a variable, in our language.  For example, 
 Our language contains some default procedures, from which we can then build up more complicated ones.  In fact, as we all see later, the types of procedures we allow will end up being more general than that which is typically thought of as a procedure.  \\
 
 {\bf Expressions} are syntactic building blocks.  % Please refer to \cite{Goodman} for more details. 
-Expressions are {\bf evaluated}, so that they take on some value.  Their evaluation is relative to an {\bf environment}, in which variable names may be bound to values.   All expressions are one of the following: % (the syntax is much like Scheme)
+Expressions are {\bf evaluated}, so that they take on some value.  Their evaluation is relative to an {\bf environment}, in which variable names may be bound to values.   All expressions are one of the following: 
 
 \begin{itemize}
 \item A name, e.g. x or y, which refers to a value bound in the current environment.
@@ -178,6 +178,8 @@ Expressions are {\bf evaluated}, so that they take on some value.  Their evaluat
 \item A lambda expression, i.e. $(\lambda \  (x_1 \ldots x_n) \ \text{body\_expression})$, which evaluates to a procedure taking $n$ arguments.
 \item An application, i.e. $(f \ x_1 \ x_2 \ \ldots \ x_n)$, where $f$ is a procedure taking $n$ arguments.
 \end{itemize}
+
+We will see examples of the syntax later.  For those familiar with Scheme \cite{sicp} \cite{scheme}, it should be quite familiar.
 
 \subsection{Directives}
 
@@ -201,7 +203,7 @@ Observes the expression {\tt expr} to have been evaluated to the value {\tt val}
 \begin{itemize}
 \item {\tt INFER [rerun] [iters]} 
 
-Runs {\tt iters} steps of the Markov Chain, also deciding whether to first rerun the entire program.  The result of running sufficiently many iterations from the prior, should be that sampling gives the posterior distribution for expressions, conditioned on all the observed values.  Restarting from the prior will not be typically used, but is useful for performance comparisons.
+Runs {\tt iters} steps of the Markov Chain, also deciding whether to first rerun the entire program.  The result of running sufficiently many iterations from the prior should be that sampling gives the posterior distribution for expressions, conditioned on all the observed values.  Restarting from the prior will not be typically used, but is useful for performance comparisons.
 
 \end{itemize}
 
@@ -232,7 +234,7 @@ Inference is by far the most complicated of the directives, and also the most im
 
 \subsection{First try}
 
-Of course, the most obvious way to implement inference is to use rejection sampling.   But this scales poorly with the number of observations.  We'd like to instead run Metropolis-Hastings on the space of all possible executions of the program.  \\
+Of course, the most obvious way to implement inference is to use rejection sampling.   But this scales poorly with the number of observations.  We'd like to instead run Metropolis-Hastings \cite{mh} on the space of all possible executions of the program.  \\
 
 Our proposal density, which chooses the new state (program execution history) to potentially transition to, does the following:   
 \begin{enumerate}
@@ -319,7 +321,7 @@ Up until now, we have neglected to mention a crucial aspect of our language.  Th
 
 \subsection{Exchangeability}
 
-Evaluating and unevaluating sections of code is very easy when all random choices are made independently of one another.  But actually, it is easy to evaluate and unevaluate so long as the sequence of random choices is {\bf exchangeable sequence}, meaning, roughly speaking, that the probability of some set of outcomes does not depend on the order of the outcomes.  In particular, as long as it is safe to pretend that the section of code we're unevaluating was the last section of code evaluated, we're fine!  %For a formal definition, see  \cite{}.
+Evaluating and unevaluating sections of code is very easy when all random choices are made independently of one another.  But actually, it is easy to evaluate and unevaluate so long as the sequence of random choices is {\bf exchangeable sequence}, meaning, roughly speaking, that the probability of some set of outcomes does not depend on the order of the outcomes.  In particular, as long as it is safe to pretend that the section of code we're unevaluating was the last section of code evaluated, we're fine!   For more background, see  \cite{definetti}.
 
 Thus instead of merely being able to flip independent coins as a source of randomness for procedures, the most general thing we are able to allow what is called an {\bf exchangeable random procedure (XRP)}.  An XRP is a type of random procedure, but different applications of it are not guaranteed to be independent; they are guaranteed merely to be an exchangeable sequence.  That is, the sequence of {\tt (arguments, result)} tuples is exchangeable.  The probability of a sequence is independent of its order (assuming we got the arguments in that order).\\
 
@@ -333,13 +335,29 @@ XRPs used in our probabilistic programs are specified by the following four func
 
 \begin{itemize}
 \item {\tt initialize()}, which returns an initial state.  
-\item {\tt apply(state, args)}, which returns a value.
-\item {\tt incorporate(state, value, args)}, which returns a new state.
-\item {\tt remove(state, value, args)}, which returns a new state.
-\item {\tt prob(state, value, args)}, which returns the (log) probability of returning the value, if the XRP in its current state is applied to the arguments.
+
+\item {\tt sample(state, args)}
+
+Samples a new {\tt value}, applying to the {\tt args}, given the current {\tt state}.  
+
+\item {\tt incorporate(state, value, args)}.
+
+Incorporates an application to {\tt args} that resulted in the {\tt value}, returning a new  {\tt state}.
+
+\item {\tt remove(state, value, args)}
+
+Undoes an incorporate, taking out the application to {\tt args} resulting in {\tt value}, and returning a new  {\tt state}.
+
+\item {\tt unsample(state, value, args)}
+
+Undoes a sampling.  It's purpose is to ``undo" any randomness or state change used in sample.  By default, it does nothing, and few XRPs use this.  Returns the new  {\tt state}.
+
+\item {\tt prob(state, value, args)}
+
+Returns the marginal (log) probability of returning the value, if the XRP in its current state is applied to the arguments.
 \end{itemize}
 
-The state of the XRP is a sufficient state, meaning it alone lets you determine the XRP's behavior.  Minimally, the state may be a history of all previous applications of the XRP, although in most cases, it is much more succinct.  Whenever we apply the XRP, we use {\tt apply} to determine the resulting value, and we may use {\tt prob} to determine the probability that we got that value, conditioning on all previous applications.  This value can then incorporated into the XRP using {\tt incorporate}, and the state is updated.  Finally, {\tt remove} lets you remove a value, undoing an incorporate.
+The state of the XRP is a sufficient state, meaning it alone lets you determine the XRP's behavior.  Minimally, the state may be a history of all previous applications of the XRP, although in most cases, it is much more succinct.  Whenever we apply the XRP, we use {\tt sample} to determine the resulting value, and we may use {\tt prob} to determine the probability that we got that value, conditioning on all previous applications.  This value can then incorporated into the XRP using {\tt incorporate}, and the state is updated.  Finally, {\tt remove} lets you remove a value, undoing an incorporate.
 
 Notice that if applications are independent, then we do not need a state, and both incorporate and remove can do nothing.  Thus this recovers the special case of normal random procedures.  
 
@@ -355,7 +373,7 @@ If our XRP is not capable of this, we call it a ``reapplying" XRP.  That is, it 
 
 Essentially, in inference, when values change, and we are propagating the changes upwards, reapplying XRPs will ``pass on" the changes, whereas rescoring XRPs will ``absorb" them.  \\
 
-Now, we can allow for something much more general than the noisy observations above.  We now simply require that all observed expressions have an outermost rescoring/absorbing XRP application.  When running inference, we always force the XRP to give the observed value by using {\tt inc} (without using {\tt apply}).  The probability of getting this observed value should always be non-zero.  
+Now, we can allow for something much more general than the noisy observations above.  We now simply require that all observed expressions have an outermost rescoring/absorbing XRP application.  When running inference, we always force the XRP to give the observed value by using {\tt inc} (without using {\tt sample}).  The probability of getting this observed value should always be non-zero.  
 % Suppose that I observe that the sky is pink, and also that the ocean is yellow.  Chances are, either my vision has gone crazy, or the world has underwent drastic changes.  The correctness of my observations is highly correlated, and so we should allow for non-independent noise.  Luckily, XRPs allow for this.  
 
 The noisy expressions obtained with {\tt noisy} are a special case of this, so long as {\tt noise} was non-zero.  
@@ -364,7 +382,7 @@ Also, notice that we could make all XRPs re-scorers, by adding noise to their ou
 
 \subsection{Mem}
 
-A special XRP worth noting is {\tt mem}, which lets us memorize procedures.  Applying {\tt mem} to a procedure returns another XRP, which is a memoized form of that procedure.  That is, when using a {\tt mem}'d procedure, we never reapply randomness, given old arguments.  Thus whenever we apply the memoized procedure once to some particular arguments, applying it again to those arguments will result in the same value. 
+A special XRP worth noting is {\tt mem}, which lets us memoize procedures.  Applying {\tt mem} to a procedure returns another XRP, which is a memoized form of that procedure.  That is, when using a {\tt mem}'d procedure, we never reapply randomness, given old arguments.  Thus whenever we apply the memoized procedure once to some particular arguments, applying it again to those arguments will result in the same value. 
 
 Implementation of {\tt mem} is extremely tricky, and we will decline to work out its details in this paper.  However, it is important to understand its utility.  As a simple example, consider a naive implementation of Fibonacci:
 
@@ -385,7 +403,7 @@ ASSUME fib (mem (lambda (x) (if (< x 2) 1 (+ (fib (- x 1)) (fib (- x 2))))))
 
 Evaluating {\tt (fib 20)} now takes well less than a millisecond. \\
 
-One limitation of mem is that if the procedure argument to mem changes, the memorization must be reapplied.  unless mem is noisy, it needs to be reapplied. state that we could make a noisy-mem which takes a noise proc that is applied after the procedure is looked up each time.
+%One limitation of mem is that if the procedure argument to mem changes, the memoization must be reapplied.  unless mem is noisy, it needs to be reapplied. state that we could make a noisy-mem which takes a noise proc that is applied after the procedure is looked up each time.
 
 \section{Traces}
 
@@ -628,8 +646,6 @@ This essentially follows directly from our propagation algorithm.  We do just as
 
 The major downside of the traces implementation is that it is not memory efficient.  The number of nodes stored is essentially proportional to the time it takes to compute the original program, since we keep a node for each expression evaluation.  \\
 
-% naming with a rolling hash
-
 
 To highlight this, consider the following program, which samples from the categorical distribution, which returns $i$ with probability $p_i$.   The distribution is represented by some procedure {\tt categorical-dist}, which takes an argument $i$ and returns $p_i$.  It is guaranteed that for some finite $n$, $\sum_{i = 0}^{n-1} p_i = 1$
 
@@ -654,11 +670,47 @@ One solution is to ``collapse" this sampling into an XRP.  That is, we turn {\tt
 
 The idea of reduced traces is to essentially ``contract" all edges of deterministic computation in the traces graph.  Whenever we need to perform deterministic computation, we will simply recompute, instead of having nodes all along the way with cached values.  
 
-In contracting all these edges, the only nodes which remain will be nodes corresponding to XRP applications, and nodes which correspond to directives \footnote{There are also nodes corresponding to applications of {\tt mem}.}. \\
+In contracting all these edges, the only nodes which remain will be nodes corresponding to XRP applications, and nodes which correspond to directives \footnote{There are also nodes corresponding to applications of {\tt mem}, in the standard implementation of {\tt men}.  However, this is not necessarily always the case}. \\
 
-One minor issue which comes up is the locating of child nodes.  We need to be able to recover a specific child node, if we perform the computation leading to what should be its evaluation.  We also need to be able to figure out the location of children to unevaluate.  The relative locations may be long, and we don't want to store them in memory.
+To illustrate, let's consider the following simple program:
 
-In order to do this, we using a rolling hash on the ``stack", a list which pins down the relative location of a node within the computation.  This technique is also used in the random database implementation of the engine.
+\begin{leftbar} \begin{small} \begin{verbatim}
+ASSUME a (if (flip) 
+             (+ (normal 0 1) (normal 0 1))
+             (- (normal 0 1) (normal 0 1)))
+\end{verbatim} \end{small} \end{leftbar}
+
+Let's now draw the trace structure corresponding to this program.   
+
+\begin{center} \includegraphics[scale=0.6]{reducedtraces.png} \end{center}
+
+Circles correspond to nodes which would exist in a traces data structure, but only the large circles correspond exist in the reduced traces data structure.  We can see that here, the number of nodes has reduced from 16 to 6.  In general, the reduction can be arbitrarily large.
+
+\subsubsection{Naming locations}
+
+One issue which comes up when implementing reduced traces is the naming of child node locations.  
+Let's revisit the example above.  In regular traces, the top node would have 3 children, corresponding to 
+\begin{itemize} 
+\item consequent,
+\item predicate, and 
+\item alternative.
+\end{itemize} 
+In reduced traces, however, the top node has 5 children, and they correspond to the following lists:
+\begin{itemize}
+\item  \ [consequent, arg1], 
+\item \ [consequent, arg2], 
+\item \  [predicate], 
+\item \ [alternative, arg1], and 
+\item \  [alternative, arg2].
+\end{itemize}
+
+These locations are important for being able to recover a specific child node, in order to continue computations while propagating up, or while unevaluating.  Unfortunately, these lists can be arbitrarily long, if there is a lot of deterministic computation in-between nodes, taking up space.  Furthermore, the lists must be copied, in order to propagate the location values to children, taking up time.  Thus this is an algorithmic disaster.
+
+The solution is to use a rolling hash on these lists (first converting them into numbers, if necessary).  We want the property that the hash can be computed for the list even if we don't know an entire prefix, so long as we have the hash of the prefix. In our implementation, we use the standard Rabin-Karp hash\cite{rabin}.  \\ 
+
+Now, all the top node will remember is a dictionary with 5 random-looking integer keys, mapping to 5 children nodes.  We have effectively pinned down the relative location of a node within the computation, taking up minimal space, and with rather strong guarantees against collision.  
+
+This technique is also used in the random database implementation of the engine.  
 
 \subsection{Propagation in reduced traces}
 
@@ -788,56 +840,161 @@ Unfortunately, this sampling algorithm has complexity proportional to the ratio 
 
 In fact, one can imagine having weights more finely controllable.  For example, they could be different for particular applications on the same XRP, changing based on the XRP's internal state.  They could even perhaps be given as an argument to the XRP application, and be themselves random variables in the program.  This would let us do a certain form of inference over inference.  These extensions have not yet been implemented or fully thought out, but would be one research direction to head in.
 
-\subsection{}
-
-In addition to sample, incorporate, remove, and apply, we give the user additional optional methods to implement, when implementing their own XRPs.  
-
-%initialize(init_args, xrp_state) --- constructs the contents of the state to be empty but have the right shape (ie enforces ÒemptyÓ sufficient statistics, e.g. 0 values for all counts for a dirichlet-discrete). also must copy init_args into the state if they are not there or equal to the current one. optionally, gets to sample some randomness and store it in theta. 
-%
-%
-%reinitialize(old_init_args, new_init_args, xrp_state) --- "propagate" a change in init_args into the state. for typical XRPs, just copy in the new args. but for XRPs that have a theta, this might be a useful way to let them know that parameters/etc have changed.
-%
-%overrideable: calculate_state_weight(xrp_state, init_args) --- calculate the weight for the state of this XRP. This weight determines how often the engine will perform transitions on any internal randomness hidden inside this XRP.
-%
 %
 %overrideable: calc_application_weight(init_args, xrp_state, args) --- calculates a positive integer weight used by the engine to allocate Markov chain transition steps for inference. by default, always returns a constant of 1.
+
+
+\subsection{Application proposals}
+
+Suppose we have a program containing many applications of {\tt (flip 0.9)}, in which, because of our observations, we expect common program executions to contain half true and half false.  
+
+In our standard proposal, it might take a while for this program to mix, simply because each iteration, we propose to have coins be tails far more often than we propose they be heads, even if they are already tails.  Wouldn't it be better if we simply always proposed to turn over the coin, and rejected more often?  Indeed, this seems better most of the time, but for many XRPs it makes less sense to do something like this.  Furthermore, in some situations, it may actually be harmful to include this ``optimization".  \\
+
+The solution is to let the user customize!  Of course, this sort of customization is entirely optional, and would be potentially confusing if front-facing for a amateur probabilistic programmer.   Essentially, we offer the following simple function which can be optionally implemented for any XRP: 
+
+\begin{itemize}
+\item {\tt application\_mh\_propose(state, args, val)}
+
+Returns a newly proposed value, a forwards probability (a contribution to the forwards term in the MH proposal Q ratio), and a backwards probability.  Furthermore, if XRP applications are weighted, it returns any application weight removed, and any application weight added.   Lastly, it returns a new state.  
+\end{itemize}
+
+Notice the default implementation of this, in terms of the most primitive XRP applications, would be the following:  
+\begin{enumerate}
+\item First remove the old value.  
+\item Then, score the old value to determine the backwards probability contribution.  
+\item Then, sample a new value, independently.  
+\item Then, score the new value to determine the forwards probability contribution.  
+\item Lastly, incorporate the new value.
+\end{enumerate}
+
+After the MH proposal is evaluated, using the probabilities and weights returned to help calculate the acceptance ratio, we must be able to then restore or keep the old state.  It is thus often convenient to explicitly implement a {\tt restore} and {\tt keep} function for XRPs, since the state is often kept internally.  In this case, guarantee that after any {\tt application\_mh\_propose} is called, exactly one of {\tt restore} and {\tt keep} is called (corresponding to whether we rejected or accepted).
+
+\subsection{State weights and state proposals}
+
+Memoization is typically not implemented through the usual XRP interface, despite its being an XRP.  And in fact, implementing it as a true XRP would normally lead to some undesired behavior.  For example, we would not be able to reflip individual bits of randomness within a memoized procedure application.  Furthermore, we would only choose to re-flipping mem as often as any other XRP, despite its potentially owning much of the program's computation and randomness.  \\
+
+To fix this, we will add the following optional additions to the XRP interface:
+
+\begin{itemize}
+\item {\tt internal\_mh\_propose(state, args, values)}
+
+Re-proposes part of any XRP's internal randomness, i.e. parts of its state.  Returns a new list of values, a forward probability contribution, and a backwards probability contribution.  Also returns any state weight added and state weight removed.  And finally, it returns a new state.
+
+\item {\tt restore(state)}, {\tt keep(state)}
+
+These two functions are trivial functions.  However, we include them to emphasize that, if the state is implemented internally in some object, it should allow for restoration and keeping after an internal MH propose, analogously to application proposal.
+\end{itemize}
+
+The above description of {\tt internal\_mh\_propose} needs a bit more clarification.  Firstly, we mentioned ``state weight".  This is fairly self explanatory.  We are allowed to assign weights to the state of an XRP, in addition to weights to individual applications.  This is particularly useful for a true-XRP implementation of mem, in which applications are all deterministic and thus have no weight, but the state should be internally repurposed often.  We should intuitively set the state weight to be equal to the sum of the application and state weights which happen internally in all the mem's procedure application computation.  \\
+
+Another important thing to know is that both the input and output lists of values are ordered, and correspond to each other.  Thus, when we feed the internal proposal all the old values, we know exactly which new value to give to each evaluation node that applied that XRP.  We then propagate upwards from each one of these new nodes \footnote{This only works in the priority queue method of propagation (with full locations).  In the greedy propagation method, there may be some unexplored subtleties in the order of propagation here, although in normal use cases it may also work...}.   At the end of propagation, we determine the acceptance probability, and then restore or keep the XRP's internal state (as well as the corresponding set of values).  
+
+%In fact, this is quite useful for implementations of mem in which they are truly an isolated XRP.  We'd like to 
+
+%overrideable: calculate_state_weight(xrp_state, init_args) --- calculate the weight for the state of this XRP. This weight determines how often the engine will perform transitions on any internal randomness hidden inside this XRP.
 %
+%4. optional: state_mhpropose([args], [vals], state) -> (old_theta_key, {val_loc : new_val}, log_q->, log_q<-, w_added, w_removed) --- runs an mh proposal that modifies theta and potentially some/all of [vals]. returns an object that the xrp can use to undo the move as follows:
+%set_theta(theta_key) --- tell the system to revert theta to an old value specified by theta_key
 %
-%overrideable: application_mhpropose(xrp_state, args, old_val) -> (new_val, log_q->, log_q<-, w_added, w_removed) --- performs an MH proposal and returns the new value along with the proposal probabilities in both directions, **and adjusts the state accordingly**
-%default kernel on applications: before, app_mhprop was implicitly remove score sample score incorporate. now that's the default implementation of propose, but it can be overridden.
-%
-%default propagation on argument change to any application: remove the application, score, change the value, incorporate the application, and score
+
+
+\subsection{Links}
+
+Consider the following setup:
+
+\begin{leftbar} \begin{small} \begin{verbatim}
+ASSUME weight (uniform-continuous 0 1)
+ASSUME coin (lambda () (flip weight))
+...
+\end{verbatim} \end{small} \end{leftbar}
+
+Here, the remainder of the program uses coin extensively.   In this scenario, if {\tt weight} changes, {\tt coin} becomes a different function, and we must propagate this change to all instances of {\tt coin}.  Not only that, but we will reflip each instance of {\tt coin}, and propagate all those changes, even if the weight has barely changed.  
+
+We would like to provide a shortcut, by which we can tell all the {\tt coin} applications that it has not changed very much, and that they can in fact retain their original flipped values.  But in general, {\tt coin} could've been something else, which changed completely in structure once {\tt weight} changed, so that all applications indeed needed to be reflipped.  \\
+
+In another scenario, suppose we have an XRP which takes many arguments.  When one argument changes, it can quickly adjust its state so that all its applications do not change.  But how can we recognize this possibility and support this behavior? \\
+
+Or what if the XRP outputs something somewhat different, but in a way such that the change can be passed on in a more intelligent way?  In fact, this is exactly what happens when we implement mem as an XRP.  
+
+In the previous section, we dealt with changes to a particular mem'd procedure application.  But what about changes to the mem'd procedure itself?  In particular, consider the following example:
+
+\begin{leftbar} \begin{small} \begin{verbatim}
+ASSUME cluster1-center (normal 0 1)
+ASSUME cluster2-center (normal 0 1)
+ASSUME cluster-point (mem (lambda (i) (if (= (mod i 2) 1)
+                                          (normal cluster1-center 1)
+                                          (normal cluster2-center 1))))
+OBSERVE (cluster-point 1) 1.4
+OBSERVE (cluster-point 2) -1.2
+OBSERVE (cluster-point 3) 1.7
+...
+\end{verbatim} \end{small} \end{leftbar}
+
+Suppose we are running inference, and we reflip {\tt cluster1-center} (after all, this XRP should probably be weighted heavily).  Now, the argument to the memoization XRP has changed.  This means, we should remove and reapply the memorization application, resulting in a new version of cluster-point, all of whose applications must be propagated to.  In particular, even the even-numbered cluster points will change in value!
+
+However, typically, in traces, we can do an optimization here.  Since only the environment of the procedure changed, and not the body itself, we can simply propagate that new value within the body, neglecting to redo any computation.  So here, for example, we would only need to propagate within the odd-numbered memoization application nodes. \\
+
+To solve this problem (and potentially many other problems), we make explicit the notion of a ``link".  A link is a connection maintained from a ``broadcaster" node to a ``receiver" node, along which the broadcaster may send messages of the form ``I changed in this manner".  The receivers must create the links to the broadcaster, who will then broadcast his message to all receivers once he receives it.  Typically, the message is simply "I changed my value to $x$". 
+
+Essentially, all propagation happens in this way.   When parent nodes create children, they by default, contact them to become their receiver, and implement a protocol where they simply listen for any change in their value and then continue broadcasting these value changes.  
+
+We suggest the following:    {\bf Whenever there is a variable reference, we perform a lookup in the current environment, and a link is created to the node responsible for that variable setting.  If it is the global environment, it will be an assume node.  Otherwise, it should be the argument to a procedure application.}
+%\begin{itemize}
+%\item Nodes which take on XRPs as values could, are linked to by all appearances of that XRP's application.  To accomplish this, we simply allow the node which evaluated to the XRP to tell it about itself, and then add a hook in the XRP's {\tt apply}, which lets other nodes identify that node and contact it. 
+%\end{itemize}
+
+%Let's consider the case where we have an XRP maker (something which when applied returns XRPs).  In this case, whenever the maker is applied, 
+
+%So, in particular, an application of mem, could link to all applications of that memorized procedure.  However, this isn't what we'll do.  However, in general, if an XRP is being produced, it may be quite useful to have this functionality.  Otherwise, by default, if the XRP changes, we will simply replace the old with the new, and reapply each time.
+
+%default propagation on init_arg change: remove all applications (calculating scores one by one), change the init arg, reincorporate all, calculating scores accordingly
+
+%\\
+
+Now, we will add the following stipulations to mem's implementation:
+
+\begin{itemize}
+\item When the memoizer is applied, the created XRP internally creates a new RIPL.  The internal RIPL's global environment is simply the environment of the procedure that the memorizer is being applied to.
+\item When the memoized procedure is applied to new arguments, the internal RIPL creates a new node.   This application node then creates a link to the internal node!
+\item  When the internal nodes do lookups which reach the internal RIPL's global environment, they contact any node responsible for that assignment (just like normal variable references contact assume nodes, or the node of the argument producing the assignment).  In this case, they traverse through the environment and find a node in the outer RIPL.
+\end{itemize}
+
+Considering the cluster example again, let's see what can happen when {\tt cluster1-center} changes.  First, it broadcasts to the applications of the procedure {\tt cluster-point} where {\tt cluster1-center} was indeed used.  This gets passed on, up to the top of these applications, in the internal RIPL.  This is then passed to the applications of  {\tt cluster-point}, which are passed the new memorized values.  These application nodes then can broadcast their new values!   \\
+
+In general, nodes which take on XRPs as values could, could be linked to by all appearances of that XRP's application.  To accomplish this, we simply allow the node which evaluated to the XRP to tell it about itself, and then add a hook in the XRP's {\tt apply}, which lets other nodes identify that node and contact it.  This could be useful for a variety of reasons, since we could pass arbitrary messages to allow different protocols for propagation. \\
+
+%reinitialize(old_init_args, new_init_args, xrp_state) --- "propagate" a change in init_args into the state. for typical XRPs, just copy in the new args. but for XRPs that have a theta, this might be a useful way to let them know that parameters/etc have changed.
 %
 %default propagation on init_arg change: remove all applications (calculating scores one by one), change the init arg, reincorporate all, calculating scores accordingly
 %
-%2. slice (on applications of continuous variables) and enumerate (optional; on applications for discrete variables) are separate additions [[FIXME Yura]]
 %
-%3. optional: theta_transition([args], [vals], xrp_state)  --- OPTIONAL: run a transition operator on xrp_state that leaves the distribution P(theta, state | init_args, [args], [vals]) invariant (e.g. Gibbs on the parameters in a conjugate model, or slice on something more generic) and ergodically converges to it.
-%
-%NOTE:  If you implement theta_transition, then weight can only depend on init_args and args
-%
-%But can be used for inference over (collapsed) inference, or also the uncollapsed beta-bernoulli processes as an XRP
-%
-%4. optional: theta_mhpropose([args], [vals], state) -> (old_theta_key, {val_loc : new_val}, log_q->, log_q<-, w_added, w_removed) --- runs an mh proposal that modifies theta and potentially some/all of [vals]. returns an object that the xrp can use to undo the move as follows:
-%set_theta(theta_key) --- tell the system to revert theta to an old value specified by theta_key
-%
-%there is no default kernel on theta, since the user who makes use of theta needs to manage it themselves. an easy kernel (assuming the user can track P(theta|initargs, rest_of_state) internally --- application_logprob already gives them P(val|theta, args, initargs, rest_of_state)) is MH from the prior: remove all applications (tracking scores), re-init, re-add, accept or reject internally. [[FIXME: note for vkm to send to dan roy --- yura add asana task once youÕve revised this doc --- ask about slice sampling and mem-as-uncomputable-object here]]
-%
-%
-%to use this, the engine:
-%- saves old value
-%- replaces the vals with the new vals (using inc/remove)
-%- scores the p ratio for this new move
-%- does MH
-%- if reject, undoes the value changes and tells the underlying XRP to reset its theta back to the old theta_key
-%
-%OPTIONAL: but can be used to implement men with an inner RIPL.
-%
-%5. joint_prob(init_args, state) --- efficiently computes score for the whole sequence of applications (used for changes to init_args) ***given state and theta***
-%   [ASSUME popular_die (symmetric-dirichlet-discrete alpha 2)]
-%   [PREDICT (repeat big_die 10000000)]
-%   So when alpha changes, we want to quickly rescore, which we can sometimes do efficiently given the state (without linearly touching all applications)
 
+
+Lastly, this abstraction is highly useful for a seemingly unrelated problem.  Suppose we are running a distributed version of our engine.  What happens if something needs to access a variable in an environment stored on a remote computer?  And what happens when that variable's value changes and needs to propagate?  Making links explicit helps us think about the intercommunication required for this to happen.
+
+\subsection{And more...}
+
+There are many more extensions to the XRP interface which have yet to be explored much.  As the user base for probabilistic programs grow, and the usage becomes more advance, demand will increase for more specialized control.  Some potential other extensions to consider, which we haven't explored:
+
+\begin{itemize}
+\item One might hope we could allow XRP transitions that are forced to leave the resulting output values fixed.  In this case, there would be no accept or reject step, we would simply sample from the desired distribution.  A side effect of this is that weights for an XRP implementing such a feature cannot depend on internal state.
+
+\item Oftentimes, we score a sequence of XRP applications by taking the marginal probabilities and incorporating them in one by one.  One might imagine a function which helps efficiently computes scores entire sequence of applications.
+
+\item We could break out of the Metropolis-Hastings paradigm and try to do an ``enumerative Gibbs".  
+
+\item And much more...
+\end{itemize}
+
+And there are also open problems to address, such as
+
+\begin{itemize}
+
+\item There are some slight downsides to the internal RIPL version of mem.  Although the design is both more natural, and usually more flexible (as different parts of the XRP API can be easily changed), it can't support recursive or mutually recursively memoized procedures.  
+
+\item In a model where things independently broadcast to each of their receivers, it seems very difficult to use a priority queue method of propagation.  
+
+\end{itemize}
 
 \section{Conclusion and future work}
 
@@ -858,121 +1015,146 @@ However, with parallelism and JITing still in baby stages, there is undoubtedly 
 
 \section{Acknowledgements}
 
-%Besides my advisor Vikash Mansinghika, I should acknowledge Tejas Kulkarni, Ardavan Saeedi, Dan Lovell, and especially Yura Perov for their work on the MIT Probabilistic Computing Project in conjunction with me, providing valuable discussions and developing useful infrastructure.  
-%
-%\appendix
-%
-%\section{Appendix A: Empirical results}
-%
-%In this section, we examine the time and space complexity of our various engines, on various classic inference problems.  We simultaneously showcase the flexibility and generality of the language, as well as the ease of defining models.  
-%
-%% All the data points were averaged over 10 seeds.  Unfortunately, the data was sometimes still quite noisy, 
-%
-%\subsection{Categorical}
-%Consider the following simple program, in which $n$ is some integer.
-%
+Besides my advisor Vikash Mansinghika, I should acknowledge Tejas Kulkarni, Ardavan Saeedi, Dan Lovell, and especially Yura Perov for their work on the MIT Probabilistic Computing Project in conjunction with me, providing valuable discussions and developing useful infrastructure.  
+
+\appendix
+
+\section{Appendix A: Empirical results}
+
+In this section, we examine the time and space complexity of our various engines, on various classic inference problems.  We simultaneously showcase the flexibility and generality of the language, as well as the ease of defining models.  
+
+You will notice that we have comparisons between Python and C.  This was possible because the engine was written in RPython, a subset of the Python language which can be translated (by the PyPy toolchain) into C.  
+
+% All the data points were averaged over 10 seeds.  Unfortunately, the data was sometimes still quite noisy, 
+
+\subsection{Categorical}
+Consider the following simple program, in which $n$ is some integer.
+
+\begin{leftbar} \begin{small} \begin{verbatim}
+ASSUME categorical-dist (lambda (x) (/ 1 n))
+ASSUME sample-categorical-loop 
+        (lambda (v i)
+                (if (< v (categorical-dist i)) 
+                    i 
+                    (sample-categorical-loop 
+                     (- v (categorical-dist i))
+                     (+ i 1))))
+
+ASSUME sample-categorical (lambda () (sample-categorical-loop (rand) 0))
+ASSUME sample (sample-categorical)
+\end{verbatim} \end{small} \end{leftbar}
+
+We ran this model for varying $n$, measuring the time and space usage of various engines.  Here are the results:
+
+\begin{center}
+{\bf SPACE} \\
+\includegraphics[scale=0.4]{../graphs/categorical/categorical-reduced-c-space.png}
+\includegraphics[scale=0.4]{../graphs/categorical/categorical-reduced-py-space.png} \\
+Reduced traces C \qquad \qquad \qquad\qquad\qquad\qquad \qquad Reduced traces Python \\
+\includegraphics[scale=0.4]{../graphs/categorical/categorical-traces-c-space.png}
+\includegraphics[scale=0.4]{../graphs/categorical/categorical-traces-py-space.png} \\
+Traces C \qquad\qquad\qquad\qquad\qquad\qquad \qquad Traces Python \\
+\pagebreak
+{\bf TIME} \\
+\includegraphics[scale=0.4]{../graphs/categorical/categorical-reduced-c-time.png} 
+\includegraphics[scale=0.4]{../graphs/categorical/categorical-reduced-py-time.png} \\
+Reduced traces C \qquad \qquad \qquad\qquad\qquad\qquad \qquad Reduced traces Python \\
+\includegraphics[scale=0.4]{../graphs/categorical/categorical-traces-c-time.png}
+\includegraphics[scale=0.4]{../graphs/categorical/categorical-traces-py-time.png} \\
+Traces C \qquad\qquad\qquad\qquad\qquad\qquad \qquad Traces Python \\
+\end{center}
+
+\subsection{A Simple HMM}
+
+Suppose we have some integers {\tt nstates}, and {\tt chainlength}.
+
+\begin{leftbar} \begin{small} \begin{verbatim}
+ASSUME get-column (mem (lambda (i) (symmetric-dirichlet 1 nstates)))
+
+ASSUME get-next-state 
+       (lambda (i) \
+               (let ((loop (lambda (v j) \
+                                   (let ((w ((get-column i) j))) \
+                           (if (< v w) j (loop (- v w) (inc j))))))) \
+               (loop (rand) 0)))
+
+ASSUME state (mem (lambda (i) (if (= i 0) 0 (get-next-state (state (dec i))))))
+ASSUME laststate (state chainlength)
+\end{verbatim} \end{small} \end{leftbar}
+
+
+\begin{center}
+{\bf SPACE} \\
+%\includegraphics[scale=0.4]{../graphs/hmm_simple/hmm-simple-reduced-traces-c-memory.png}
+\includegraphics[scale=0.4]{../graphs/hmm_simple/hmm-simple-reduced-traces-py-memory.png} 
+\includegraphics[scale=0.4]{../graphs/hmm_simple/hmm-simple-traces-py-memory.png} \\
+%Reduced traces C 
+Reduced traces Python \qquad \qquad \qquad\qquad\qquad\qquad \qquad  Traces Python \\
+%\includegraphics[scale=0.4]{../graphs/hmm_simple/hmm-simple-traces-c-memory.png}
+%Traces C \qquad\qquad\qquad\qquad\qquad\qquad \qquad 
+{\bf TIME} \\
+%\includegraphics[scale=0.4]{../graphs/hmm_simple/hmm-simple-reduced-traces-c-time.png} 
+\includegraphics[scale=0.4]{../graphs/hmm_simple/hmm-simple-reduced-traces-py-time.png} 
+\includegraphics[scale=0.4]{../graphs/hmm_simple/hmm-simple-traces-py-time.png} \\
+%Reduced traces C 
+Reduced traces Python \qquad \qquad \qquad\qquad\qquad\qquad \qquad Traces Python \\
+%\includegraphics[scale=0.4]{../graphs/hmm_simple/hmm-simple-traces-c-time.png}
+%Traces C \qquad\qquad\qquad\qquad\qquad\qquad \qquad 
+
+\end{center}
+
+
+
+\subsection{Topic Modeling}
+
+Consider the following program:
+
 %\begin{leftbar} \begin{small} \begin{verbatim}
-%ASSUME categorical-dist (lambda (x) (/ 1 n))
-%ASSUME sample-categorical-loop 
-%        (lambda (v i)
-%                (if (< v (categorical-dist i)) 
-%                    i 
-%                    (sample-categorical-loop 
-%                     (- v (categorical-dist i))
-%                     (+ i 1))))
+%ASSUME sample-dirichlet (lambda (prob_array) (let ((loop
+%                               (lambda (v i)
+%                                       (let ((w (prob_array i))) 
+%                                            (if (< v w) i (loop (- v w) (+ i 1))))))) 
+%                              (loop (rand) 0)))
 %
-%ASSUME sample-categorical (lambda () (sample-categorical-loop (rand) 0))
-%ASSUME sample (sample-categorical)
+%ASSUME get-document-topic-weights (mem (lambda (doc) (symmetric-dirichlet 1 ntopics)))
+%ASSUME get-document-topic-sampler (mem (lambda (doc) (sample-dirichlet (get-document-topic-weights doc))))
+%ASSUME get-topic-word-weights (mem (lambda (topic) (symmetric-dirichlet 1 nwords)))
+%ASSUME get-topic-word-sampler (mem (lambda (topic) (sample-dirichlet (get-topic-word-weights topic))))
+%
+%
+% ASSUME doc0_word0 (get-topic-word-sampler (get-document-topic-sampler 0))
 %\end{verbatim} \end{small} \end{leftbar}
-%
-%We ran this model for varying $n$, measuring the time and space usage of various engines.  Here are the results:
-%
-%\begin{center}
-%{\bf SPACE} \\
-%\includegraphics[scale=0.4]{../graphs/categorical/categorical-reduced-c-space.png}
-%\includegraphics[scale=0.4]{../graphs/categorical/categorical-reduced-py-space.png} \\
-%Reduced traces C \qquad \qquad \qquad\qquad\qquad\qquad \qquad Reduced traces Python \\
-%\includegraphics[scale=0.4]{../graphs/categorical/categorical-traces-c-space.png}
-%\includegraphics[scale=0.4]{../graphs/categorical/categorical-traces-py-space.png} \\
-%Traces C \qquad\qquad\qquad\qquad\qquad\qquad \qquad Traces Python \\
-%\pagebreak
-%{\bf TIME} \\
-%\includegraphics[scale=0.4]{../graphs/categorical/categorical-reduced-c-time.png} 
-%\includegraphics[scale=0.4]{../graphs/categorical/categorical-reduced-py-time.png} \\
-%Reduced traces C \qquad \qquad \qquad\qquad\qquad\qquad \qquad Reduced traces Python \\
-%\includegraphics[scale=0.4]{../graphs/categorical/categorical-traces-c-time.png}
-%\includegraphics[scale=0.4]{../graphs/categorical/categorical-traces-py-time.png} \\
-%Traces C \qquad\qquad\qquad\qquad\qquad\qquad \qquad Traces Python \\
-%\end{center}
-%%
-%%\subsection{A Simple HMM}
-%%
-%%Suppose we have some integers {\tt nstates}, and {\tt chainlength}.
-%%
-%%\begin{leftbar} \begin{small} \begin{verbatim}
-%%ASSUME get-column (mem (lambda (i) (symmetric-dirichlet 1 nstates)))
-%%
-%%ASSUME get-next-state 
-%%                        (lambda (i) \
-%%                                (let ((loop (lambda (v j) \
-%%                                      (let ( (w ((get-column i) j))) \
-%%                                             (if (< v w) j (loop (- v w) (inc j))))))) \
-%%                                (loop (rand) 0)))
-%%
-%%  ripl.assume("state", lisp_parser.parse("(mem (lambda (i) (if (= i 0) 0 (get-next-state (state (dec i))))))"))
-%%
-%%  ripl.assume("laststate", lisp_parser.parse("(state chainlength)"))
-%%\end{verbatim} \end{small} \end{leftbar}
-%%
-%%hmm-simple-reduced-traces-py-memory.png
-%%hmm-simple-reduced-traces-py-time.png
-%%hmm-simple-traces-py-memory.png
-%%hmm-simple-traces-py-time.png
-%
-%\subsection{Topic Modeling}
-%
-%Consider the following program:
-%
-%%\begin{leftbar} \begin{small} \begin{verbatim}
-%%ASSUME sample-dirichlet (lambda (prob_array) (let ((loop
-%%                               (lambda (v i)
-%%                                       (let ((w (prob_array i))) 
-%%                                            (if (< v w) i (loop (- v w) (+ i 1))))))) 
-%%                              (loop (rand) 0)))
-%%
-%%ASSUME get-document-topic-weights (mem (lambda (doc) (symmetric-dirichlet 1 ntopics)))
-%%ASSUME get-document-topic-sampler (mem (lambda (doc) (sample-dirichlet (get-document-topic-weights doc))))
-%%ASSUME get-topic-word-weights (mem (lambda (topic) (symmetric-dirichlet 1 nwords)))
-%%ASSUME get-topic-word-sampler (mem (lambda (topic) (sample-dirichlet (get-topic-word-weights topic))))
-%%
-%%
-%% ASSUME doc0_word0 (get-topic-word-sampler (get-document-topic-sampler 0))
-%%\end{verbatim} \end{small} \end{leftbar}
-%
-%\begin{leftbar} \begin{small} \begin{verbatim}
-%ASSUME get-topic-word-hyper (mem (lambda (topic) (gamma 1 1)))
-%ASSUME get-document-topic-hyper (mem (lambda (doc) (gamma 1 1)))
-%ASSUME get-document-topic-sampler (mem (lambda (doc) 
-%          (symmetric-dirichlet-multinomial/make (/ (get-document-topic-hyper doc) ntopics) ntopics)))
-%
-%ASSUME get-topic-word-sampler (mem (lambda (topic) 
-%          (symmetric-dirichlet-multinomial/make (/ (get-topic-word-hyper topic) nwords) nwords)))
-%
-%ASSUME get-word (mem (lambda (doc pos) ((get-topic-word-sampler ((get-document-topic-sampler doc))))))
-%\end{verbatim} \end{small} \end{leftbar}
-%
-%When running this program (with increasingly large documents), we see that the space usage is about 50\% better for reduced traces, and the time is about 50\% worse.
-%\pagebreak
-%\begin{center}
-%{\bf SPACE} \\
-%\includegraphics[scale=0.4]{../graphs/topic_models/topic-model-collapsed-traces-py-memory.png} 
-%\includegraphics[scale=0.4]{../graphs/topic_models/topic-model-collapsed-reduced-traces-py-memory.png} \\
-%Traces Python \qquad \qquad \qquad\qquad\qquad\qquad \qquad Reduced traces Python \\
-%{\bf TIME} \\
-%\includegraphics[scale=0.4]{../graphs/topic_models/topic-model-collapsed-traces-py-time.png} 
-%\includegraphics[scale=0.4]{../graphs/topic_models/topic-model-collapsed-reduced-traces-py-time.png} \\
-%Traces Python \qquad \qquad \qquad\qquad\qquad\qquad \qquad Reduced traces Python \\
-%\end{center}
+
+\begin{leftbar} \begin{small} \begin{verbatim}
+ASSUME get-topic-word-hyper (mem (lambda (topic) (gamma 1 1)))
+ASSUME get-document-topic-hyper (mem (lambda (doc) (gamma 1 1)))
+
+ASSUME get-document-topic-sampler 
+       (mem (lambda (doc) 
+                    (symmetric-dirichlet-multinomial/make 
+                     (/ (get-document-topic-hyper doc) ntopics) ntopics)))
+           
+ASSUME get-topic-word-sampler 
+       (mem (lambda (topic) 
+                    (symmetric-dirichlet-multinomial/make 
+                     (/ (get-topic-word-hyper topic) nwords) nwords)))
+
+ASSUME get-word (mem (lambda (doc pos) 
+                ((get-topic-word-sampler ((get-document-topic-sampler doc))))))
+\end{verbatim} \end{small} \end{leftbar}
+
+When running this program (with increasingly large documents), we see that the space usage is about 50\% better for reduced traces, and the time is about 50\% worse.
+
+\begin{center}
+{\bf SPACE} \\
+\includegraphics[scale=0.4]{../graphs/topic_models/topic-model-collapsed-traces-py-memory.png} 
+\includegraphics[scale=0.4]{../graphs/topic_models/topic-model-collapsed-reduced-traces-py-memory.png} \\
+Traces Python \qquad \qquad \qquad\qquad\qquad\qquad \qquad Reduced traces Python \\
+{\bf TIME} \\
+\includegraphics[scale=0.4]{../graphs/topic_models/topic-model-collapsed-traces-py-time.png} 
+\includegraphics[scale=0.4]{../graphs/topic_models/topic-model-collapsed-reduced-traces-py-time.png} \\
+Traces Python \qquad \qquad \qquad\qquad\qquad\qquad \qquad Reduced traces Python \\
+\end{center}
 %In fact, this topic modeling code was used to infer topics from a real corpus of 1500 documents with over a million total words.  The results were quite promising.  The C engine was able to perform on the order of 100,000 inference steps per second, using around 15 gigabytes of RAM.  Here is a graph of the logscore over time:
 %
 %\begin{center}
@@ -1134,7 +1316,6 @@ However, with parallelism and JITing still in baby stages, there is undoubtedly 
 %%            - discuss eval, uneval, XRPs with state, mem as an example, etc
 %%        - [[whatever focused experiments/results we come up with]]
 %
-%%\cite{Fagin1}:  
 %
 %
 %
@@ -1528,12 +1709,23 @@ However, with parallelism and JITing still in baby stages, there is undoubtedly 
 
 \begin{thebibliography}{99}
 
-\bibitem[1]{Dagum} Dagum,  P.  and  M.  Luby,  Approximating probabilistic inference in Bayesian  belief networks is NP-hard  (Research  Note),  Artificial Intelligence 60  (1993)  141-153. 
+\bibitem[1]{sicp} Abelson, Harold ; Sussman, Gerald Jay; Sussman, Julie.  Structure and interpretation of computer programs.  MIT Press, 1996.
 
-\bibitem[2]{Goodman} Goodman, Noah D.; Mansinghka, Vikash K.;
-Roy, Daniel M.; Bonawitz, Keith; and Tenenbaum, Joshua B.  Church: a language for generative models.  Proceedings of the Twenty-Fourth Conference on Uncertainty in Artificial Intelligence (2008).
+\bibitem[2]{Dagum} Dagum,  P.  and  Luby, M.  Approximating probabilistic inference in Bayesian  belief networks is NP-hard  (Research  Note),  Artificial Intelligence 60  (1993)  141-153. 
 
-\bibitem[3]{lightweight} AISTATS 2011 lightweight paper
+\bibitem[3]{definetti} Freer, Cameron and Roy, Daniel. (2009) "Computable exchangeable sequences have computable deÊFinetti measures", Proceedings of the 5th Conference on Computability in Europe: Mathematical Theory and Computational Practice, Lecture Notes In Computer Science, Vol. 5635, pp. 218--231
+
+\bibitem[4]{Goodman} Goodman, Noah D.; Mansinghka, Vikash K.;
+Roy, Daniel M.; Bonawitz, Keith; and Tenenbaum, Joshua B.  Church.  A language for generative models.  Proceedings of the Twenty-Fourth Conference on Uncertainty in Artificial Intelligence (2008).
+
+\bibitem[5]{lightweight} Goodman, Noah; Stuhlmueller,  Andreas;  Wingate, David.  Lightweight Implementations of Probabilistic Programming Languages Via Transformational Compilation.  15:770-778, AISTATS 2011.
+
+\bibitem[6]{mh} Hastings, W.K. (1970). "Monte Carlo Sampling Methods Using Markov Chains and Their Applications".  Biometrika 57 (1): 97--109. doi:10.1093/biomet/57.1.97. JSTOR 2334940. Zbl 0219.65008.
+
+\bibitem[7]{rabin} Karp, Richard M.; Rabin, Michael O. (March 1987). Efficient randomized pattern-matching algorithms. 31. Retrieved 2008-10-14.
+
+\bibitem[8]{scheme} McCarthy, J.   (April 1960). "Recursive functions of symbolic expressions and their computation by machine, Part I". Communications of the ACM 3 (4): 184--195.
+
 \end{thebibliography}
 
 \end{document}
