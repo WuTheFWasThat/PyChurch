@@ -226,9 +226,9 @@ class EvalNode(Node):
     self.active = False
     return
 
-  def evaluate_recurse(self, subexpr, env, addition, reflip):
+  def evaluate_recurse(self, subexpr, env, addition, reflip, force_val = None):
     child = self.get_child(addition, env, subexpr)
-    val = child.evaluate(reflip == True, None)
+    val = child.evaluate(reflip == True, force_val)
     return val
   
   # reflip = 1 # reflip all
@@ -296,10 +296,6 @@ class EvalNode(Node):
       args = [self.evaluate_recurse(expr.children[i], self.env, 'arg' + str(i), reflip) for i in range(n)]
       op = self.evaluate_recurse(expr.op, self.env, 'operator', reflip)
 
-      if xrp_force_val is not None:
-        if op.type != 'xrp':
-          raise RException("Require outermost XRP application")
-
       if op.type == 'procedure':
         self.procedure_apply = True
         
@@ -313,11 +309,11 @@ class EvalNode(Node):
         applychild = self.get_child(addition, new_env, op.body)
 
         if self.applychild is applychild:
-          val = self.evaluate_recurse(op.body, new_env, addition, reflip)
+          val = self.evaluate_recurse(op.body, new_env, addition, reflip, xrp_force_val)
         else:
           if self.applychild is not None:
             self.applychild.unevaluate()
-          val = self.evaluate_recurse(op.body, new_env, addition, reflip)
+          val = self.evaluate_recurse(op.body, new_env, addition, reflip, xrp_force_val)
         self.applychild = applychild
         self.applyaddition = addition
       elif op.type == 'xrp':

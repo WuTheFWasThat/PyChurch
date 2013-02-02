@@ -79,16 +79,16 @@ Probabilistic programming languages are generalizations of programming languages
 
 A core operation of probabilistic programming languages is inference, which is a difficult computational problem in general\cite{Dagum}.  However, Markov chain Monte Carlo (MCMC) methods converge quite quickly to the posterior distribution for a large class of inference problems.  Much effort has been devoted to studying in which cases this inference is efficient, and how to make it so.  \\
 
-We explore implementations of a programming language much like Church \cite{Goodman}.  A naive implementation of inference uses a database to store all random choices, and re-performs all computations on each transition.  
+We explore implementations of a programming language much like Church \cite{Goodman}.  A naive implementation of inference uses a database to store all random choices \cite{lightweight}, and re-performs all computations on each transition.  
 
 To improve this, we introduce a ``traces" data structure, letting us represent the program structure in a way that allows us to do minimal re-computation.  During inference, we make one small change and propagate the changes locally. 
 
-Unfortunately, the trace structure takes up significantly more space than the random database.  Thus we introduce ``reduced traces", which takes the same amount of space (asymptotically) as the random database.  While it is asymptotically slower than traces for some programs,at  we demonstrate thits time complexity is similar in practice.  \\
+Unfortunately, the trace structure takes up significantly more space than the random database.  Thus we introduce ``reduced traces", which takes the same amount of space (asymptotically) as the random database.  While it is asymptotically slower than traces for some programs, we demonstrate that the time complexity is similar in practice.  \\
 
 We also remark on another significant advantage of reduced traces.  While writing interpreters in Python is typically considered slow, the PyPy translation toolchain aims to let developers compile their interpreters into lower level languages, such as C.  %, so long as they write their code in a restricted version of Python called RPython.  
 Furthermore, one can use various hints to generate a tracing JIT.  Generating a tracing JIT for inference could potentially improve efficiency greatly, and reduced traces make this far easier to implement. \\
 
-Thus far, in this project, we hae done the following:
+Thus far, in this project, we have done the following:
 \begin{enumerate}
 \item Explore the theoretical aspects of the traces and reduced traces inference algorithms.
 \item Implement the different inference engines, in RPython, so as to have C versions of the interpreter.  All engines conform to a common REST API.  \footnote{Server code here:  https://github.com/WuTheFWasThat/Church-interpreter}
@@ -101,7 +101,7 @@ There are many research directions to pursue after this, all towards the goal of
 \item Potentially exploring some ``adaptive" generalizations of Gibbs sampling.
 \end{enumerate}
 
-Ultimately like to be able to recover the efficiency of special-cased inference algorithms for topic-modeling, mixture modeling, and Hidden Markov Models, in a much more general setting, and with far fewer lines of code.
+We would ultimately like to recover the efficiency of special-cased inference algorithms for topic-modeling, mixture modeling, and Hidden Markov Models, in a much more general setting, and with far fewer lines of code.
 
 % introduction: restate goals from above, of course including which research direction (parallelism; noise variables; connections to deterministic algorithms like sorting) we actually did
 
@@ -201,7 +201,7 @@ Observes the expression {\tt expr} to have been evaluated to the value {\tt val}
 \begin{itemize}
 \item {\tt INFER [rerun] [iters]} 
 
-Runs {\tt iters} steps of the Markov Chain, also deciding whether to first rerun the entire program.  The result of running sufficiently many iterations from the prior, should be that sampling gives the posterior distribution for expressions, conditioned on all the observed values.  
+Runs {\tt iters} steps of the Markov Chain, also deciding whether to first rerun the entire program.  The result of running sufficiently many iterations from the prior, should be that sampling gives the posterior distribution for expressions, conditioned on all the observed values.  Restarting from the prior will not be typically used, but is useful for performance comparisons.
 
 \end{itemize}
 
@@ -291,7 +291,7 @@ value: False
 Initially, we have this model, and we know nothing else.  So our prior tells us that there's a 30\% chance the sprinkler is on.
 
 \begin{leftbar} \begin{small} \begin{verbatim}
->>> INFER_MANY sprinkler 10000 10
+>>> INFER sprinkler 10000 10
 False: 6957
 True: 3043
 \end{verbatim} \end{small} \end{leftbar}
@@ -306,7 +306,7 @@ id: 3
 \noindent Now, we haven't yet looked at the sky, but we have inferred something about the weather.  
 
 \begin{leftbar} \begin{small} \begin{verbatim}
->>> INFER_MANY cloudy 10000 10
+>>> INFER cloudy 10000 10
 False: 8353
 True: 1647
 \end{verbatim} \end{small} \end{leftbar}
@@ -360,10 +360,11 @@ Now, we can allow for something much more general than the noisy observations ab
 
 The noisy expressions obtained with {\tt noisy} are a special case of this, so long as {\tt noise} was non-zero.  
 
+Also, notice that we could make all XRPs re-scorers, by adding noise to their output.  That is, we could have all XRPs have an internal error rate, as if {\tt noisy} were being applied.  
+
 \subsection{Mem}
 
 A special XRP worth noting is {\tt mem}, which lets us memorize procedures.  Applying {\tt mem} to a procedure returns another XRP, which is a memoized form of that procedure.  That is, when using a {\tt mem}'d procedure, we never reapply randomness, given old arguments.  Thus whenever we apply the memoized procedure once to some particular arguments, applying it again to those arguments will result in the same value. 
-
 
 Implementation of {\tt mem} is extremely tricky, and we will decline to work out its details in this paper.  However, it is important to understand its utility.  As a simple example, consider a naive implementation of Fibonacci:
 
@@ -382,7 +383,9 @@ ASSUME fib (mem (lambda (x) (if (< x 2) 1 (+ (fib (- x 1)) (fib (- x 2))))))
 \end{verbatim} \end{small} \end{leftbar}
 
 
-Evaluating {\tt (fib 20)} now takes well less than a millisecond.
+Evaluating {\tt (fib 20)} now takes well less than a millisecond. \\
+
+One limitation of mem is that if the procedure argument to mem changes, the memorization must be reapplied.  unless mem is noisy, it needs to be reapplied. state that we could make a noisy-mem which takes a noise proc that is applied after the procedure is looked up each time.
 
 \section{Traces}
 
@@ -439,7 +442,7 @@ ASSUME binom (lambda (n k) (if (or (= k 0) (= k n)) 1
 ...                            (+ (binom (- n 1) (- k 1)) (binom (- n 1) k)))) 
 \end{verbatim} \end{small} \end{leftbar}
 
-Let's say we want to randomly replace one of the entry $n=2, k=1$ of Pascal's triange with a random real number between 0 and 2.  And we are curious in the resulting distribution for the entry $n = 20, k = 10$. 
+Let's say we want to randomly replace one of the entry $n=2, k=1$ of Pascal's triangle with a random real number between 0 and 2.  And we are curious in the resulting distribution for the entry $n = 20, k = 10$. 
 
 \begin{leftbar} \begin{small} \begin{verbatim}
 ASSUME binom-wrong (lambda (n k c) (if (and (= n 2) (= k 1)) c (binom n k))) 
@@ -1530,6 +1533,7 @@ However, with parallelism and JITing still in baby stages, there is undoubtedly 
 \bibitem[2]{Goodman} Goodman, Noah D.; Mansinghka, Vikash K.;
 Roy, Daniel M.; Bonawitz, Keith; and Tenenbaum, Joshua B.  Church: a language for generative models.  Proceedings of the Twenty-Fourth Conference on Uncertainty in Artificial Intelligence (2008).
 
+\bibitem[3]{lightweight} AISTATS 2011 lightweight paper
 \end{thebibliography}
 
 \end{document}
