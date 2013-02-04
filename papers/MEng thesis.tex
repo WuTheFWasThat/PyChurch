@@ -26,12 +26,12 @@
 
 \begin{document}
 
-\title{{\bf Efficient Inference in Probabilistic Computing} \\ M.Eng Thesis}
-\author{Jeff Wu \\ \\ {\small Advised by Vikash Mansinghka and Josh Tenenbaum}}
+%\title{{\bf Efficient Inference in Probabilistic Computing} \\ M.Eng Thesis}
+%\author{Jeff Wu \\ \\ {\small Advised by Vikash Mansinghka and Josh Tenenbaum}}
 %\address{}
 %\email{}
-\date{}
-\maketitle
+%\date{}
+%\maketitle
 %
 %\begin{center} \begin{LARGE} {\sc \bf Title} \vs{6}
 
@@ -418,6 +418,8 @@ The evaluation nodes are connected in a directed graph structure, via dependenci
 
 Each node caches the relative locations and values of all its children.  Furthermore, if it is an application node, we also cache the procedure and arguments.  And for every node, we cache its most recent value.  
 
+The {\bf trace} is the data structure which contains all the nodes and their dependencies, the environments in which the nodes are evaluated, and a data structure storing XRP applications. 
+
 %\subsection{The proposal}
 %
 %When we re-flip the value of some XRP application, we would like to simply remove the old value, and then incorporate a new value directly, asking for the probabilities as we do so, in order to calculate the MH ratio.  This appears to be valid, by the exchangeability property.  
@@ -445,13 +447,27 @@ Each node caches the relative locations and values of all its children.  Further
 %\end{enumerate}
 
 % hash table with get random key
-\subsection{Propagation}
+\subsection{Propagation} \label{traces-propagation}
 
 How does propagation actually work?   This question is surprisingly interesting, and we explore two different candidate propagation schemes.
 
 \subsubsection{Recursive propagation}
 
-The easiest version of propagation to implement is simply a recursive, ``depth-first" implementation.  We simply start at the node which we reflipped, and recursively re-evaluate its parents, stopping only when we reach XRP application nodes.   However, notice that in a graph where nodes have multiple children and parents, this does not guarantee that we only propagate each node once.  In fact, this propagation has exponentially bad worst-case scenarios, and can be poor in some practical settings.  
+The easiest version of propagation to implement is simply a recursive, ``depth-first" implementation.  We simply start at the node which we reflipped, and recursively re-evaluate anything which depends on it, stopping only when we reach XRP application nodes.   In pseudocode:
+
+\begin{verbatim}
+function propagate(node):
+  node.evaluate_based_on_children()
+  if node is an assume node:
+    for all node' which reference node:
+      propagate(node')
+  if node has a parent:
+    propagate(parent)
+\end{verbatim}
+
+Although this is how I implement propagation, there is one crucial optimization to be made.  Suppose we just propagated to the argument to a procedure.  When we propagate up, we will re-evaluate this procedure application.  However, instead of re-evaluating the entire body, it is sufficient to merely change the environment to reflect the new value of the variable corresponding to the changed argument. \\
+
+There is one big problem with recursive propagation.  We do not guarantee that we only propagate each node once.  In fact, this propagation has exponentially bad worst-case scenarios, and can be poor in some practical settings. 
 
 Suppose we have the following program, which computes a familiar multivariate recurrence.
 
@@ -556,7 +572,7 @@ PREDICT (binom-wrong 20 10 (uniform-continuous 0 2))
 \begin{small} {Propagating from the red node upwards.  Here the C function is {\tt binom-wrong}.} \end{small}
 \end{center}
 
-Now suppose we decided to reflip the {\tt uniform-continuous} application.  And suppose we have the policy of always propagating to the right first, if possible.  We can then verify that the worst-case number of times we may propagate to the application {\tt (binom-wrong m l)} is essentially {\tt (binom m l)}.  \\
+Now suppose we decided to reflip the {\tt uniform-continuous} application.  And suppose we have the policy of always propagating to the right first, if possible.  We can then verify that the worst-case number of times we may propagate to the application {\tt (binom-wrong a b)} is essentially {\tt (binom a b)}.  \\
 
 Intuitively, we wanted to propagate to the smaller values first, in this modified Pascal's triangle.  Then, we would only have needed to propagate about 100 times; once for each node.  Thus we see that the order is extremely important, in general.  
 
@@ -566,13 +582,30 @@ However, although the worst case scenario is terrible, this method of propagatio
 
 So, we see is that the order of propagation is quite important.  How can we know which parents to propagate our values to first?   Intuitively, since our trace structure is a DAG, we simply propagate to those ``lowest" in the DAG.  Essentially, we want to maintain a priority queue, from which we will repeatedly remove the minimum and add his parents to the queue, until the queue is empty.  Here, we are simply interpreting the parent-child relationships as comparisons in a partial ordering.  
 
+\begin{verbatim}  
+function propagate(node, q):
+  q = priority_queue(node)
+  while q is not empty:
+    node' = q.pop_min()
+    propagate_and_add(node', q)
 
-Unfortunately, a heap does not work correctly on a set of elements with only a partial ordering (even with ties arbitrarily broken), and so we must extend to some full ordering.  
+function propagate_and_add(node, q):
+  node.evaluate_based_on_children()
+  for all node' which reference node:
+    q.add(node')
+  if node has a parent:
+    q.add(parent)
+\end{verbatim}
+
+Unfortunately, a heap does not work correctly on a set of elements with only a partial ordering (with no guarantee on how ties are broken), and so we must extend to some full ordering.  So what information can we use to do comparisons?  
 
 We cannot simply use timestamps of the initial evaluation, since it is possible for unevaluated branches earlier in the program to be evaluated later.  
 
-We could use a full description of the node's location (something like a call stack), but it would be quite expensive, %leading to asymptotic increases in both time and space.  
-as comparisons would now take $O(h)$, where $h$ is the height of the DAG, defined to be the length of the longest directed path starting from a directive node.  %And each node would require $O(h)$ space, instead of $O(1)$ space.  Unfortunately, the story is somewhat worse than that.  Thus when evaluating the program itself, we also take a hit of $O(h)$.  
+We can use a full description of the node's location (something like a call stack), including the ID of the top directive node.  Unfortunately, this can be quite expensive, %leading to asymptotic increases in both time and space.  
+as comparisons would now take $O(h)$, where $h$ is the height of the DAG, defined to be the length of the longest directed path starting from a directive node.  \\ %And each node would require $O(h)$ space, instead of $O(1)$ space.  Unfortunately, the story is somewhat worse than that.  Thus when evaluating the program itself, we also take a hit of $O(h)$.  
+
+Is it possible to do something more efficient?  We believe we can do the following optimization, which has not been implemented:  Consider the full path from a directive node to the node in question.  Remove the edges which correspond to being the computation of an application node (the application of a procedure), i.e. the link between an application node and its child which isn't the arguments or procedure.  We now have a set of path segments.  Simply store the ordered list of their lengths.  
+
 
 %\subsubsection{Partial location}
 % 
@@ -609,10 +642,20 @@ We think of $V_x$ a random variable as well, but it is only defined over worlds 
 
 Now let $p_x$ be the probability that node $x$ is chosen to be reflipped in the Markov chain.  In other words, $p_x$ should represent the distribution where, first, we sample from a run of the program, and then we pick one of the XRP applications uniformly at random.  Lastly, we let $V$ be the random variable which first picks some $x$ with probability $p_x$, and then picks a random $V_x$, conditioned on $x$ being active.
 
-We then have that the expected propagation time of the ``full location" propagation scheme is 
-$$E_V[ |V| \cdot h \log |V| | = h  \cdot E_V[|V| \log |V|]. $$
+We claim now that the expected propagation time of the ``full location" propagation scheme is 
+$$E_V[ h |V| \cdot h \log |V| | = h^2  \cdot E_V[|V| \log |V|]. $$
 
-This essentially follows directly from our propagation algorithm.  We do just as much unevaluating as evaluating, but this introduces just a factor of 2.  
+Most terms follow directly from our propagation algorithm.  For each of $V$ things, we must add and pop it from the queue in $h \log |V|$, as well as do $O(1)$ work of evaluation.  It's true that we un-evaluating as well as evaluate, but this introduces just a factor of 2, and we can ``amortize" by considering the un-evaluation to always happen right away (after evaluation, instead of before).  \\
+
+So where did the second factor of $h$ come from?  This hidden complexity comes from variable lookups.  It may take us $O(h)$ to find the environment containing the value of a variable.  This hidden cost exists in our current implementation, but can perhaps be alleviated by using path-compression and sacrificing memory usage.  
+
+Another hidden complexity may come from complexity internal to XRPs.  For the sake of analysis, we have assumed (erroneously, in practice) that all XRP operations are $O(1)$.  \\
+
+
+
+In the greedy version, we've shown that the worst case is essentially
+$$ E_{W}[h |W^{W}|], $$
+in the worst case.
 
 % Although we may evaluate new parts, outside of $V_x$, when choosing $x$, we can use amortized analysis to show this is okay; essentially, we evaluate this work as part of the next reflipping instead.  
  
@@ -632,12 +675,12 @@ This essentially follows directly from our propagation algorithm.  We do just as
 %ASSUME decay-time (geometric 0)
 %\end{verbatim} \end{small} \end{leftbar}
 %
-%For every node $x$, we say the {\bf static envelope} of $x$, denoted $V^+_x$, is the set of nodes reached by propagating upwards in the static trace until we reach XRP application nodes (including the application nodes, as well as $x$), and then propagating down through the consequents of any conditionals we pass through and the bodies of any procedure applications we pass through.  Similarly, we let $V^+$ be the random variable which first picks some $x$ with probability $p_x$, and then picks a random $V^+_x$, conditioned on $x$ being active.
+%For every node $x$, we say the {\bf static envelope} of $x$, denoted $W_x$, is the set of nodes reached by propagating upwards in the static trace until we reach XRP application nodes (including the application nodes, as well as $x$), and then propagating down through the consequents of any conditionals we pass through and the bodies of any procedure applications we pass through.  Similarly, we let $W$ be the random variable which first picks some $x$ with probability $p_x$, and then picks a random $W_x$, conditioned on $x$ being active.
 %
 
 
 % So we then have that the expected propagation time of the ``partial location" propagation scheme is 
-% $$ E_{V^+}[|V^+| \cdot \log |V^+|]. $$
+% $$ E_{W}[|W| \cdot \log |W|]. $$
 
 
 \section{Reduced Traces}
@@ -690,19 +733,19 @@ Circles correspond to nodes which would exist in a traces data structure, but on
 
 One issue which comes up when implementing reduced traces is the naming of child node locations.  
 Let's revisit the example above.  In regular traces, the top node would have 3 children, corresponding to 
-\begin{itemize} 
-\item consequent,
-\item predicate, and 
-\item alternative.
-\end{itemize} 
-In reduced traces, however, the top node has 5 children, and they correspond to the following lists:
-\begin{itemize}
-\item  \ [consequent, arg1], 
-\item \ [consequent, arg2], 
-\item \  [predicate], 
-\item \ [alternative, arg1], and 
-\item \  [alternative, arg2].
-\end{itemize}
+\begin{enumerate} 
+\item consequent
+\item predicate
+\item alternative
+\end{enumerate} 
+In reduced traces, however, the top node has 5 children, corresponding to the following lists:
+\begin{enumerate}
+\item  \ [consequent, arg1]
+\item \ [consequent, arg2]
+\item \  [predicate]
+\item \ [alternative, arg1]
+\item \  [alternative, arg2]
+\end{enumerate}
 
 These locations are important for being able to recover a specific child node, in order to continue computations while propagating up, or while unevaluating.  Unfortunately, these lists can be arbitrarily long, if there is a lot of deterministic computation in-between nodes, taking up space.  Furthermore, the lists must be copied, in order to propagate the location values to children, taking up time.  Thus this is an algorithmic disaster.
 
@@ -718,9 +761,15 @@ This technique is also used in the random database implementation of the engine.
 
 % Interestingly, we can see that we will avoid the problem which we saw earlier with the dice roll.  Because we evaluate expressions from top-to-bottom, we have taken care of that issue for free!\\
 
-In reduced traces, we essentially have the same options as in regular traces.  We won't go into detail explaining again.  
+In reduced traces, we essentially have the same options as in regular traces.  In fact, the pseudocode is identical to that of traces, as outlined in Section \ref{traces-propagation}.  However, the subroutine {\tt evaluate\_based\_on\_children} is no longer as straightforward.  
 
-However, we will pay a price for our lack of structure.  Let's consider the following program, which indexes into an array using the max of two samples from the categorical distribution from the last example:
+First, we should store a copy our children dictionary.  Then, we must evaluate our expression as normal, but stopping the recursion whenever we reach what should be a new node. If that node is in our child dictionary, we can use its cached value.  Otherwise, we should evaluate it newly.  At the end, we evaluate anything which we didn't see in our old child dictionary.  \\
+
+One subtlety which comes up here, is how to name locations when applying functions.  The easiest thing to do, and indeed what our implementation does, is to simply create a random ID for each XRP and procedure created.  However, this causes us to need to repeat calculation any time we are dealing with a procedure or XRP.  This is quite bad; much worse than not doing the changed-argument optimization we could do in traces.  
+
+Luckily, we believe this can be fixed.  Essentially, when evaluating, we should always keep track of the environment.  Thus our reduced trace structure reflects all values of nodes, modulo environments of procedures.  The environment is instead kept at the node separately (it still exists in memory, but isn't factored into the location).  And of course, we should now hash the body code of procedures and use those for our location naming.  \\
+
+Though this takes care of the majority of our pains, we will pay a price for our lack of structure.  Let's consider the following program, which indexes into an array using the max of two samples from the categorical distribution from the last example:
 
 \begin{leftbar} \begin{small} \begin{verbatim}
 ASSUME categorical-sum (+ (sample-categorical) (sample-categorical)) 
@@ -771,15 +820,19 @@ the bodies of any procedure applications we passed through.  The set of nodes we
 
 Viewing the picture with only reduced traces, the set of nodes we propagate to is extremely analogous to the notion of Markov blankets, and also captures explicitly a notion of conditional independence.  
 
-Let us call this set of nodes the {\bf full envelope}, $V^+_x$.  From the reduced trace point of view, we simply propagate to all parents, and then propagate down to their children which needed to be evaluated.  However, it is the set of nodes from the traces point of view that we are interested in.  
+Let us call this set of nodes the {\bf full envelope}, $W_x$.  From the reduced trace point of view, we simply propagate to all parents, and then propagate down to their children which needed to be evaluated.  However, it is the set of nodes from the traces point of view that we are interested in.  
 
 Again, we can consider the reduced trace to be dynamic, in this analysis, using the same sort of amortized analysis we had done earlier.  Thus the runtime is
-$$ E_{V^+}[|V^+| \cdot \log |V^+], $$
-where $V^+$ is the random variable which first picks some $x$ with probability $p_x$, and then picks a random full envelope $V^+_x$, conditioned on $x$ being active.
+$$ E_{W}[h^2 |W| \cdot \log |W], $$
+where $W$ is the random variable which first picks some $x$ with probability $p_x$, and then picks a random full envelope $W_x$, conditioned on $x$ being active.
+
+And in the greedy version, the worst case is
+$$ E_{W}[h |W^{W}|], $$
+analogously to before.
 
 \subsection{Engine Complexity Trade-offs Summary}
 
-To summarize, we have the following table of asymptotic complexities:
+To summarize, we have the following table of asymptotic complexities (we abuse notation and drop all expectations, which are implicitly over the random variables of the expression):
 
 \begin{table}[h]
 \caption{Engine Complexity Trade-offs} \label{sample-table}
@@ -787,11 +840,11 @@ To summarize, we have the following table of asymptotic complexities:
 \begin{tabular}{c|c | c |c } % | c
 & {\bf  Time / Iteration} & {\bf Space} & {\bf Time} \\ \hline % & {\bf h / iter}
 {\bf Random DB} & $T$ & H + P & $T$\\  % & 1? 
-{\bf Traces 1 (recursive)} & $E_V[2^V]$ & $T \ (\, + \ H + P)$ & $T$ \\ % & H(site)
-{\bf Traces 2 (full location)} & $h \cdot E_V[V \log V]$ & $T \ (\, + \ H + P)$  & $h \cdot T$\\ % & H(site)
-%{\bf Traces 3 (partial location)} & $E_{V^+}[V^+ \log V^+]$ & $T \ (\, + \ H + P)$ & $T$ \\ % & H(site)
-{\bf Reduced Traces (recursive)} & $E_{V^+}[2^{V^+}]$ & H + P& $T$\\ % & H(site) 
-{\bf Reduced Traces (full location)} & $E_{V^+}[V^+ \log V^+]$ & H + P& $T$\\ % & H(site)  %  \footnote{There are some additional costs, due to storing environments, and {\tt mem}. }
+{\bf Traces 1 (recursive)} & $h \cdot V^V$ & $T \ (\, + \ H + P)$ & $T$ \\ % & H(site)
+{\bf Traces 2 (full location)} & $h^2 \cdot V \log V$ & $T \ (\, + \ H + P)$  & $h \cdot T$\\ % & H(site)
+%{\bf Traces 3 (partial location)} & $E_{W}[W \log W]$ & $T \ (\, + \ H + P)$ & $T$ \\ % & H(site)
+{\bf Reduced Traces (recursive)} & $h \cdot {W}^{W}$ & H + P& $T$\\ % & H(site) 
+{\bf Reduced Traces (full location)} & $h^2 \cdot W \log W$ & H + P& $T$\\ % & H(site)  %  \footnote{There are some additional costs, due to storing environments, and {\tt mem}. }
 \end{tabular}
 \end{center}
 \end{table}
@@ -806,12 +859,12 @@ Here, the variables mean the following:
 
 \item $V$ = Envelope size, in dynamic trace
 
-\item $V^+$ = Full envelope size, in dynamic reduced trace
+\item $W$ = Full envelope size, in dynamic reduced trace
 
 \item $h$ = The ``height" of the program.  That is, the largest number of evaluations any node is away from a directive.
 \end{itemize}
 
-Recall that $T > H$ and $T > P$, and $V < V^+$. \\ % and $V > F$.  \\
+Recall that $T > H$ and $T > P$, and $V < W$. \\ % and $V > F$.  \\
 
 Though none of the traces implementation is strictly dominated by another, we believe the 1st and especially 3rd are more likely to be efficient in practice.  And we believe that reduced traces should have much better space usage and only marginally worse run-time.  See the appendix for some preliminary empirical results.
 
@@ -977,6 +1030,9 @@ Lastly, this abstraction is highly useful for a seemingly unrelated problem.  Su
 There are many more extensions to the XRP interface which have yet to be explored much.  As the user base for probabilistic programs grow, and the usage becomes more advance, demand will increase for more specialized control.  Some potential other extensions to consider, which we haven't explored:
 
 \begin{itemize}
+
+\item We might let XRPs decide when to be a resampler and when to be a rescorer, depending on the value.
+
 \item One might hope we could allow XRP transitions that are forced to leave the resulting output values fixed.  In this case, there would be no accept or reject step, we would simply sample from the desired distribution.  A side effect of this is that weights for an XRP implementing such a feature cannot depend on internal state.
 
 \item Oftentimes, we score a sequence of XRP applications by taking the marginal probabilities and incorporating them in one by one.  One might imagine a function which helps efficiently computes scores entire sequence of applications.
@@ -1015,7 +1071,7 @@ However, with parallelism and JITing still in baby stages, there is undoubtedly 
 
 \section{Acknowledgements}
 
-Besides my advisor Vikash Mansinghika, I should acknowledge Tejas Kulkarni, Ardavan Saeedi, Dan Lovell, and especially Yura Perov for their work on the MIT Probabilistic Computing Project in conjunction with me, providing valuable discussions and developing useful infrastructure.  
+Besides my advisors Vikash Mansinghika and Josh Tenenbaum, I should acknowledge Tejas Kulkarni, Ardavan Saeedi, Dan Lovell, and especially Yura Perov for their work on the MIT Probabilistic Computing Project in conjunction with me, providing valuable discussions and developing useful infrastructure.  
 
 \appendix
 
@@ -1054,7 +1110,6 @@ Reduced traces C \qquad \qquad \qquad\qquad\qquad\qquad \qquad Reduced traces Py
 \includegraphics[scale=0.4]{../graphs/categorical/categorical-traces-c-space.png}
 \includegraphics[scale=0.4]{../graphs/categorical/categorical-traces-py-space.png} \\
 Traces C \qquad\qquad\qquad\qquad\qquad\qquad \qquad Traces Python \\
-\pagebreak
 {\bf TIME} \\
 \includegraphics[scale=0.4]{../graphs/categorical/categorical-reduced-c-time.png} 
 \includegraphics[scale=0.4]{../graphs/categorical/categorical-reduced-py-time.png} \\
