@@ -26,13 +26,117 @@
 
 \begin{document}
 
-%\title{{\bf Efficient Inference in Probabilistic Computing} \\ M.Eng Thesis}
-%\author{Jeff Wu \\ \\ {\small Advised by Vikash Mansinghka and Josh Tenenbaum}}
+
+%by
+%John M. Doe
+%
+%[Previous/Other degree information: i.e.: S.B. EE, M.I.T., 1997] 
+%
+%Submitted to the Department of Electrical Engineering and Computer Science 
+%in Partial Fulfillment of the Requirements for the Degree of 
+%Master of Engineering in Electrical Engineering and Computer Science 
+%at the Massachusetts Institute of Technology
+%
+%May, 2010 
+%Massachusetts Institute of Technology
+%All rights reserved.
+%
+%Author:	 ______________________________________________________
+% 	
+%Department of Electrical Engineering and Computer Science
+%
+%May 17, 2010
+%
+%Certified by:	 ______________________________________________________
+% 	[Supervisor's Name and Title] Thesis Supervisor May 17, 2010
+%Certified by:	 ______________________________________________________
+% 	[Co-Supervisor's Name and Title] Thesis Co-Supervisor May 17, 2010
+%Accepted by:	 ______________________________________________________
+% 	Prof. Dennis M. Freeman, Chairman, Masters of Engineering Thesis Committee
+%	
+
+
+\begin{center}
+\vspace{1 in}
+\begin{LARGE}{\bf Reduced Traces and JITing in Church} \\
+\end{LARGE}
+
+\vspace{0.25 in}
+
+\begin{Large}
+Jeff Wu  \\ 
+\end{Large}
+ 
+ \vspace{1 in}
+ 
+ \begin{large}
+Submitted to the Department of Electrical Engineering and Computer Science in Partial Fulfillment of the Requirements for the Degree of Master of Engineering in Electrical Engineering and Computer Science at the Massachusetts Institute of Technology \\ 
+
+ \vspace{1 in}
+
+February, 2013 \\
+Massachusetts Institute of Technology \\
+All rights reserved. 
+
+ \vspace{1 in}
+
+\end{large}
+\end{center}
+
+\begin{large}
+\noindent Author:  \underline{\makebox[5.9in][l]{ }} \\
+Department of Electrical Engineering and Computer Science \\
+February 4, 2013
+ 
+ \vspace{0.25 in}
+ 
+\noindent Certified by:  \underline{\makebox[5.6in][l]{    }} \\
+Josh Tenenbaum, Thesis Supervisor \\
+February 4, 2013
+
+\vspace{0.25 in}
+%Certified by:	 ______________________________________________________ \\
+% 	[Co-Supervisor's Name and Title] Thesis Co-Supervisor May 17, 2010 \\
+
+\noindent Accepted by:	\underline{\makebox[5.5in][l]{   }} \\
+ 	Prof. Dennis M. Freeman, Chairman, Masters of Engineering Thesis Committee
+\end{large}
 %\address{}
 %\email{}
 %\date{}
-%\maketitle
-%
+\pagebreak
+\begin{center}
+
+\begin{Large}{\bf Reduced Traces and JITing in Church} \\
+\end{Large}
+by \\
+\begin{Large}
+Jeff Wu  \\ 
+\end{Large}
+ 
+ \vspace{0.5 in}
+ 
+ \begin{normalsize}
+Submitted to the Department of Electrical Engineering and Computer Science \\ 
+
+\vspace{12 pt} 
+
+February 4, 2013 \\ 
+
+\vspace{12 pt} 
+
+ in Partial Fulfillment of the Requirements for the Degree of Master of Engineering in Electrical Engineering and Computer Science at the Massachusetts Institute of Technology \\ 
+
+ \vspace{0.5 in}
+
+\end{normalsize}
+\end{center}
+
+\begin{abstract}
+Church is a Turing-complete probabilistic programming language, designed for inference.  By allowing for easy description and manipulation of distributions, it allows one to describe classical AI models in compact ways, providing a language for very rich expression.  However, for inference in Bayes nets, Hidden Markov Models, and topic models, the very settings for which probabilistic programming languages like Church were designed for, researchers typically instead write special cased algorithms in regular programming languages to maximize performance.  In this paper, we argue that an extremely general language can still support very fast inference.  We first introduce the theoretical aspects of our Church-like language, including many implementation tradeoffs.  While the language is extremely hands-off and easy to use, we also allow for more detailed specification of the inference.  Lastly, we demonstrate empirical results displaying our progress towards general languages which can perform inference quickly, and point out many future directions for research.
+\end{abstract}
+
+\pagebreak
 %\begin{center} \begin{LARGE} {\sc \bf Title} \vs{6}
 
 %{\sc M.Eng Proposal} \vs{9}
@@ -41,8 +145,6 @@
 
 %\end{center}
 
-%\begin{abstract}
-%\end{abstract}
 
 
 
@@ -91,17 +193,12 @@ Furthermore, one can use various hints to generate a tracing JIT.  Generating a 
 Thus far, in this project, we have done the following:
 \begin{enumerate}
 \item Explore the theoretical aspects of the traces and reduced traces inference algorithms.
-\item Implement the different inference engines, in RPython, so as to have C versions of the interpreter.  All engines conform to a common REST API.  \footnote{Server code here:  https://github.com/WuTheFWasThat/Church-interpreter}
+\item Implement the different inference engines, in RPython, and use PyPy's translator toolchain to have C versions of the interpreter.    Generate a tracing JIT version of the interpreter, using PyPy's translator toolchain.  \footnote{Server code here:  https://github.com/WuTheFWasThat/Church-interpreter}
 \item Run various benchmarks on the engines to compare the engines' performance on various problems. % Demonstrate good performance on a large-scale topic model!  % Apply the engine to a real-world problem, recovering classic algorithms for topic modeling to demonstrate efficiency.
 \end{enumerate}
-There are many research directions to pursue after this, all towards the goal of improving performance of the inference engine:
-\begin{enumerate}
-\item Generate a tracing JIT version of the interpreter.
-\item Creating a parallelized version of reduced traces.
-\item Potentially exploring some ``adaptive" generalizations of Gibbs sampling.
-\end{enumerate}
+There are many research directions to pursue after this, many of which will be mentioned throughout the paper.  In particular, though, our JITing efforts weren't successful, although we suspect they can be made to be.
 
-We would ultimately like to recover the efficiency of special-cased inference algorithms for topic-modeling, mixture modeling, and Hidden Markov Models, in a much more general setting, and with far fewer lines of code.
+We have already made tremendous progress towards the ultimate goal:  to recover the efficiency of special-cased inference algorithms for topic-modeling, mixture modeling, and Hidden Markov Models, in a much more general setting, and with far fewer lines of code.
 
 % introduction: restate goals from above, of course including which research direction (parallelism; noise variables; connections to deterministic algorithms like sorting) we actually did
 

@@ -15,8 +15,10 @@ ENGINE:  r = randomdb, t = traces, rt = reduced traces
 PROGRAM:  The directory of some Church program.
 
 -----------------------
-RUN A SERVER (REST API)
+RUN A SERVER 
 -----------------------
+
+All servers conform to a common REST API.
 
 To run the python server:
   python server.py [-e ENGINE] [-v] [-p PORT]

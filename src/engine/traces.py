@@ -372,12 +372,14 @@ class EvalNode(Node):
     #if use_jit:
     #  jitdriver.jit_merge_point(node=self.val)
 
-    if not (self.type == 'apply' and self.xrp_apply and self.random_xrp_apply):
-      raise RException("Reflipping something that isn't a random xrp apply")
     if not self.active:
       raise RException("Reflipping something that isn't active")
-    self.remove_xrp()
-    self.add_xrp(self.xrp, force_val, self.args)
+
+    if self.traces.application_reflip:
+      if not (self.type == 'apply' and self.xrp_apply and self.random_xrp_apply):
+        raise RException("Reflipping something that isn't a random xrp apply")
+      self.remove_xrp()
+      self.add_xrp(self.xrp, force_val, self.args)
     self.set_val(force_val)
     self.propagate_up(True, True)
     return self.val
@@ -664,11 +666,11 @@ class Traces(Engine):
       print "p(old) : ", math.exp(old_p)
       print "p(new) : ", math.exp(new_p)
       print 'transition prob : ',  math.exp(new_p + self.new_to_old_q - old_p - self.old_to_new_q) , "\n"
-      print "\n-----------------------------------------\n"
 
     return old_p, self.old_to_new_q, new_p, self.new_to_old_q
 
   def restore(self):
+    print "APPL REFLIP ", self.application_reflip
     if self.application_reflip:
       self.reflip_node.restore(self.old_val)
     else:
@@ -679,6 +681,7 @@ class Traces(Engine):
       self.reflip_xrp.theta_mh_restore()
     if self.debug: 
       print 'restore'
+      print "\n-----------------------------------------\n"
 
   def keep(self):
     if self.application_reflip:
@@ -688,6 +691,9 @@ class Traces(Engine):
         node = self.nodes[i]
         node.restore(self.new_vals[i]) 
       self.reflip_xrp.theta_mh_keep()
+    if self.debug: 
+      print 'keep'
+      print "\n-----------------------------------------\n"
 
   def add_for_transition(self, xrp, evalnode):
     hashval = xrp.__hash__()
@@ -697,8 +703,8 @@ class Traces(Engine):
     evalnodes[evalnode] = True
 
     weight = xrp.state_weight()
-    self.delete_from_db(xrp.__hash__())
-    self.add_to_db(xrp.__hash__(), weight)
+    self.delete_from_db(hashval)
+    self.add_to_db(hashval, weight)
 
   # Add an XRP application node to the db
   def add_xrp(self, xrp, args, val, evalnode, forcing = False):
@@ -714,6 +720,7 @@ class Traces(Engine):
     if not forcing:
       self.old_to_new_q += prob
     self.p += prob
+    self.add_for_transition(xrp, evalnode)
     if xrp.resample:
       return
 
@@ -722,7 +729,6 @@ class Traces(Engine):
       self.new_to_old_q += math.log(weight)
     except:
       pass # This is only necessary if we're reflipping
-    self.add_for_transition(xrp, evalnode)
 
     if self.weighted_db.__contains__(evalnode.hashval) or self.db.__contains__(evalnode.hashval) or (evalnode.hashval in self.choices):
       raise RException("DB already had this evalnode")
@@ -743,7 +749,7 @@ class Traces(Engine):
     del evalnodes[evalnode]
     if len(evalnodes) == 0:
       del self.xrps[hashval]
-      self.delete_from_db(xrp.__hash__())
+      self.delete_from_db(hashval)
 
   def remove_xrp(self, xrp, args, val, evalnode):
     self.uneval_xrps.append((xrp, args, val))
@@ -754,11 +760,11 @@ class Traces(Engine):
     if not evalnode.forcing:
       self.new_to_old_q += prob
     self.p -= prob 
+    self.remove_for_transition(xrp, evalnode)
     if xrp.resample:
       return
 
     xrp = evalnode.xrp
-    self.remove_for_transition(xrp, evalnode)
     try: # TODO: dont do this here.. dont do cancellign
       self.old_to_new_q += math.log(xrp.weight(evalnode.args))
     except:
