@@ -209,6 +209,8 @@ class ReducedEvalNode(Node):
       self.traces.uneval_p += prob
     self.traces.p -= prob
 
+    self.traces.remove_for_transition(xrp, self)
+
   def add_xrp(self, xrp, val, args, forcing = False):
     prob = xrp.prob(val, args)
     if not forcing:
@@ -217,6 +219,8 @@ class ReducedEvalNode(Node):
     self.p = prob
     xrp.incorporate(val, args)
     xrp.make_link(self, args)
+
+    self.traces.add_for_transition(xrp, self)
 
   # reflips own XRP, possibly with a forced value
   def apply_random_xrp(self, xrp, args, xrp_force_val = None):
@@ -666,7 +670,6 @@ class ReducedTraces(Engine):
       self.new_to_old_q += math.log(weight)
     except:
       pass # This is only necessary if we're reflipping
-    self.add_for_transition(xrp, evalnode)
 
     if self.weighted_db.__contains__(evalnode.hashval) or self.db.__contains__(evalnode.hashval) or (evalnode.hashval in self.choices):
       raise RException("DB already had this evalnode")
@@ -692,7 +695,6 @@ class ReducedTraces(Engine):
 
   def remove_xrp(self, evalnode):
     xrp = evalnode.xrp
-    self.remove_for_transition(xrp, evalnode)
     try:
       self.old_to_new_q += math.log(xrp.weight(evalnode.args))
     except:

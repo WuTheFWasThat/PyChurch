@@ -47,11 +47,10 @@ You can also compile a faster version of the server by doing the following:
 
 1.  (OPTIONAL) Open socket_server.py, and change engine_type to what you'd like.
 2.  Install pypy.  
-3.  Run (replace the path to translate.py as appropriate):
-        python /Applications/pypy/pypy/translator/goal/translate.py socket_server.py 
-    (NOT YET READY)
-    For a tracing JIT version :
-        python /Applications/pypy/pypy/translator/goal/translate.py --opt=jit socket_server.py 
+3.  Run (replace the path to the pypy folder as appropriate):
+        python /Applications/pypy/rpython/bin/rpython socket_server.py
+    For a tracing JIT version (NOT YET READY):
+        python /Applications/pypy/rpython/bin/rpython --opt=jit socket_server.py
      WARNING:  This can take a long time.
 4.  This should create a binary called socket_server-c.  You may want to rename it:
      mv socket_server-c some_new_name

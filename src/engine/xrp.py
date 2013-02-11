@@ -456,6 +456,7 @@ class CRP_XRP(XRP):
       self.tables[val.nat] += 1
     else:
       self.tables[val.nat] = 1
+
   def remove(self, val, args = None):
     if args is not None and len(args) != 0:
       raise RException('CRP_XRP has no need to take in arguments %s' % str(args))
@@ -466,7 +467,7 @@ class CRP_XRP(XRP):
         if not self.tables[val.nat] > 1:
           raise RException("Removing from an empty table")
         self.tables[val.nat] -= 1
-        self.z -= 1
+      self.z -= 1
     else:
       raise RException('CRP_XRP cannot remove the value %d, as it has state %s' % (val.nat, str(self.tables.keys())))
   def prob(self, val, args = None):

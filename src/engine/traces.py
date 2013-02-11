@@ -670,7 +670,6 @@ class Traces(Engine):
     return old_p, self.old_to_new_q, new_p, self.new_to_old_q
 
   def restore(self):
-    print "APPL REFLIP ", self.application_reflip
     if self.application_reflip:
       self.reflip_node.restore(self.old_val)
     else:
