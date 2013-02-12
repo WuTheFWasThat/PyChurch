@@ -2,7 +2,8 @@ from utils.rexceptions import RException
 from engine.expressions import *
 
 def parse_token(s, i = 0):
-    delim = ['(', ')', '[', ']', ',']
+    # delim = ['(', ')', '[', ']', ',']
+    delim = ['(', ')', ',']
     while s[i] == ' ':
       i += 1
       if i == len(s):
@@ -85,7 +86,10 @@ def parse_value_token(token):
       val = IntValue(intval)
   except:
     try:
-      floatval = float(token)
+      if token[:2] == 'r[' and token[-1] == ']':
+        floatval = float(token[2:-1])
+      else:
+        floatval = float(token)
       val = NumValue(floatval)
     except:
       if token in ['False', 'false', 'TRUE']:
