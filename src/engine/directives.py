@@ -130,6 +130,7 @@ class Directives:
     self.assume('**', xrp(pow_XRP()), True);
     self.assume('power', xrp(pow_XRP()), True);
     self.assume('%', xrp(mod_XRP()), True);
+    self.assume('mod', xrp(mod_XRP()), True);
     self.assume('&', xrp(and_XRP()), True);
     self.assume('and', xrp(and_XRP()), True);
     self.assume('|', xrp(or_XRP()), True);
