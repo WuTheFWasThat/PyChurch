@@ -1,0 +1,5 @@
+
+assume a (flip 0.8)
+assume  proc (mem (lambda (x) a))
+assume s (and (proc 1) (proc 1))
+infer_many s 10000

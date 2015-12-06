@@ -1,0 +1,4 @@
+assume proc (mem (lambda (x) (flip 0.8)))
+assume s (and (proc (uniform-discrete 1 3)) (proc (uniform-discrete 1 3)))
+infer_many s 10000
+

@@ -1,0 +1,9 @@
+assume b (uniform-discrete 0 2)
+assume a ((lambda (x y) x) (normal b .2) 2)
+
+infer_many b 10000
+observe a 1.4
+infer_many b 10000
+
+
+

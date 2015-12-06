@@ -1,0 +1,6 @@
+assume  proc (mem (lambda (x) (flip 0.8)))
+assume c (and (proc 1) (proc 2) (proc 1) (proc 2))
+
+infer_many c 10000
+predict 0.64
+predict 0.36

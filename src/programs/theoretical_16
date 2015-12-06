@@ -1,0 +1,7 @@
+
+assume  draw-type  (CRP/make 0.5)
+assume  class   (mem (lambda (x) (draw-type)))
+observe  (noisy-negate (= (class 1) (class 2)) 0.000001) true
+assume ans  (= (class 1) (class 3))
+infer_many ans 10000
+

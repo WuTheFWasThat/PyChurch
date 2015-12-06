@@ -1,0 +1,12 @@
+assume a (flip 0.3)
+assume b (beta-binomial/make (list 3 1))
+assume c1 (if a (b) (b))
+assume c2 (if a (b) 10)
+assume c3 (if a (b) 100)
+assume c (+ c1 c2 c3)
+assume d (if a ,
+             (+ (b) (b) (b)) ,
+             (+ (b) 10 100) ,
+         )
+infer_many c 100000
+infer_many d 100000
