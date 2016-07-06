@@ -1,3 +1,12 @@
+#### NOTE: This project is defunct.
+
+#### If you're interested, please check out these more recent projects:
+- [Web PPL](http://webppl.org/)
+- [Venture](http://probcomp.csail.mit.edu/venture/)
+
+
+# Church interpreter
+
 This README is very incomplete
 
 [Read paper for details](papers/MEng%20thesis.pdf)
