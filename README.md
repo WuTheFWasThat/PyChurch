@@ -5,9 +5,7 @@
 - [Venture](http://probcomp.csail.mit.edu/venture/)
 
 
-# Church interpreter
-
-This README is very incomplete
+# PyChurch
 
 [Read paper for details](papers/MEng%20thesis.pdf)
 
